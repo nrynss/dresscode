@@ -1,0 +1,107 @@
+# P2: Clients
+
+```yaml
+id:       P2
+size:     M
+requires: [P1]
+blocks:   P3
+parallel: P4 accounts, P5
+```
+
+**Goal:** Real implementations of the P1 interfaces, each proved live once by its `b` sibling and otherwise tested on recordings.
+
+---
+
+### T2.1: The System One client ★
+```yaml
+requires:   T1.3, T0.6
+fixture-ok: yes
+size:       M · mid
+owns:       internal/systemone/workersai.go, internal/systemone/openrouter.go (only if T0.2 kept Jev)
+status:     not-started
+```
+Workers AI REST (`/ai/run/@cf/cloudflare/clef` and `clef-flash`): images embedded as base64 under Clef's limits (4 MiB, 16 MP each, 8 MiB decoded in total), questions and state in, probabilities out. Retries through Keel `throttle` for errors a wait can fix. Every call metered through `cost`. If Jev was kept, the OpenRouter endpoint behind the same interface.
+
+**Done when:** tests against the T0.6 recordings pass; oversize images are refused before the call with a typed error; the meter records every call.
+
+### T2.1b: System One live
+```yaml
+requires:   T2.1
+fixture-ok: no
+size:       XS · light
+owns:       internal/systemone/live_test.go
+status:     not-started
+```
+One judge and one check request on a sample photo. Workers AI spend within the free allowance. **Done when:** the transcript is in the report and matches the recording's shape.
+
+---
+
+### T2.2: The YouCam client ★
+```yaml
+requires:   T1.3, T0.5
+fixture-ok: yes
+size:       L · mid
+owns:       internal/youcam/client.go, internal/youcam/tasks.go
+status:     not-started
+```
+v2 REST on `https://yce-api-01.makeupar.com`, the key as a Bearer token. Upload through the File API; create and poll through Keel `providertask` under an idempotency key, so a restart resumes the recorded task and never creates (and pays for) it twice; copy each result into `mediastore` at once (links expire). Units quoted, reserved and settled through `cost`.
+
+**Done when:** tests on the T0.5 recordings cover success, every recorded error, a restart mid-poll that resumes without a second create, and a budget refusal that spends nothing.
+
+### T2.2b: YouCam live
+```yaml
+requires:   T2.2
+fixture-ok: no
+size:       XS · light
+owns:       internal/youcam/live_test.go
+status:     not-started
+```
+One upload slot (free), then one render task on a sample photo. **Unit budget: 20.** **Done when:** the transcript and the units spent are in the report.
+
+---
+
+### T2.3: The Lambo client ★
+```yaml
+requires:   T1.3, T0.7
+fixture-ok: yes
+size:       M · mid
+owns:       internal/memory/lambo.go
+status:     not-started
+```
+MCP over streamable HTTP to the Dresscode Lambo server: one session per account, remember a look as text (the occasion, flagged criteria, fixes kept and dismissed, products, the look-in-words line), recall for an occasion, erase a session. Lambo's writes are applied in the background: a remember is confirmed through its receipt before the look reports "remembered". `record_action` does not de-duplicate, so a write is sent once (Keel `outbox` if it must survive a restart).
+
+**Done when:** tests on the T0.7 recordings pass; erase is safe to repeat and reports gone; the client is a target Keel `erase` can call.
+
+### T2.3b: Lambo live
+```yaml
+requires:   T2.3
+fixture-ok: no
+size:       XS · light
+owns:       internal/memory/live_test.go
+status:     not-started
+```
+Remember, recall and erase one look in a scratch session on the Dresscode server. **Done when:** the transcript is in the report.
+
+---
+
+### T2.4: The Resend sender
+```yaml
+requires:   T1.4
+fixture-ok: yes
+size:       S · light
+owns:       internal/mail/
+status:     not-started
+```
+A Keel `identity.Sender` over Resend for sign-in codes only: plain text and a minimal HTML version, the from address from settings, Keel's send limits applied before sending. A recorder implementation for tests.
+
+**Done when:** tests on a recorded Resend reply pass; the code never appears in a log.
+
+### T2.4b: Resend live
+```yaml
+requires:   T2.4
+fixture-ok: no
+size:       XS · user
+owns:       internal/mail/live_test.go
+status:     not-started
+```
+The user receives one sign-in code at their own address. **Done when:** the user confirms it arrived and how long it took.

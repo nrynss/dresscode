@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+dresscode.toml
+data/
+*.db
+web/build/
+node_modules/
+.claude/worktrees/
