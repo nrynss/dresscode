@@ -94,6 +94,6 @@ size:       S · user
 owns:       docs/judging.md
 status:     not-started
 ```
-Through judging (rules: 3–20 Nov; Devpost: 9–20 Nov): Workers Paid on before judging starts; YouCam units checked against the judging share; the flags ready if units run low; the machine and tunnel up; the recorded video as the fallback if the connection drops. After judging: cancel Workers Paid if it isn't wanted.
+Through the judging period (product.md gives both published windows; plan for the longer): Workers Paid on before judging starts; YouCam units checked against the judging share; the flags ready if units run low; the machine and tunnel up; the recorded video as the fallback if the connection drops. After judging: cancel Workers Paid if it isn't wanted.
 
 **Done when:** `docs/judging.md` holds the checklist, and the user has upgraded Workers AI.
