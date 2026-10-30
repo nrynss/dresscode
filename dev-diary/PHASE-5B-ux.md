@@ -52,7 +52,7 @@ What to build:
 
 3. **Error sentence polish in `web/src/lib/api/errors.ts`:**
    - `chunk_mismatch`: `"A piece of the upload did not match. Start it again."`
-   - `lease_refused`: `"This session cannot start another look. A sample look is still open."`
+   - `lease_refused`: `"This session cannot start another look."`
    - `invalid_request` (`field === "choice"`): `"That sign-in choice is not one Dresscode knows."`
 
 4. **Real sample JPEGs in mock mode (`web/vite.config.ts`, `web/src/lib/api/mock.ts`, `web/src/lib/api/mock.test.ts`):**
@@ -227,7 +227,7 @@ Every edited string and every newly authored UI string across P5B is pinned belo
 | `testdata/occasions/festival.json`, `docs/occasions.md` (`festival-full-beard`) | `Renders a full even beard.` | `Shapes a full, even beard.` |
 | `testdata/occasions/{date,family-function,interview,festival}.json`, `docs/occasions.md`, `testdata/api/occasion.json` (`*-closed-smile`) | `Renders a closed-mouth smile.` | `Sets a calm, closed-mouth smile.` |
 | `web/src/lib/api/errors.ts` (`chunk_mismatch`) | `A piece of the upload did not match. Dresscode will need it again.` | `A piece of the upload did not match. Start it again.` |
-| `web/src/lib/api/errors.ts` (`lease_refused`) | `This session cannot start another fresh look.` | `This session cannot start another look. A sample look is still open.` |
+| `web/src/lib/api/errors.ts` (`lease_refused`) | `This session cannot start another fresh look.` | `This session cannot start another look.` |
 | `web/src/lib/api/errors.ts` (`invalid_request`, `field === "choice"`) | `That sign-in choice is not one Dresscode honours.` | `That sign-in choice is not one Dresscode knows.` |
 
 ### 2. Edited Screen & Flow Strings (`T5.11`–`T5.13`)
