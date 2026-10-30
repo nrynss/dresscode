@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** **P3 has opened** — T2.2 (YouCam client) landed, so all clients exist. T3.1 (Judge, frontier) dispatches now; T5.13 (vanity mirror) is in flight; T5.14 closes P5B after it.
+**Current status:** T5.13 landed (`a043780`) — the mirror journey is complete in code, and dev mode shows the real photographs. T5.14 (visual verification + closing screenshots) dispatches next and finishes P5B. T3.1 (Judge) is in review; T3.2 follows it.
 
 ---
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 3 / 5 | T5.12 landed — the front door is the picker, with judge samples. T5.13 (vanity mirror capture + comparator) next. |
+| P5B | 4 / 5 | T5.13 landed — the vanity mirror, stepper, hero cards, arched comparator and fidelity popovers. T5.14 (visual verification) closes the phase. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.13 Vanity mirror capture, stepper and hero cards, arched comparator, fidelity popovers.** Capture carries the arched mirror viewfinder (padding spacer — never `aspect-ratio`), button-styled pickers, the collapsible product drawer, authored camera-failure copy, and a `Check the dress code` CTA that starts the look. Verdict carries the 4-step live stepper, the Fix hero card, and a `See the render` CTA. Render carries the arched comparator with a visible split line, drag handle and Original/After chips, fidelity popovers, `You bought this look.`, and the segmented verdict bar. The review's four minor findings were diary-class and ratified at remediation (`{word}.` recorded, two new strings added to the canonical table, the divider note corrected to two 1px hairlines, drag-glide accepted). Two orchestrator grants closed real gaps: the picker's saved occasion now flows into `startLook` (story fallback for fresh judges, pinned by test — a judge picking Interview gets Interview), and a Vite dev middleware serves the sample photographs at `/media/*` so `pnpm dev` shows real pictures (T5.10's goal, which `<img>` loads bypassing the fetch patch had left unmet in dev). The remediation also closed T5.9's disclosed blind spot for real: the boundary sweep now collects side-specific borders, and it caught the hero cards the old sweep couldn't see. Two review rounds; the second CLEAN with no findings. Landed as `05da1db`+`a043780`, gate green in the worktree and the main checkout, 54 unit + 34 a11y tests.
 
 - **T5.12 Front door.** `/` is now the product: five editorial occasion cards immediately interactive, selectable fix chips with custom check indicators, the second-visit recall banner above the fixes when history is on (runtime-only memory words, fetched only when an occasion is selected and the switch is on; a failed or unmet answer leaves the menu without the line), one-tap judge samples from the recorded `/api/samples`, and a primary `Bring the look` into capture. The gate discipline paid before landing: `--line` over `--raised` computes 2.81:1 in dark, so the raised cards take the soft edge and the banner is sunken — and the review endorsed remediating T5.11's `.info-card` to the same sunken recipe (its raised drawing failed dark). Four POST fixtures recorded so all five judge samples work in mock. The slimmed lead sentence was ratified as authored. Accent/accent-soft joined the boundary table (8.81/8.00); the a11y matrix grew to 26 mounted tests over 13 states. Two review rounds; the second re-ran the whole gate on a patched copy at the remediated tip. Landed as `7c9b121`+`4324fcf`+`9949451`, gate green in the worktree and the main checkout. Note for T5.13: the judge flow intentionally never reads the POST response — the render screen follows the recorded story look.
 

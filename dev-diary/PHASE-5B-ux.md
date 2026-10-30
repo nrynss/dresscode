@@ -197,7 +197,7 @@ requires:   T5.12
 fixture-ok: yes
 size:       L · mid
 owns:       web/src/routes/capture/, web/src/routes/look/, web/tests/a11y/
-status:     in-review
+status:     done
 ```
 Transform `#/capture` into an arched Vanity Mirror camera experience with button-styled file pickers, a collapsible product drawer, and a `Check the dress code` CTA (`POST /api/looks` → `#/look/verdict`). Transform `#/look/verdict` and `#/look/render` with a 4-step live pipeline stepper, an arched Before/After comparator with a visible split line, drag handle, and `Original` / `After the fix` chips, a Fix hero card, a 3-column verdict bar, and interactive fidelity popovers on the Shop sheet.
 
