@@ -33,6 +33,7 @@ What to build:
 
 1. **Source copy updates in `product.md` and `web/src/routes/account/privacy.ts`:**
    - In `product.md` (and matching readers in `privacy.ts`):
+     - `The call is text only.` → `That step is text only, with no photo sent.`
      - `No Google sign-in for the event.` → `No Google sign-in, and no social login.`
      - `Account deletion fans out across stored files, rows and the Lambo session, survives a restart, and reports when every part has confirmed.` → `Account deletion removes your stored photos, looks, and style memory, continues if the server restarts, and reports when every part has confirmed.`
      - `**Cloudflare Workers AI** over REST: Clef, Clef-flash` → `**Cloudflare Workers AI** runs Clef to read the dress code and check the render` (so `privacy.ts`'s `cloudflare` line reads `Cloudflare Workers AI runs Clef to read the dress code and check the render`).
@@ -204,3 +205,58 @@ status:     not-started
 Extend the accessibility and contrast gate matrix in `web/tests/a11y/` to cover the new interactive states (judge samples on home, collapsible drawers, fidelity explanation in the shop sheet), verify that every text pair (4.5:1) and boundary pair (3:1) holds with break-proofs in `/tmp`, and capture a fresh set of light, dark, and 768 px screenshots in `/tmp/ui-explore-after/` to prove the overhaul end-to-end.
 
 **Done when:** `./tools/check.sh` passes; all screen states pass `a11yGate` and `contrastGate` in forced light and dark at 375 px; before/after screenshots confirm the visual overhaul across all 17 states and 768 px tablet width.
+
+---
+
+## Canonical Copy & String Specification
+
+Every edited string and every newly authored UI string across P5B is pinned below. None of these strings contain a digit (`/\d/`) or any banned grading/memory word (`/\b(score|probability|percent|gender|attractiveness|ratio)\b/i`, `/\bmemory\b|\bremember(?:s|ing|ed)?\b|\brecall(?:s|ed|ing)?\b|jhumkas|second visit/i` in static `.svelte` markup).
+
+### 1. Edited Source & Fixture Strings (`T5.10`)
+
+| File | Before | After |
+|---|---|---|
+| `product.md`, `web/src/routes/account/privacy.ts` | `The call is text only.` | `That step is text only, with no photo sent.` |
+| `product.md`, `web/src/routes/account/privacy.ts` | `**Cloudflare Workers AI** over REST: Clef, Clef-flash` | `**Cloudflare Workers AI** runs Clef to read the dress code and check the render` |
+| `product.md`, `web/src/routes/account/privacy.ts` | `**No Google sign-in** for the event.` | `**No Google sign-in**, and no social login.` |
+| `product.md`, `web/src/routes/account/privacy.ts` | `Account deletion fans out across stored files, rows and the Lambo session, survives a restart, and reports when every part has confirmed.` | `Account deletion removes your stored photos, looks, and style memory, continues if the server restarts, and reports when every part has confirmed.` |
+| `testdata/occasions/*.json`, `docs/occasions.md`, `testdata/api/occasion.json` (`*-tie-hair`) | `Renders the hair tied back.` | `Ties the hair back.` |
+| `testdata/occasions/interview.json`, `docs/occasions.md` (`interview-short-hair`) | `Renders the hair short.` | `Cuts the hair short and neat.` |
+| `testdata/occasions/{date,family-function,interview}.json`, `docs/occasions.md`, `testdata/api/occasion.json`, `web/src/routes/occasion/menu.test.ts` (`*-short-beard`) | `Renders a short even beard.` | `Shapes a short, even beard.` |
+| `testdata/occasions/funeral.json`, `docs/occasions.md` (`funeral-short-beard`) | `Renders a short close beard.` | `Shapes a short, close beard.` |
+| `testdata/occasions/festival.json`, `docs/occasions.md` (`festival-full-beard`) | `Renders a full even beard.` | `Shapes a full, even beard.` |
+| `testdata/occasions/{date,family-function,interview,festival}.json`, `docs/occasions.md`, `testdata/api/occasion.json` (`*-closed-smile`) | `Renders a closed-mouth smile.` | `Sets a calm, closed-mouth smile.` |
+| `web/src/lib/api/errors.ts` (`chunk_mismatch`) | `A piece of the upload did not match. Dresscode will need it again.` | `A piece of the upload did not match. Start it again.` |
+| `web/src/lib/api/errors.ts` (`lease_refused`) | `This session cannot start another fresh look.` | `This session cannot start another look. A sample look is still open.` |
+| `web/src/lib/api/errors.ts` (`invalid_request`, `field === "choice"`) | `That sign-in choice is not one Dresscode honours.` | `That sign-in choice is not one Dresscode knows.` |
+
+### 2. Edited Screen & Flow Strings (`T5.11`–`T5.13`)
+
+| File | Before | After |
+|---|---|---|
+| `web/src/app/home.svelte`, `web/src/routes/account/flow.ts` (`sessionLine` fallback) | `You have a session.` | `You are here as a guest.` (shared helper, no dead fallback) |
+| `web/src/routes/account/account.svelte` | `A new address keeps this device's looks because the guest is upgraded in place.` | `A new email address keeps the looks already on this device.` |
+| `web/src/routes/account/account.svelte` | `This device is on the account. The guest's looks were not copied.` | `This device now uses your account. Earlier guest looks stayed separate.` |
+| `web/src/routes/account/account.svelte` | `The guest was upgraded in place, so this device's looks stay.` | `You are signed in, and your looks on this device are kept.` |
+| `web/src/routes/account/flow.ts`, `web/src/routes/account/account.test.ts` | `Every target is confirmed and the identity rows are gone.` | `Every stored part is confirmed and your sign-in is removed.` |
+| `web/src/routes/capture/capture.svelte` (camera failure) | `{session.reason ?? "The camera did not open. Use the phone camera below."}` | `The camera did not open. Use the phone camera below.` |
+| `web/src/routes/look/render/copy.ts` (`savedSentences.bought`) | `This look is marked bought.` | `You bought this look.` |
+
+### 3. Newly Authored UI Strings (`T5.11`–`T5.13`)
+
+| Screen / Component | Element | Exact String |
+|---|---|---|
+| Shell header (`web/src/app/shell.svelte`) | History nav link | `Style history` |
+| Front door (`web/src/app/home.svelte` / `app.svelte`) | Judge sample section heading (`h3`) | `Sample looks` |
+| Front door (`web/src/app/home.svelte` / `app.svelte`) | Judge sample section hint (`p`) | `Open a sample selfie to see a finished look right away.` |
+| Occasion (`web/src/routes/occasion/occasion.svelte`) | Next-step CTA link beneath `Save` | `Bring the look` |
+| Capture (`web/src/routes/capture/capture.svelte`) | Empty mirror viewfinder prompt | `The mirror opens here.` |
+| Capture (`web/src/routes/capture/capture.svelte`) | Collapsible product drawer `<summary>` | `Considering a specific piece?` |
+| Capture (`web/src/routes/capture/capture.svelte`) | Start-look primary button (when selfie is ready) | `Check the dress code` |
+| Verdict (`web/src/routes/look/verdict/verdict.svelte`) | Primary CTA link on finished verdict | `See the render` |
+| Render swipe (`web/src/routes/look/render/swipe.svelte`) | Left corner badge | `Original` |
+| Render swipe (`web/src/routes/look/render/swipe.svelte`) | Right corner badge | `After the fix` |
+| Shop sheet (`web/src/routes/look/render/sheet.svelte`, `copy.ts`) | Fidelity explanation: `exact product` | `This is the exact piece you brought or the occasion named, tried on directly.` |
+| Shop sheet (`web/src/routes/look/render/sheet.svelte`, `copy.ts`) | Fidelity explanation: `approximate match` | `This piece is a close catalog match for the fix shown in the render.` |
+| Shop sheet (`web/src/routes/look/render/sheet.svelte`, `copy.ts`) | Fidelity explanation: `visual simulation` | `The render shows the effect on your photo, paired with a shopping suggestion.` |
+
