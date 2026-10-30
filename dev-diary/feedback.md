@@ -26,6 +26,7 @@ Each entry gives what happened, the evidence, what it cost, and what would fix i
 
 ## Resend
 
+- **Root cause of the nameless 403: the from-domain was not the verified one.** `RESEND_FROM` was `dresscode@nryn.dev`, but the verified domain in the Resend console is `send.nryn.dev` (verified, Resend Forge on, Cloudflare). The same one-send test from `dresscode@send.nryn.dev` was accepted in 401 ms — no console change needed, only the address. *Fix:* keep the from-address on a verified domain of the account; and treat an unnamed 403 as "look at the domain first".
 - **A refused send carries no error name.** The T2.4b live send (one POST to `/emails`, 2026-10-30T13:38:42Z) answered `403` in 0.37 s with an empty `name`, where T2.4's recorded errors and Resend's docs carry a snake_case name such as `validation_error`. An unnamed 403 reads as account or domain gating (from-domain not verified, or the key lacking send permission), not message shape — but the response says none of that. *Cost:* one refused call, nothing; no mail, no retry. *Fix:* the console must say what the API will not; and the sender's typed `Refusal` should surface the name verbatim when Resend gives one, so an empty name is itself the tell.
 
 ## Svelte

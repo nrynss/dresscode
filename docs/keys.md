@@ -9,7 +9,7 @@ Names and where they live. No values in this file. `.env` is gitignored and hold
 | `WORKERS_AI_API_TOKEN` | Workers AI token for Clef, Clef-flash and `bge-m3` | Keyring `service=cloudflare`, `kind=workers-ai`, and `.env`. Not named `CLOUDFLARE_API_TOKEN` |
 | `CLOUDFLARE_ACCOUNT_ID` | Account id for the Workers AI URL | `.env` |
 | `RESEND_API_KEY` | Sign-in mail. Send-only. The key already used for `nryn.dev` | `.env` |
-| `RESEND_FROM` | `dresscode@nryn.dev` | `.env` |
+| `RESEND_FROM` | `dresscode@send.nryn.dev` | `.env` |
 | `OPENROUTER_API_KEY` | Jev, kept for the comparison. Clef is the picker | `.env`, and the OMP credential store |
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | `.env` |
 | `LAMBO_URL` | Dresscode's own Lambo HTTP MCP | `.env`. This machine, `127.0.0.1:7720` |
