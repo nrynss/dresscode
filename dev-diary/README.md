@@ -141,7 +141,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
-| P4 | 1 / 7 | T4.1 done. T4.2, T4.3 and T4.5 are claimed. |
+| P4 | 2 / 7 | T4.1 and T4.2 done. T4.3 and T4.5 are still being written. |
 | P5 | 1 / 8 | T5.1 done except a phone install. T5.2, T5.3 and T5.7 are claimed. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T4.2 Sign-in by emailed code.** `MountSignIn` serves the two code routes through Keel identity. A new address upgrades the guest in place. An existing account with guest looks returns `guest_data_conflict`, then `choice` `switch` moves the device and leaves both looks where they were. `merge` is `invalid_request`. Tests cover a fresh sign-in, that switch, a wrong code, an expired code, and the send limit. A review of `2abd459` came back clean. No live mail.
 - **T2.3b Lambo live.** One remember, recall, and erase on `127.0.0.1:7720`, session `dc-u-live-t23b`. Recall returned the two lines that were stored. Erase removed them. The test reads `LAMBO_URL` and `LAMBO_DRESSCODE_TOKEN` from the environment and does not open `.env`. A second review of `61d4cd9` came back clean. The gate does not run the live test.
 - **T5.1 Shell, theme and API client.** The shell, Chaaya theme roles, the manifest, and the typed API client are in. Mock mode serves `testdata/api`. Every recorded error code has a human message. A review of `9c45b71` came back clean aside from installing the app on a phone, which was not done. The gate passed.
 - **T2.3 The Lambo client.** `internal/memory.Client` speaks MCP streamable HTTP. A remember is confirmed through its receipt before the caller is told it was remembered. A repeat erase reports gone. `Target` is a Keel erase target named `memory`. Tests replay `testdata/lambo` and do not dial. A review of `beba7c7` came back clean and the gate passed.

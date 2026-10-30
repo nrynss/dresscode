@@ -44,7 +44,7 @@ requires:   T4.1, T2.4
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/signin.go
-status:     in-review
+status:     done
 ```
 Keel `identity` code sign-in with the Resend sender: start (email in, code sent, send limits refuse before sending), verify (code in, session upgraded). **Signing in keeps the guest's looks:** the guest's rows attach to the account; when the address already has an account, the guest's looks are added to it, never overwrite it. No Google sign-in.
 
