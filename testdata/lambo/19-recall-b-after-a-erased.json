@@ -1,0 +1,83 @@
+{
+  "exchange": "19-recall-b-after-a-erased",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-b",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "bbb64748-8b39-4fe2-9aa8-c1cff74e6399"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 19,
+      "method": "tools/call",
+      "params": {
+        "name": "lambo_recall",
+        "arguments": {
+          "agent_id": "dresscode-probe",
+          "query": "family function",
+          "top_k": 10,
+          "max_tokens": 2000
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      "x-accel-buffering": "no",
+      "connection": "close",
+      "transfer-encoding": "chunked"
+    },
+    "sse": [
+      {
+        "id": "0/4",
+        "retry": 3000,
+        "data": null
+      },
+      {
+        "id": "1/4",
+        "retry": null,
+        "data": {
+          "jsonrpc": "2.0",
+          "id": 19,
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Family function dismissed the braid. [Observation] (score 0.65, id 02bd43f4)\n\nFamily function kept the silver studs. [Observation] (score 0.64, id f1016010)"
+              }
+            ],
+            "structuredContent": {
+              "context": "Family function dismissed the braid. [Observation] (score 0.65, id 02bd43f4)\n\nFamily function kept the silver studs. [Observation] (score 0.64, id f1016010)",
+              "hits": [
+                {
+                  "blast_radius": null,
+                  "concept_type": "Observation",
+                  "content": "Family function dismissed the braid.",
+                  "is_canonical": false,
+                  "node_id": "02bd43f4-7d91-498f-a07e-240c1c0edfec",
+                  "score": 0.6452310168743134
+                },
+                {
+                  "blast_radius": null,
+                  "concept_type": "Observation",
+                  "content": "Family function kept the silver studs.",
+                  "is_canonical": false,
+                  "node_id": "f1016010-9e7d-46f3-8bc1-afef94593030",
+                  "score": 0.6449823164939881
+                }
+              ],
+              "warnings": []
+            },
+            "isError": false
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "exchange": "09-derive-b",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-b",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "bbb64748-8b39-4fe2-9aa8-c1cff74e6399"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 9,
+      "method": "tools/call",
+      "params": {
+        "name": "lambo_derive",
+        "arguments": {
+          "agent_id": "dresscode-probe",
+          "concepts": [
+            {
+              "content": "Family function kept the silver studs.",
+              "concept_type": "observation"
+            },
+            {
+              "content": "Family function dismissed the braid.",
+              "concept_type": "observation"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      "x-accel-buffering": "no",
+      "connection": "close",
+      "transfer-encoding": "chunked"
+    },
+    "sse": [
+      {
+        "id": "0/0",
+        "retry": 3000,
+        "data": null
+      },
+      {
+        "id": "1/0",
+        "retry": null,
+        "data": {
+          "jsonrpc": "2.0",
+          "id": 9,
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "accepted 2 concept(s) for background write; validated and ordered, not yet applied\nreceipt lwr1.691cdf3390a0d9f4.1a18ad3d2c5.1: pending \u2014 admitted, not yet applied; ask again\nThe outcome arrives on your next tool response. To wait for it, call lambo_stats with receipt=lwr1.691cdf3390a0d9f4.1a18ad3d2c5.1 (add wait_ms to block).\nRecorded under agent_id \"dresscode-probe\"; send this same id on every call."
+              }
+            ],
+            "structuredContent": {
+              "agent_id": "dresscode-probe",
+              "receipt": "lwr1.691cdf3390a0d9f4.1a18ad3d2c5.1",
+              "receipt_state": "pending",
+              "summary": "accepted 2 concept(s) for background write; validated and ordered, not yet applied",
+              "warnings": []
+            },
+            "isError": false
+          }
+        }
+      }
+    ]
+  }
+}

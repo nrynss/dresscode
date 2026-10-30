@@ -1,0 +1,42 @@
+{
+  "exchange": "15-erase-a",
+  "request": {
+    "method": "POST",
+    "path": "/admin/s/dc-u-probe-a/erase",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>"
+    },
+    "body": {
+      "confirm": "dc-u-probe-a"
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "content-length": "263",
+      "connection": "close"
+    },
+    "body": {
+      "session": "dc-u-probe-a",
+      "already_absent": false,
+      "removed": {
+        "sessions": 1,
+        "interactions": 1,
+        "concepts": 2,
+        "vectors": 2,
+        "edges": 3,
+        "synonyms": 0,
+        "canonization_events": 0,
+        "reservations": 0,
+        "write_intents": 1,
+        "session_stats": 1,
+        "lease_refusals": 0,
+        "leases": 1
+      },
+      "fence_token": 2
+    }
+  }
+}

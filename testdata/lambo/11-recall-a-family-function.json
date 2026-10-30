@@ -1,0 +1,83 @@
+{
+  "exchange": "11-recall-a-family-function",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-a",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "a2d650e6-9b6a-4270-a33e-961ac3fc7679"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 11,
+      "method": "tools/call",
+      "params": {
+        "name": "lambo_recall",
+        "arguments": {
+          "agent_id": "dresscode-probe",
+          "query": "family function",
+          "top_k": 10,
+          "max_tokens": 2000
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      "x-accel-buffering": "no",
+      "connection": "close",
+      "transfer-encoding": "chunked"
+    },
+    "sse": [
+      {
+        "id": "0/3",
+        "retry": 3000,
+        "data": null
+      },
+      {
+        "id": "1/3",
+        "retry": null,
+        "data": {
+          "jsonrpc": "2.0",
+          "id": 11,
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Family function dismissed the red lip. [Observation] (score 0.65, id 1c8a743b)\n\nFamily function kept the gold jhumkas. [Observation] (score 0.65, id 609855c8)"
+              }
+            ],
+            "structuredContent": {
+              "context": "Family function dismissed the red lip. [Observation] (score 0.65, id 1c8a743b)\n\nFamily function kept the gold jhumkas. [Observation] (score 0.65, id 609855c8)",
+              "hits": [
+                {
+                  "blast_radius": null,
+                  "concept_type": "Observation",
+                  "content": "Family function dismissed the red lip.",
+                  "is_canonical": false,
+                  "node_id": "1c8a743b-e85b-41f8-9ed8-78e2769d489a",
+                  "score": 0.6511893653869629
+                },
+                {
+                  "blast_radius": null,
+                  "concept_type": "Observation",
+                  "content": "Family function kept the gold jhumkas.",
+                  "is_canonical": false,
+                  "node_id": "609855c8-b924-406a-ad73-4f1ec22463d9",
+                  "score": 0.6494891726970673
+                }
+              ],
+              "warnings": []
+            },
+            "isError": false
+          }
+        }
+      }
+    ]
+  }
+}

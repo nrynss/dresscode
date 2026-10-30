@@ -1,0 +1,25 @@
+{
+  "exchange": "08-initialized-b",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-b",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "bbb64748-8b39-4fe2-9aa8-c1cff74e6399"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "method": "notifications/initialized"
+    }
+  },
+  "response": {
+    "status": 202,
+    "headers": {
+      "connection": "close",
+      "content-length": "0"
+    },
+    "body": null
+  }
+}
