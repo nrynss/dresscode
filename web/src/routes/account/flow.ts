@@ -65,8 +65,7 @@ function pushLine(lines: string[], line: string): void {
 
 export function sessionLine(kind: string): string {
   if (kind === "owner") return "You are signed in.";
-  if (kind === "guest") return "You are here as a guest.";
-  return "You have a session.";
+  return "You are here as a guest.";
 }
 
 export async function readSession(signal?: AbortSignal): Promise<Session> {
@@ -182,7 +181,7 @@ export function deletionLines(events: readonly JobEvent[]): string[] {
         const rowsDone = detailRecord(event.detail)?.rows_done === true;
         pushLine(
           lines,
-          rowsDone ? "Every target is confirmed and the identity rows are gone." : "Deleting the account.",
+          rowsDone ? "Every stored part is confirmed and your sign-in is removed." : "Deleting the account.",
         );
       } else if (event.stage === "erase") {
         pushLine(lines, "Deleting.");

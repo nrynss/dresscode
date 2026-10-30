@@ -84,7 +84,7 @@
       />
       Style history
     </label>
-    <p class="notice">{switchState.notice}</p>
+    <p class="info-card">{switchState.notice}</p>
 
     {#if switchState.enabled}
       <h3>Past looks</h3>
@@ -167,7 +167,7 @@
 
   .switch {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.65rem;
     min-height: 2.75rem;
     padding: 0.45rem 0.15rem;
@@ -176,16 +176,56 @@
     overflow-wrap: break-word;
   }
 
+  /* The checkbox itself is the pill track; the thumb rides on it, so the
+   * label keeps its exact structure and the input stays the one control. */
   .switch input {
-    width: 1.15rem;
-    height: 1.15rem;
-    margin-top: 0.2rem;
-    accent-color: var(--accent);
+    appearance: none;
+    position: relative;
+    width: 2.75rem;
+    height: 1.55rem;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--sunken);
     flex: none;
   }
 
-  .notice {
-    color: var(--dim);
+  .switch input::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0.15rem;
+    translate: 0 -50%;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+  }
+
+  .switch input:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .switch input:checked::before {
+    translate: 1.2rem -50%;
+    border-color: var(--accent);
+  }
+
+  .switch input:disabled {
+    opacity: 0.6;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .switch input,
+    .switch input::before {
+      transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease,
+        translate 0.15s ease;
+    }
   }
 
   .group {

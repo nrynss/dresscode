@@ -3,6 +3,7 @@
   import { onDestroy } from "svelte";
   import { ApiError } from "../../lib/api/client";
   import ErrorNotice from "../../app/error-notice.svelte";
+  import ThemeControl from "../../app/theme-control.svelte";
   import {
     deleteAccount,
     deleteHistory,
@@ -43,6 +44,14 @@
   let dialog = $state<string | null>(null);
 
   const freshCodeReady = $derived(/^\d{6}$/.test(deletionCode.trim()));
+  const signInCells = $derived(codeCells(signInCode));
+  const deletionCells = $derived(codeCells(deletionCode));
+
+  /** One slot per cell of the code frame. The input keeps the value; the
+   * cells only show it. */
+  function codeCells(code: string): string[] {
+    return Array.from({ length: 6 }, (_, index) => code.slice(index, index + 1));
+  }
 
   $effect(() => {
     const control = new AbortController();
@@ -197,16 +206,18 @@
     <p>{sessionLine(session.kind)}</p>
   {/if}
 
+  <ThemeControl />
+
   <section class="block" aria-labelledby="sign-in">
     <h3 id="sign-in">Sign in</h3>
     <p>{accounts.keepsLooks}</p>
-    <p>A new address keeps this device's looks because the guest is upgraded in place.</p>
+    <p>A new email address keeps the looks already on this device.</p>
     <p>{accounts.noGoogle}</p>
 
     {#if signedIn && didSwitch}
-      <p>This device is on the account. The guest's looks were not copied.</p>
+      <p>This device now uses your account. Earlier guest looks stayed separate.</p>
     {:else if signedIn}
-      <p>The guest was upgraded in place, so this device's looks stay.</p>
+      <p>You are signed in, and your looks on this device are kept.</p>
     {/if}
 
     <form onsubmit={onSignIn}>
@@ -217,7 +228,12 @@
       {#if !signedIn && signInSent}
         <label>
           Code
-          <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" bind:value={signInCode} />
+          <span class="otp">
+            <input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" bind:value={signInCode} />
+            {#each signInCells as cell, index (index)}
+              <span class="cell" aria-hidden="true">{cell}</span>
+            {/each}
+          </span>
         </label>
       {/if}
       {#if !signedIn && !signInSent}
@@ -250,13 +266,18 @@
     {/if}
   </section>
 
-  <section class="block" aria-labelledby="who-sees">
-    <h2 id="who-sees">{privacy.heading}</h2>
-    <p>{privacy.cloudflare}</p>
-    {#each sentences as sentence (sentence)}
-      <p>{sentence}</p>
-    {/each}
-  </section>
+  <details open class="disclosure">
+    <summary>
+      <h2 id="who-sees">{privacy.heading}</h2>
+      <span class="chevron" aria-hidden="true">▾</span>
+    </summary>
+    <div class="block">
+      <p>{privacy.cloudflare}</p>
+      {#each sentences as sentence (sentence)}
+        <p>{sentence}</p>
+      {/each}
+    </div>
+  </details>
 
   <section class="block" aria-labelledby="deletion">
     <h3 id="deletion">Deletion</h3>
@@ -278,7 +299,7 @@
               else if (dialog === `look:${look.id}`) dialog = null;
             }}
           >
-            <Dialog.Trigger disabled={pending}>Delete this look</Dialog.Trigger>
+            <Dialog.Trigger class="danger" disabled={pending}>Delete this look</Dialog.Trigger>
             <Dialog.Portal>
               <Dialog.Overlay class="dresscode-overlay" />
               <Dialog.Content class="dresscode-panel">
@@ -312,7 +333,7 @@
                 else if (dialog === `photo:${selfieId}`) dialog = null;
               }}
             >
-              <Dialog.Trigger disabled={pending}>Delete this photo</Dialog.Trigger>
+              <Dialog.Trigger class="danger" disabled={pending}>Delete this photo</Dialog.Trigger>
               <Dialog.Portal>
                 <Dialog.Overlay class="dresscode-overlay" />
                 <Dialog.Content class="dresscode-panel">
@@ -349,7 +370,7 @@
         else if (dialog === "history") dialog = null;
       }}
     >
-      <Dialog.Trigger disabled={pending}>Delete style history</Dialog.Trigger>
+      <Dialog.Trigger class="danger" disabled={pending}>Delete style history</Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay class="dresscode-overlay" />
         <Dialog.Content class="dresscode-panel">
@@ -386,13 +407,18 @@
     {#if freshSent}
       <label>
         Fresh code
-        <input
-          name="deletion-code"
-          inputmode="numeric"
-          autocomplete="one-time-code"
-          maxlength="6"
-          bind:value={deletionCode}
-        />
+        <span class="otp">
+          <input
+            name="deletion-code"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            maxlength="6"
+            bind:value={deletionCode}
+          />
+          {#each deletionCells as cell, index (index)}
+            <span class="cell" aria-hidden="true">{cell}</span>
+          {/each}
+        </span>
       </label>
       <Dialog.Root
         open={dialog === "account"}
@@ -496,6 +522,76 @@
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: var(--radius-control);
+  }
+
+  /* The code frame: six cells, with the real input stretched invisibly over
+   * them, so typing, paste and autofill all stay native. */
+  .otp {
+    position: relative;
+    display: flex;
+    gap: 0.4rem;
+    width: 100%;
+    max-width: 17rem;
+  }
+
+  .otp .cell {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+    font-family: var(--font-numeric);
+    font-size: 1.25rem;
+  }
+
+  .otp input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    min-height: 100%;
+    padding: 0;
+    color: transparent;
+    background: none;
+    border: none;
+    text-align: center;
+  }
+
+  .otp:focus-within {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
+  }
+
+  .disclosure {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .disclosure summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .disclosure summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .chevron {
+    color: var(--dim);
+  }
+
+  .disclosure[open] .chevron {
+    rotate: 180deg;
   }
 
   .row {

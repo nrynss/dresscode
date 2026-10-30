@@ -17,7 +17,7 @@
 <fieldset class="appearance">
   <legend>Appearance</legend>
   {#each modes as mode (mode.id)}
-    <label>
+    <label class="mode" class:active={selected === mode.id}>
       <input
         type="radio"
         name="appearance"

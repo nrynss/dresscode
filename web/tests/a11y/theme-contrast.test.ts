@@ -26,7 +26,9 @@ const colourRoles = [
 ] as const;
 
 /** Every text pair the screens draw, foreground over background. The gate
- * measures each pair in every theme block the stylesheet defines. */
+ * measures each pair in every theme block the stylesheet defines. The stop
+ * pairs carry the danger button's text; the dim pair carries the appearance
+ * pill's resting labels on their sunken fill. */
 const textPairs: readonly ContrastPair[] = [
   ["text", "ground"],
   ["text", "surface"],
@@ -36,8 +38,11 @@ const textPairs: readonly ContrastPair[] = [
   ["text", "accent-soft"],
   ["dim", "ground"],
   ["dim", "surface"],
+  ["dim", "sunken"],
   ["accent", "ground"],
   ["on-accent", "accent"],
+  ["stop", "surface"],
+  ["stop", "ground"],
   ["ok", "ground"],
 ];
 
@@ -45,13 +50,20 @@ const textPairs: readonly ContrastPair[] = [
  * The gate measures each pair in every theme block the stylesheet defines.
  * --line bounds the controls against the page, against the fills the controls
  * sit on, and against the sunken frame of the render swipe; --stop bounds the
- * notice against its own soft fill and the page. */
+ * notice against its own soft fill and the page, and the danger button
+ * against its surface fill; --accent bounds the primary button and the
+ * appearance pill's active segment against the surface, the page, and the
+ * raised card. */
 const boundaryPairs: readonly ContrastPair[] = [
   ["line", "ground"],
   ["line", "surface"],
   ["line", "sunken"],
   ["stop", "stop-soft"],
   ["stop", "ground"],
+  ["stop", "surface"],
+  ["accent", "surface"],
+  ["accent", "ground"],
+  ["accent", "raised"],
 ];
 
 /** Border roles that draw no control boundary: the soft edges around cards

@@ -2,6 +2,7 @@
   import { ApiError } from "@nrynss/chaaya/keel";
   import { Dialog } from "bits-ui";
   import { api } from "../lib/api/client";
+  import { sessionLine } from "../routes/account/flow";
   import ErrorNotice from "./error-notice.svelte";
 
   interface Session {
@@ -12,15 +13,7 @@
   let problem = $state<ApiError | null>(null);
   let open = $state(false);
 
-  const here = $derived(
-    session === null
-      ? ""
-      : session.kind === "owner"
-        ? "You are signed in."
-        : session.kind === "guest"
-          ? "You are here as a guest."
-          : "You have a session.",
-  );
+  const here = $derived(session === null ? "" : sessionLine(session.kind));
 
   $effect(() => {
     const control = new AbortController();

@@ -113,7 +113,7 @@ test("account deletion shows progress to the end on mock data", async () => {
     expect(lines).toEqual(recorded);
     expect(lines).toEqual([
       "Deleting the account.",
-      "Every target is confirmed and the identity rows are gone.",
+      "Every stored part is confirmed and your sign-in is removed.",
       "Every part has confirmed.",
     ]);
     expect(lines.at(-1)).toBe("Every part has confirmed.");
