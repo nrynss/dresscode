@@ -124,9 +124,17 @@ requires:   T2.4
 fixture-ok: no
 size:       XS · user
 owns:       internal/mail/live_test.go
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 The user receives one sign-in code at their own address. **Done when:** the user confirms it arrived and how long it took.
+
+Notes:
+
+- Added `internal/mail/live_test.go` behind `//go:build live`, `TestLiveSigninCodeArrives`. It reads `RESEND_API_KEY`, `RESEND_FROM` and `RESEND_TO` from the environment and skips when any is missing, so `-tags live` without env does nothing. It builds the real `Client` from those values, no config load, and calls `Send` once. No retry: a failed send fails the test. The key is never printed, and a send error is reported only by its typed refusal fields (status and name) or a fixed line, never by its text.
+- The provider id is read without changing the sender: the test passes a capturing `slog.Handler` as the client's `Log`, and the sender's own accepted-send record carries `provider_id`. The sender already refuses to log an id that contains the code.
+- **The live run was refused.** One send attempted, `sent_at_utc` in the handoff log; Resend answered 403 with no error name, so no mail was sent and the user received nothing. Stopped there per the one-send rule. Unmet done-when: the user has not confirmed arrival. Likely outside the client: a 403 before the mail is accepted reads as account or domain verification, not message shape. Needs the user's Resend console check before the next attempt.
+- gofmt clean, `go vet -tags live ./internal/mail/` silent, the gate passes without the tag, and a run without env skips cleanly.
+- Landed after the console finding was worked around with the user's approval, by the account-owner quick path. A second single send, from `onboarding@resend.dev` to the user's own address at 2026-10-30T14:33:40Z, was accepted in 415 ms, and the user confirmed arrival within about a minute — in Gmail's spam, which is its own finding (feedback.md, Resend). Done-when met on that confirmation. The configured from-domain `nryn.dev` is still unverified: production-sender proof, and the demo, wait on the console fix.
 
 ### T2.5: The memory client survives session expiry
 ```yaml
