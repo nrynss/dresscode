@@ -329,7 +329,7 @@ func replayEveryRecordingIn(t *testing.T, rel string, bothModels bool) {
 		t.Fatalf("%s holds no recordings", rel)
 	}
 	models := map[string]int{}
-	for _, exchange := range exchanges {
+	for i, exchange := range exchanges {
 		rec, err := rep.Reply(exchange)
 		if err != nil {
 			t.Fatalf("%s: %v", exchange, err)
@@ -342,6 +342,16 @@ func replayEveryRecordingIn(t *testing.T, rel string, bothModels bool) {
 		}
 		want, wantUsage := recordedAnswers(t, rec)
 		assertSameAnswers(t, exchange, got, want, wantUsage)
+		// The charge names the model asked, matched whole: "workersai.clef"
+		// is a prefix of the flash kind too, so a prefix check would pass
+		// a clef-flash call charged to clef.
+		charges := ledger.Charges()
+		if len(charges) != i+1 {
+			t.Fatalf("%s: %d charges after the call", exchange, len(charges))
+		}
+		if want := "workersai." + req.Model; charges[i].Kind != want {
+			t.Fatalf("%s: charge kind %q, want %q", exchange, charges[i].Kind, want)
+		}
 		call := wire.lastCall()
 		if want := "/client/v4/accounts/" + workersTestAccount + runPath(req.Model); call.Path != want {
 			t.Fatalf("%s: path %s, want %s", exchange, call.Path, want)
@@ -356,14 +366,7 @@ func replayEveryRecordingIn(t *testing.T, rel string, bothModels bool) {
 	if bothModels && (models[ModelClef] == 0 || models[ModelClefFlash] == 0) {
 		t.Fatalf("%s covers models %v", rel, models)
 	}
-	charges := ledger.Charges()
-	if len(charges) != len(exchanges) {
-		t.Fatalf("%d charges for %d calls", len(charges), len(exchanges))
-	}
-	for _, charge := range charges {
-		if !strings.HasPrefix(charge.Kind, "workersai."+ModelClef) && !strings.HasPrefix(charge.Kind, "workersai."+ModelClefFlash) {
-			t.Fatalf("charge kind %q", charge.Kind)
-		}
+	for _, charge := range ledger.Charges() {
 		if charge.Units != 1 || charge.UnitPrice <= 0 {
 			t.Fatalf("charge %+v", charge)
 		}
@@ -607,8 +610,12 @@ func TestARateLimitFollowsTheRetryAfterHint(t *testing.T) {
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	if len(waits) != 2 || waits[0] < 2*time.Second {
-		t.Fatalf("waits %v, want the first above the 2s hint", waits)
+	// The hint names 2s and the throttle adds at most a second of spread
+	// on top of a hint, so the honest wait sits in [2s, 3s]. The plain
+	// backoff would spread across the upper half of its 20s, at least
+	// 10s, so a reader that dropped the hint fails this ceiling.
+	if len(waits) != 2 || waits[0] < 2*time.Second || waits[0] > 3*time.Second {
+		t.Fatalf("waits %v, want the first at the 2s hint plus under a second of spread", waits)
 	}
 }
 
@@ -652,19 +659,24 @@ func TestANonRetryableRefusalDoesNotRetry(t *testing.T) {
 }
 
 // A server fault is a transient class of its own: it draws the smaller
-// attempt budget, so two faults end the call without a third submission.
+// attempt budget, so two faults end the call without a third submission,
+// and a call that never succeeded settles nothing.
 func TestATransientFaultDrawsItsOwnBudget(t *testing.T) {
 	t.Parallel()
 	wire, _ := newClefReplay(t, clefDir(t), []wireStep{{status: http.StatusBadGateway}, {status: http.StatusBadGateway}})
-	meter, _, _ := newTestMeter(t, cost.Dollar)
+	meter, _, ledger := newTestMeter(t, cost.Dollar)
 	client := newWorkersTestClient(t, wire.url, meter, instantPacer())
 	_, err := client.Ask(context.Background(), sampleRequest(t, nil))
 	var statusErr *StatusError
 	if !errors.As(err, &statusErr) || statusErr.Code != http.StatusBadGateway {
 		t.Fatalf("err = %v", err)
 	}
+	// The budget of two spent: no request follows the last attempt.
 	if calls := wire.callCount(); calls != 2 {
 		t.Fatalf("%d requests, want the transient budget of two", calls)
+	}
+	if charges := ledger.Charges(); len(charges) != 0 {
+		t.Fatalf("%d charges for a call that never succeeded", len(charges))
 	}
 }
 
@@ -672,7 +684,7 @@ func TestAFailedEnvelopeDoesNotRetry(t *testing.T) {
 	t.Parallel()
 	refused := `{"result":null,"success":false,"errors":[{"code":70001,"message":"model not found"}],"messages":[]}`
 	wire, _ := newClefReplay(t, clefDir(t), []wireStep{{status: http.StatusOK, body: refused}})
-	meter, _, _ := newTestMeter(t, cost.Dollar)
+	meter, _, ledger := newTestMeter(t, cost.Dollar)
 	client := newWorkersTestClient(t, wire.url, meter, instantPacer())
 	_, err := client.Ask(context.Background(), sampleRequest(t, nil))
 	var envelope *EnvelopeError
@@ -692,6 +704,10 @@ func TestAFailedEnvelopeDoesNotRetry(t *testing.T) {
 	}
 	if calls := wire2.callCount(); calls != 1 {
 		t.Fatalf("%d requests, want one", calls)
+	}
+	// Two refused envelopes, two settled-nothing calls.
+	if charges := ledger.Charges(); len(charges) != 0 {
+		t.Fatalf("%d charges for calls that never succeeded", len(charges))
 	}
 }
 

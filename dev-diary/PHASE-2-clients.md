@@ -33,6 +33,13 @@ Notes:
 - No OpenRouter recording exists — T0.6 recorded Clef only — and no live call was made. The OpenRouter tests pin the documented decisions shape with an inline fixture and say so in place. The endpoint is `alpha/decisions` appended to the resolved `OPENROUTER_BASE_URL` (`https://openrouter.ai/api/v1` in docs/keys.md); if OpenRouter serves the decisions call only outside that prefix, the setting changes, not the code. Images ride in the state as `image_url` data-URL parts, the documented form; the pick comparison is text only, so no image crosses on the recorded path. A reply that reports its own `usage.cost` settles at that figure; the reserve uses the documented $0.042 per million input tokens.
 - The key and the account id come from the caller's resolved references. Neither is in an error — a transport error is scrubbed and a provider note is trimmed to 200 characters — and a test pins the bearer on every recorded call. No new dependency.
 
+Remediation (review):
+
+- The Retry-After test now bounds the first wait from above as well as below: the hint names 2s and the throttle adds at most a second of spread on a hint, so the honest wait sits in [2s, 3s], while the default backoff waits at least 10s. A reader that dropped the hint no longer passes.
+- `decodeClefResult` routes the envelope's `errors[].message` strings through the same scrub-and-trim the non-200 note uses (a shared `cleanNote`), so an `EnvelopeError`'s notes are key-free and capped at 200 characters like a `StatusError` note. Nothing else about the notes changed.
+- The replay's charge-kind check now matches the kind whole against the model each request named; the old double prefix check was dead, because `workersai.clef` is also a prefix of the flash kind.
+- The transient-fault and failed-envelope tests pin zero charges after a fully failed call (the non-retryable refusal test already carried that pin and the request count). The only behaviour change is the envelope notes' scrub and trim.
+
 ### T2.1b: System One live
 ```yaml
 requires:   T2.1

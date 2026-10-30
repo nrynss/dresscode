@@ -111,6 +111,7 @@ func statusRetryable(code int) bool {
 
 // EnvelopeError is an HTTP 200 whose body is not a usable result: the
 // Cloudflare envelope reported failure, or the answers are incomplete.
+// Each provider note is trimmed short and never carries the key.
 type EnvelopeError struct {
 	Reason string
 	Notes  []string
@@ -310,7 +311,7 @@ func (c *WorkersAI) post(ctx context.Context, model string, body []byte) (Respon
 	if reply.status != http.StatusOK {
 		return Response{}, 0, reply.statusError(c.token)
 	}
-	resp, tokens, err := decodeClefResult(reply.body)
+	resp, tokens, err := decodeClefResult(reply.body, c.token)
 	if err != nil {
 		return Response{}, 0, err
 	}
@@ -331,7 +332,7 @@ type workersBody struct {
 
 // decodeClefResult unwraps Cloudflare's envelope into the answers. The
 // recorded shape is {"result": {model, answers, usage}, "success": true}.
-func decodeClefResult(body []byte) (Response, int64, error) {
+func decodeClefResult(body []byte, token string) (Response, int64, error) {
 	var envelope struct {
 		Result  *json.RawMessage `json:"result"`
 		Success *bool            `json:"success"`
@@ -342,7 +343,7 @@ func decodeClefResult(body []byte) (Response, int64, error) {
 		return Response{}, 0, &EnvelopeError{Reason: "reply is not a workers ai envelope"}
 	}
 	for _, note := range envelope.Errors {
-		notes = append(notes, note.Message)
+		notes = append(notes, cleanNote(note.Message, token))
 	}
 	if envelope.Success == nil || !*envelope.Success {
 		return Response{}, 0, &EnvelopeError{Reason: "the call was refused", Notes: notes}
@@ -574,15 +575,27 @@ func (r reply) statusError(token string) error {
 	if note == "" {
 		note = strings.TrimSpace(string(r.body))
 	}
-	note = scrubSecret(note, token)
-	if len(note) > 200 {
-		note = note[:200]
-	}
+	note = cleanNote(note, token)
 	return &StatusError{
 		Code:       r.status,
 		RetryAfter: parseRetryAfter(r.header.Get("Retry-After")),
 		Note:       note,
 	}
+}
+
+// maxNoteLen caps one provider note an error carries.
+const maxNoteLen = 200
+
+// cleanNote scrubs the key out of provider text an error carries and
+// trims it to the note length. A non-200 reply's note and an envelope's
+// notes both go through it, so no provider text reaches an error
+// unscrubbed or unbounded.
+func cleanNote(note, token string) string {
+	note = scrubSecret(note, token)
+	if len(note) > maxNoteLen {
+		note = note[:maxNoteLen]
+	}
+	return note
 }
 
 type providerNote struct {
