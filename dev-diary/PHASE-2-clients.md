@@ -66,11 +66,19 @@ requires:   T1.3, T0.7
 fixture-ok: yes
 size:       M · mid
 owns:       internal/memory/lambo.go
-status:     claimed:grok-4.7
+status:     in-review
 ```
 MCP over streamable HTTP to the Dresscode Lambo server: one session per account, remember a look as text (the occasion, flagged criteria, fixes kept and dismissed, products, the look-in-words line), recall for an occasion, erase a session. Lambo's writes are applied in the background: a remember is confirmed through its receipt before the look reports "remembered". `record_action` does not de-duplicate, so a write is sent once (Keel `outbox` if it must survive a restart).
 
 **Done when:** tests on the T0.7 recordings pass; erase is safe to repeat and reports gone; the client is a target Keel `erase` can call.
+
+Notes:
+
+- Added `internal/memory.Client`. `New` does not dial. `Open` was already the recording reader. One MCP session per Dresscode session: `initialize`, then `notifications/initialized`, then the tool call. The session id from `Mcp-Session-Id` goes on every later call. The client name is `dresscode`, not the probe's `dresscode-t07`. The agent id defaults to `dresscode`. A test that replays the probe sets `dresscode-probe`.
+- `Remember` sends one `lambo_derive` and does not send it again. It returns only after `lambo_stats` reports that receipt `applied`, with the created nodes and the embedded count. `ErrUnconfirmed` means the write was sent and not confirmed. A refused token and an erased session stay those errors, so a caller can tell them from a lost confirmation. `Recall` sends `top_k` 10 and `max_tokens` 2000. JSON-RPC `-32003` is `ErrErased`, the hit list is empty, and the call is not retried. The cached MCP session is dropped, so the next call is a fresh initialize, which the erased id also refuses.
+- `Erase` is `POST /admin/s/<session>/erase` with `confirm` set to the session. A second call is the same request. `AlreadyAbsent` is the gone report, with every removed count at zero and the same fence token. `Target` is a Keel `erase.Target` named `memory`, the name history deletion and account deletion register. `Delete` returns `erase.ErrGone` when the session is already absent. An erasure counts that as confirmed. One erasure has one memory target, because the name is not the session id.
+- Did not use Keel `outbox`. A Lambo write is not idempotent, and outbox delivery is at-least-once, so a replay would derive the look again. The remember call itself sends the write once and waits. Did not use Keel `fetch`. It refuses loopback, and both the Dresscode serve and the test replay are loopback. There is no MCP client in Keel. No new dependency.
+- Tests replay `testdata/lambo` over HTTP, including the SSE priming event and the JSON body an erased session returns. The probe order is initialize, the initialized notification, derive, stats, recall, erase, the erased recall, the erased initialize, the second erase, the other session's recall, and its erase. `01` is the refusal with no token. `04` is `tools/list`, which this client does not call. No live serve. No token in an error. The package comment in `memory.go` still says the package does not dial. That was true of the replay twin. This file is the exception.
 
 ### T2.3b: Lambo live
 ```yaml
