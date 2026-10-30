@@ -184,7 +184,7 @@ requires:   T0.2, T0.3, T0.4, T0.4a
 fixture-ok: no
 size:       M · mid
 owns:       testdata/youcam/, docs/youcam.md
-status:     in-review
+status:     done
 ```
 Turn the API docs into recorded replies the clients are built against. **Unit budget: 150.** Run the cheapest case first, read the units it cost, stop and report before going over.
 

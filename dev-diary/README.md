@@ -139,9 +139,9 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Phase | Tasks complete | Status |
 |---|---|---|
-| P0 | 7 / 8 | T0.4, T0.4a and T0.6 done. T0.5 (YouCam probe) is ready. |
+| P0 | 8 / 8 | Done. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
-| P2 | 6 / 9 | T2.1 landed. Only T2.2 (and its live sibling) remain, waiting on the T0.5 probe. |
+| P2 | 6 / 9 | T2.1 landed. T2.2 (YouCam client) is ready now that T0.5 landed; T2.2b follows it. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
@@ -152,7 +152,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Service | Budget | Spent |
 |---|---|---|
-| YouCam | 1040 credits, they do not expire; 400 held back for judging | 0 |
+| YouCam | 1040 credits in two pools that expire (event pool after judging closes); 400 held back for judging | 24 (T0.5), balance 1,016 read from the credit endpoint |
 | FAL (sample images, Chalachithram's key) | $10 for T0.4, listed prices | $5.70 (T0.4: 12 Seedream at $0.135, 51 nano-banana-2/edit at $0.08) |
 | Workers AI | Free plan until T6.6; then Workers Paid | 7 embeddings (the access check, four in the T0.7 probe, two in the T2.3b live check); T0.6: 78 Clef calls, 3,292 neurons in one day (76 on clef, 2 on clef-flash) |
 
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T0.5 YouCam probe** (`aaf9866`). A recorded success and measured unit cost for every menu task: `ai-smile` 1, `makeup-vto` 1, `2d-vto/earring` 1, `2d-vto/necklace` 1, `cloth-v4` 2, `hair-transfer` v2.1 2, `beard-style` 2, `face-attr-analysis` (faceShape only) 10, each read from the balance before and after: **`GET /s2s/v1.0/client/credit` answers to the v2 key**, so there is a balance endpoint after all (feedback.md corrected), and the orchestrator re-read it at 1,016. **Spend: 24 of 150 units.** 149 recordings in `testdata/youcam/` with uploads and results as files (2.9 MB); `internal/youcam/replay.go` loads them with keys unchanged, and its guard against any `testdata/youcam` is removed. Error shapes recorded, all at 0 net units. Tasks finish in 3.7–12.6 s; result links are signed for two hours and a re-poll gives a fresh one for free; no rate-limit headers. **Corrected:** units do expire (docs/keys.md fixed); makeup must send `skin_smooth` at 0, since leaving it out smooths at 50 (docs/occasions.md fixed). **Renders:** lip at 0 smoothing, earring, placed necklace and the kurta are clean; the boys' kurta renders fine on an adult chest-up. AI Smile and hair transfer smooth the skin, and the hair updo drops the earrings, so the render check will likely reject them. The necklace needs anchor and wearing points. **Open for the user:** which hair template stands for `tied-back` (no template is titled so; Casual Updo reads as a bun) and which beard template stands for `short` (Circle reads as a goatee). **Contract change (orchestrator's call):** T2.2 adds a `Status` field for analysis results carrying `faceShape` only. Not observed: a real expired upload, and running out of units.
 
 - **T5.11 Brand mark, editorial shell, button system and Account/History overhaul.** The arched vanity-mirror SVG mark sits beside the wordmark and in all four regenerated app icons (`rsvg-convert`, machine tooling, no dependency; the manifest's SVGs rewritten too so installed apps don't ship the old mark). The header is one slim row — mark, wordmark, three quiet links; `Appearance` lives in Account as a segmented pill defaulting to `system`, its fieldset/legend/radios byte-identical for keyboard and Chaaya. theme.css carries the four button tiers (primary/secondary/ghost/danger) with micro-press and transitions only under `prefers-reduced-motion: no-preference`; seven contrast pairs were computed before being added and all pass in both themes. History's notice is a neutral `.info-card` and its switch is a real sliding toggle behind the untouched label structure. Account: the four canonical copy swaps, one shared `sessionLine` with no dead branch, 6-cell OTP frames behind the exact original inputs, `Who sees what` in an open disclosure, and destructive triggers in danger — including "Delete the account", whose class swap the orchestrator ruled at remediation after the implementer correctly proposed rather than took it (the phase had named only three triggers). The h1 became a wordmark span; every screen still leads with a heading. Review came back CLEAN, reproduced all seven ratios, re-did the break-proof, and confirmed the icon and manifest handling. Landed as `366be74`+`e0c4dc2`+`5075c93`, gate green in the worktree and the main checkout, 30 a11y tests. Two cosmetic notes recorded in the task: maskable icon's bar end can overshoot the safe zone by ~2.5px, and the `.appearance` legend's clearance is visual only.
 

@@ -58,7 +58,7 @@ AI Smile is grouped with face and skin tools on the YouCam MCP page, not with Cr
 
 Hair and beard template ids are not in this data. T0.5 lists them and picks one whose title matches the vocabulary change. The beard feature page names styles such as Shaved; those names are not ids.
 
-Makeup must not set lip `morphology` fullness, must not pick a lip shape that redraws the mouth, and must not use `skin_smooth`. A render that smooths skin or reshapes the face is discarded.
+Makeup must not set lip `morphology` fullness, must not pick a lip shape that redraws the mouth, and must send `skin_smooth` at 0 (left out, it defaults to 50 and smooths the skin; T0.5). A render that smooths skin or reshapes the face is discarded.
 
 The only analysis on the menu is face shape, and only for a hair fix. The task name on the analyzer page is `face-attr-analysis` (`POST 'task/face-attr-analysis'`). The `/s2s/v2.0` prefix is the v2 pattern used by the other tasks, not a second path printed on that page. The picker may receive `faceShape` only. That response also carries age and gender. Those fields are never read, stored, or sent on. Ratios are never sent.
 

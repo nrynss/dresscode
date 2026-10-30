@@ -57,10 +57,13 @@ One judge and one check request on a sample photo. Workers AI spend within the f
 requires:   T1.3, T0.5
 fixture-ok: yes
 size:       L · mid
-owns:       internal/youcam/client.go, internal/youcam/tasks.go
+owns:       internal/youcam/client.go, internal/youcam/tasks.go, internal/youcam/youcam.go (the analysis field only)
 status:     not-started
 ```
 v2 REST on `https://yce-api-01.makeupar.com`, the key as a Bearer token. Upload through the File API; create and poll through Keel `providertask` under an idempotency key, so a restart resumes the recorded task and never creates (and pays for) it twice; copy each result into `mediastore` at once (links expire). Units quoted, reserved and settled through `cost`.
+
+- **Contract change (orchestrator's call, from T0.5):** the seam's `Status` has no field for analysis results. Add one that carries `faceShape` only; age, gender and ratios are never decoded into it.
+- From T0.5 (docs/youcam.md): send makeup `skin_smooth` at 0; send hair `hair_color: src`; the necklace needs anchor and wearing points; sniff result bytes (PNGs come as `binary/octet-stream` under a `.jpg` name); re-polling a finished task returns a fresh result link for free; the balance is `GET /s2s/v1.0/client/credit`.
 
 **Done when:** tests on the T0.5 recordings cover success, every recorded error, a restart mid-poll that resumes without a second create, and a budget refusal that spends nothing.
 

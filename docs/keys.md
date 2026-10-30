@@ -15,6 +15,6 @@ Names and where they live. No values in this file. `.env` is gitignored and hold
 | `LAMBO_URL` | Dresscode's own Lambo HTTP MCP | `.env`. This machine, `127.0.0.1:7720` |
 | `LAMBO_DRESSCODE_TOKEN` | Bearer token for that server | `.env`, and the server's environment file outside this repo |
 
-YouCam console balance: 1040 credits. They do not expire.
+YouCam console balance: 1040 credits, in two pools (1,000 event units and a 40-unit trial). Both pools expire, the event pool after judging closes; the console and `GET /s2s/v1.0/client/credit` give the date. That endpoint answers to the v2 key and reads the balance without spending (T0.5).
 
 Lambo for Dresscode is a separate process from the dogfood writer. Its sqlite file is `~/lambo-dresscode/dresscode.db`. The embedder is Workers AI `@cf/baai/bge-m3`. Sessions for accounts use the prefix `dc-u-`. The dogfood server stays on ports 7700 and 7710.
