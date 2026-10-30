@@ -20,11 +20,21 @@ requires:   T1.2, T1.5
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/server.go, internal/server/session.go
-status:     claimed:grok-4.7
+status:     in-review
 ```
 The HTTP server on Keel, serving the API and the built app. Keel `identity`: a first visit creates a guest user and a server-side session; the cookie carries only the signed session id; every request resolves it against the rows. `gate` in front of every route that spends.
 
 **Done when:** a new visitor gets a guest; revoking a session ends it on the next request; spending routes refuse past the gate.
+
+Notes:
+
+- `internal/server` opens one SQLite file, migrates the store schema, then Keel identity, and serves one handler. `GET /api/session` returns `user_id` and `kind`. A first visit mints a guest and a session row. The cookie is `identity_session`, `HttpOnly`, `Secure`, `SameSite=Lax`, and the value is the session id plus its signature. The body does not carry the session id. A second visit with that cookie resolves the same user and does not mint another session. The same cookie still resolves after the process closes and opens again on the same file and the same key.
+- A revoked row does not resolve. Keel's middleware treats that as no session and mints a new guest, so the next response is a different user with a new cookie. The revoked row stays revoked. Deleting the session row does the same. A bad signature does not resolve the user, and neither does a different signing key.
+- `POST /api/looks` is the spending route. It sits behind Keel `gate`. A refusal is `429` `rate_limited` and the handler is not called. A refusal takes no token: after one interval the next request is admitted. With no look handler installed, an admission is `not_found` and no look row is written. `SetSpendHandler` with `RouteLook` installs the handler. The look route itself is T4.4. The default limit is 8 starts per client, then one every ten minutes, and 40 for the process, then one every minute. `Config.LookPerClient` and `Config.LookGlobal` override that. Those numbers bound requests, not credits. `POST /api/samples/{id}/looks` is not mounted and is not gated: after the look gate is exhausted it is still `not_found`, not `rate_limited`.
+- The built app is `Config.AppDir`. `GET /` and an unknown non-API path serve `index.html` with `Cache-Control: no-store`. A real file is served as itself. An `/api/` miss is the `not_found` envelope, so sign-in and deletion are not mounted. An `/media/` miss is the plain `404 page not found` text with `Cache-Control: private, no-store`, so the app shell is not returned for a missing blob.
+- The gate trusts forwarding headers only from loopback and private peers, which is what a tunnel on this box presents. A public peer cannot mint a bucket with `X-Forwarded-For`. The global bucket is the ceiling. No passcode.
+- `cmd/dresscode` still does not listen. This task does not own it. `Open` takes the database path, the app directory, and the signing key bytes. No signing-key variable is named in `docs/keys.md`, so this task does not invent one. `identity.New` has no mail sender and no code key. T4.2 has to pass both when it mounts sign-in, and a guest-data check before a switch can strand looks. T4.4 calls `SetSpendHandler` before the process listens.
+- Surprised: Keel mints a fresh guest on a revoked cookie instead of answering 401. That matches the contract, which creates a guest whenever the cookie does not resolve. A session fault inside Keel uses Keel's own sentence, not the fixture's `The request could not be finished.`
 
 ---
 
