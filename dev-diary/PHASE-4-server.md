@@ -20,7 +20,7 @@ requires:   T1.2, T1.5
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/server.go, internal/server/session.go
-status:     in-review
+status:     done
 ```
 The HTTP server on Keel, serving the API and the built app. Keel `identity`: a first visit creates a guest user and a server-side session; the cookie carries only the signed session id; every request resolves it against the rows. `gate` in front of every route that spends.
 
@@ -44,7 +44,7 @@ requires:   T4.1, T2.4
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/signin.go
-status:     not-started
+status:     claimed:grok-4.7
 ```
 Keel `identity` code sign-in with the Resend sender: start (email in, code sent, send limits refuse before sending), verify (code in, session upgraded). **Signing in keeps the guest's looks:** the guest's rows attach to the account; when the address already has an account, the guest's looks are added to it, never overwrite it. No Google sign-in.
 
@@ -86,7 +86,7 @@ requires:   T4.1
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/intake.go
-status:     not-started
+status:     claimed:grok-4.7
 ```
 Resumable uploads through Keel `upload` into `mediastore`; every photo normalised by Keel `photo` (orientation applied, EXIF and GPS stripped, resized to YouCam's 1024 px and Clef's 4 MiB) and hashed for the cache. Product links through Keel `fetch` (SSRF-safe, `og:image`); a blocked retailer falls back to "upload a photo instead". The share-target intake for installed apps.
 
