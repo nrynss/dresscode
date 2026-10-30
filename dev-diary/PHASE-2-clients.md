@@ -92,7 +92,7 @@ Remember, recall and erase one look in a scratch session on the Dresscode server
 
 Notes:
 
-- Added `internal/memory/live_test.go` behind `//go:build live`. The gate does not build it. The test reads `LAMBO_URL` and `LAMBO_DRESSCODE_TOKEN` from the main checkout `.env` and does not log the token. It refuses ports 7700 and 7710 and dials only `127.0.0.1:7720`.
+- Added `internal/memory/live_test.go` behind `//go:build live`. The gate does not build it. The test reads `LAMBO_URL` and `LAMBO_DRESSCODE_TOKEN` from the environment. A missing name fails with that name and no value. It does not open a `.env` file and does not log the token. It refuses ports 7700 and 7710 and dials only `127.0.0.1:7720`.
 - Session `dc-u-live-t23b`. One look, two observations: kept the navy wrap, dismissed the extra belt. Remember came back `applied`, 2 created, 2 embedded, agent `dresscode`. Recall of "live check" returned those two and nothing from the probe. Erase reported `already_absent` false, 2 concepts, 2 vectors, 1 session, fence 2. The scratch text does not stay.
 - One derive, then the stats wait, then one recall, then one erase. No second write. Did not reuse `dc-u-probe-a` or `dc-u-probe-b`. The receipt summary matches the recorded shape.
 

@@ -3,13 +3,11 @@
 package memory
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -112,49 +110,20 @@ func TestLiveRememberRecallErase(t *testing.T) {
 	}
 }
 
-// loadLiveLambo reads the Dresscode serve from the main checkout. A
-// worktree has no .env. Other names in that file are not kept.
+// loadLiveLambo reads LAMBO_URL and LAMBO_DRESSCODE_TOKEN from the
+// environment. A missing name fails with that name and no value.
 func loadLiveLambo() (string, string, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return "", "", err
-	}
-	f, err := os.Open(filepath.Join(home, "work", "dresscode", ".env"))
-	if err != nil {
-		return "", "", err
-	}
-	defer f.Close()
-	var base, token string
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		line = strings.TrimSpace(strings.TrimPrefix(line, "export "))
-		key, value, ok := strings.Cut(line, "=")
-		if !ok {
-			continue
-		}
-		key = strings.TrimSpace(key)
-		value = strings.TrimSpace(value)
-		if len(value) >= 2 {
-			if value[0] == value[len(value)-1] && (value[0] == '"' || value[0] == '\'') {
-				value = value[1 : len(value)-1]
-			}
-		}
-		switch key {
-		case "LAMBO_URL":
-			base = value
-		case "LAMBO_DRESSCODE_TOKEN":
-			token = value
-		}
-	}
-	if err := sc.Err(); err != nil {
-		return "", "", err
-	}
-	if base == "" || token == "" {
-		return "", "", errors.New("memory: live lambo url or token is missing")
+	const urlName = "LAMBO_URL"
+	const tokenName = "LAMBO_DRESSCODE_TOKEN"
+	base := os.Getenv(urlName)
+	token := os.Getenv(tokenName)
+	switch {
+	case base == "" && token == "":
+		return "", "", fmt.Errorf("memory: %s and %s are missing", urlName, tokenName)
+	case base == "":
+		return "", "", fmt.Errorf("memory: %s is missing", urlName)
+	case token == "":
+		return "", "", fmt.Errorf("memory: %s is missing", tokenName)
 	}
 	return base, token, nil
 }
