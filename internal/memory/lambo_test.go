@@ -503,6 +503,73 @@ func TestRememberReportsAnExpiredSessionTyped(t *testing.T) {
 	}
 }
 
+// TestANotifyExpiryDropsTheDeadSession pins the open leg. Initialize
+// mints a session id and the notifications/initialized on it is refused
+// with the recorded 404. The call fails ErrSessionExpired and the dead
+// id is dropped, so the next call runs a fresh initialize and succeeds:
+// its notification and its recall carry the id that second initialize
+// returned. Without the drop the gate would keep the dead id, and every
+// later call would retry only the notification on it, refusing typed
+// forever.
+func TestANotifyExpiryDropsTheDeadSession(t *testing.T) {
+	t.Parallel()
+	rep := newReplay(t, replayConfig{script: []string{
+		"02-initialize-a",
+		"21-call-on-expired-session",
+		"02-initialize-a",
+		"03-initialized-a",
+		"11-recall-a-family-function",
+	}})
+	client := openClient(t, rep.url, "dresscode-probe")
+	ctx := context.Background()
+	_, err := client.Recall(ctx, "dc-u-probe-a", "family function")
+	if !errors.Is(err, ErrSessionExpired) || strings.Contains(err.Error(), testToken) {
+		failErr(t, err)
+	}
+	got, err := client.Recall(ctx, "dc-u-probe-a", "family function")
+	if err != nil {
+		failErr(t, err)
+	}
+	assertLook(t, got, "gold jhumkas", "red lip", "silver studs", "braid")
+
+	calls := rep.calls()
+	want := []string{
+		"02-initialize-a",
+		"21-call-on-expired-session",
+		"02-initialize-a",
+		"03-initialized-a",
+		"11-recall-a-family-function",
+	}
+	if len(calls) != len(want) {
+		t.Fatalf("%d calls", len(calls))
+	}
+	for i, call := range calls {
+		if call.Exchange != want[i] {
+			t.Fatalf("call %d is %s, want %s", i, call.Exchange, want[i])
+		}
+	}
+	dead := calls[0].ResponseMCP
+	if dead == "" {
+		t.Fatal("no session from the first initialize")
+	}
+	if calls[1].RPC != "notifications/initialized" || calls[1].RequestMCP != dead {
+		t.Fatalf("%s carried %q %q", calls[1].Exchange, calls[1].RPC, calls[1].RequestMCP)
+	}
+	fresh := calls[2].ResponseMCP
+	if fresh == "" {
+		t.Fatal("no session from the second initialize")
+	}
+	if calls[2].RequestMCP != "" {
+		t.Fatal("the second initialize reused the refused session")
+	}
+	if calls[3].RPC != "notifications/initialized" || calls[3].RequestMCP != fresh {
+		t.Fatalf("%s carried %q %q", calls[3].Exchange, calls[3].RPC, calls[3].RequestMCP)
+	}
+	if calls[4].Tool != "lambo_recall" || calls[4].RequestMCP != fresh {
+		t.Fatalf("%s carried %q %q", calls[4].Exchange, calls[4].Tool, calls[4].RequestMCP)
+	}
+}
+
 func TestClientRejectsBeforeDialing(t *testing.T) {
 	t.Parallel()
 	var dialed bool

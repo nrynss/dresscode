@@ -51,11 +51,16 @@ var ErrUnconfirmed = errors.New("memory: remember was not confirmed")
 
 // ErrSessionExpired is a call on an Mcp-Session-Id the serve no longer
 // knows. Lambo expires idle sessions in minutes, and the reply is an
-// HTTP 404 with plain text, not a JSON-RPC error. The client initialized
-// the session again and replayed the call once; the replay was refused
-// too. The call is not attempted a third time. It stays this error out
-// of Remember as well: a derive refused twice was never sent, which is
-// not a lost confirmation.
+// HTTP 404 with plain text, not a JSON-RPC error. The client drops the
+// dead id, initializes the session again and replays the call once; the
+// replay was refused too. The call is not attempted a third time.
+//
+// It stays this error out of Remember, from two legs. A derive refused
+// twice was never sent. A stats wait refused twice is not: the derive
+// was sent and holds a receipt, so the write may be applied even though
+// Remember reports the session expired and only the confirmation was
+// lost. Neither leg sends the write again, and errors.Is tells this
+// error from ErrUnconfirmed.
 var ErrSessionExpired = errors.New("memory: lambo session expired")
 
 // Config is how the client reaches one Lambo serve.
@@ -310,6 +315,14 @@ func (c *Client) open(ctx context.Context, g *sessionGate, session string) error
 		g.mcpID = mcp
 	}
 	if err := c.notify(ctx, session, g.mcpID); err != nil {
+		// A 404 on the notification means the id initialize just
+		// minted is already unknown to the serve. Drop it, so the
+		// next call starts from a fresh initialize instead of
+		// retrying only the notification on the dead id forever.
+		// The refusal surfaces from this call either way.
+		if errors.Is(err, ErrSessionExpired) {
+			g.drop()
+		}
 		return err
 	}
 	g.ready = true
