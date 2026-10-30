@@ -1,0 +1,127 @@
+{
+ "exchange": "judge-V12-interview",
+ "request": {
+  "method": "POST",
+  "path": "/ai/run/@cf/cloudflare/clef",
+  "body": {
+   "model": "clef",
+   "state": {
+    "occasion": "interview",
+    "name": "Interview"
+   },
+   "questions": {
+    "interview-collar-buttoned": {
+     "type": "noul",
+     "instructions": "Is the collar buttoned, rather than open at the neck?"
+    },
+    "interview-garment-plain": {
+     "type": "noul",
+     "instructions": "Is the garment a plain structured shirt, rather than a pattern, a tee, or festive wear?"
+    },
+    "interview-hair-close": {
+     "type": "noul",
+     "instructions": "Is the hair off the face and sitting close, rather than across the eyes or standing up?"
+    },
+    "interview-beard-short": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or a short even shape that stays off the collar, not a long or patchy outline?"
+    },
+    "lip-quiet": {
+     "type": "noul",
+     "instructions": "Is the lip either bare or a quiet nude, not a bright colour?"
+    },
+    "interview-expression-calm": {
+     "type": "noul",
+     "instructions": "Is the expression calm, with the mouth relaxed, rather than a flat stare or a wide grin?"
+    },
+    "interview-light-plain": {
+     "type": "noul",
+     "instructions": "Is the light plain and even on both eyes, with no coloured cast and no hard shadow?"
+    },
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "interview-collar-buttoned": "the collar",
+      "interview-garment-plain": "the garment",
+      "interview-hair-close": "the hair",
+      "interview-beard-short": "the facial hair",
+      "lip-quiet": "the lip",
+      "interview-expression-calm": "the expression",
+      "interview-light-plain": "the light",
+      "none": "none",
+      "cant-tell": "can't tell"
+     }
+    }
+   },
+   "images": [
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/woman/V12-interview.jpg"
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "elapsed_ms": 1065,
+  "body": {
+   "result": {
+    "model": "clef",
+    "answers": {
+     "interview-collar-buttoned": {
+      "type": "noul",
+      "noul": 0.401
+     },
+     "interview-garment-plain": {
+      "type": "noul",
+      "noul": 0.948
+     },
+     "interview-hair-close": {
+      "type": "noul",
+      "noul": 0.8597
+     },
+     "interview-beard-short": {
+      "type": "noul",
+      "noul": 0.9257
+     },
+     "lip-quiet": {
+      "type": "noul",
+      "noul": 0.8262
+     },
+     "interview-expression-calm": {
+      "type": "noul",
+      "noul": 0.672
+     },
+     "interview-light-plain": {
+      "type": "noul",
+      "noul": 0.7546
+     },
+     "biggest_issue": {
+      "type": "choice",
+      "choice": "none",
+      "probabilities": {
+       "interview-collar-buttoned": 0.3196,
+       "interview-garment-plain": 0.0165,
+       "interview-hair-close": 0.0326,
+       "interview-beard-short": 0.0124,
+       "lip-quiet": 0.0332,
+       "interview-expression-calm": 0.1229,
+       "interview-light-plain": 0.0415,
+       "none": 0.3807,
+       "cant-tell": 0.0406
+      },
+      "confidence": 0.1766
+     }
+    },
+    "usage": {
+     "input_tokens": 1973,
+     "output_tokens": 0
+    }
+   },
+   "success": true,
+   "errors": [],
+   "messages": []
+  }
+ }
+}

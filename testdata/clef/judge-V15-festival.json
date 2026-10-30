@@ -1,0 +1,137 @@
+{
+ "exchange": "judge-V15-festival",
+ "request": {
+  "method": "POST",
+  "path": "/ai/run/@cf/cloudflare/clef",
+  "body": {
+   "model": "clef",
+   "state": {
+    "occasion": "festival",
+    "name": "Festival"
+   },
+   "questions": {
+    "festival-garment-festive": {
+     "type": "noul",
+     "instructions": "Is the garment a festive colour or pattern, rather than a plain office shirt?"
+    },
+    "festival-earring": {
+     "type": "noul",
+     "instructions": "Is a festive earring visible, such as hoops or jhumkas, rather than a bare ear?"
+    },
+    "festival-necklace": {
+     "type": "noul",
+     "instructions": "Is a necklace visible, rather than a bare neck?"
+    },
+    "festival-lip": {
+     "type": "noul",
+     "instructions": "Is the lip a festive colour, red or berry, rather than bare?"
+    },
+    "festival-hair": {
+     "type": "noul",
+     "instructions": "Is the hair in a finished shape and off the eyes, rather than loose across the face?"
+    },
+    "festival-beard": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or a full shape with a clean edge, not a patchy or stubbly outline?"
+    },
+    "festival-expression": {
+     "type": "noul",
+     "instructions": "Is the expression open and present, rather than a flat stare?"
+    },
+    "festival-light": {
+     "type": "noul",
+     "instructions": "Is the face lit warmly and evenly, with both eyes visible, rather than left in a dark room?"
+    },
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "festival-garment-festive": "the garment",
+      "festival-earring": "the earring",
+      "festival-necklace": "the necklace",
+      "festival-lip": "the lip",
+      "festival-hair": "the hair",
+      "festival-beard": "the facial hair",
+      "festival-expression": "the expression",
+      "festival-light": "the light",
+      "none": "none",
+      "cant-tell": "can't tell"
+     }
+    }
+   },
+   "images": [
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/man/V15-festival.jpg"
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "elapsed_ms": 1069,
+  "body": {
+   "result": {
+    "model": "clef",
+    "answers": {
+     "festival-garment-festive": {
+      "type": "noul",
+      "noul": 0.8575
+     },
+     "festival-earring": {
+      "type": "noul",
+      "noul": 0.0146
+     },
+     "festival-necklace": {
+      "type": "noul",
+      "noul": 0.0195
+     },
+     "festival-lip": {
+      "type": "noul",
+      "noul": 0.0214
+     },
+     "festival-hair": {
+      "type": "noul",
+      "noul": 0.8211
+     },
+     "festival-beard": {
+      "type": "noul",
+      "noul": 0.8214
+     },
+     "festival-expression": {
+      "type": "noul",
+      "noul": 0.9004
+     },
+     "festival-light": {
+      "type": "noul",
+      "noul": 0.7898
+     },
+     "biggest_issue": {
+      "type": "choice",
+      "choice": "none",
+      "probabilities": {
+       "festival-garment-festive": 0.0399,
+       "festival-earring": 0.1256,
+       "festival-necklace": 0.0932,
+       "festival-lip": 0.0435,
+       "festival-hair": 0.0133,
+       "festival-beard": 0.1044,
+       "festival-expression": 0.0138,
+       "festival-light": 0.0116,
+       "none": 0.5078,
+       "cant-tell": 0.0469
+      },
+      "confidence": 0.2216
+     }
+    },
+    "usage": {
+     "input_tokens": 2064,
+     "output_tokens": 0
+    }
+   },
+   "success": true,
+   "errors": [],
+   "messages": []
+  }
+ }
+}

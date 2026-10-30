@@ -1,0 +1,127 @@
+{
+ "exchange": "judge-V08-family-function",
+ "request": {
+  "method": "POST",
+  "path": "/ai/run/@cf/cloudflare/clef",
+  "body": {
+   "model": "clef",
+   "state": {
+    "occasion": "family-function",
+    "name": "Family function"
+   },
+   "questions": {
+    "family-earring-festive": {
+     "type": "noul",
+     "instructions": "Are gold jhumkas visible, rather than a bare ear or a plain stud?"
+    },
+    "family-lip-colour": {
+     "type": "noul",
+     "instructions": "Is the lip a clear colour, rather than bare?"
+    },
+    "family-garment-festive": {
+     "type": "noul",
+     "instructions": "Is the garment a festive top, rather than an office shirt or a plain tee?"
+    },
+    "family-hair-finished": {
+     "type": "noul",
+     "instructions": "Does the hair look finished and off the eyes, either tied back or cut short and neat?"
+    },
+    "family-beard-even": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or one neat shape, not a patchy outline?"
+    },
+    "family-expression-present": {
+     "type": "noul",
+     "instructions": "Is the expression present and calm, rather than a flat stare or a wide grin?"
+    },
+    "family-light-even": {
+     "type": "noul",
+     "instructions": "Is the face lit evenly enough that both eyes are visible, without a hard shadow?"
+    },
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "family-earring-festive": "the earring",
+      "family-lip-colour": "the lip",
+      "family-garment-festive": "the garment",
+      "family-hair-finished": "the hair",
+      "family-beard-even": "the facial hair",
+      "family-expression-present": "the expression",
+      "family-light-even": "the light",
+      "none": "none",
+      "cant-tell": "can't tell"
+     }
+    }
+   },
+   "images": [
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/man/V08-family-function.jpg"
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "elapsed_ms": 1306,
+  "body": {
+   "result": {
+    "model": "clef",
+    "answers": {
+     "family-earring-festive": {
+      "type": "noul",
+      "noul": 0.0219
+     },
+     "family-lip-colour": {
+      "type": "noul",
+      "noul": 0.0193
+     },
+     "family-garment-festive": {
+      "type": "noul",
+      "noul": 0.0342
+     },
+     "family-hair-finished": {
+      "type": "noul",
+      "noul": 0.8906
+     },
+     "family-beard-even": {
+      "type": "noul",
+      "noul": 0.609
+     },
+     "family-expression-present": {
+      "type": "noul",
+      "noul": 0.3287
+     },
+     "family-light-even": {
+      "type": "noul",
+      "noul": 0.6223
+     },
+     "biggest_issue": {
+      "type": "choice",
+      "choice": "family-garment-festive",
+      "probabilities": {
+       "family-earring-festive": 0.061,
+       "family-lip-colour": 0.011,
+       "family-garment-festive": 0.5698,
+       "family-hair-finished": 0.0094,
+       "family-beard-even": 0.0841,
+       "family-expression-present": 0.1129,
+       "family-light-even": 0.0818,
+       "none": 0.0414,
+       "cant-tell": 0.0286
+      },
+      "confidence": 0.2774
+     }
+    },
+    "usage": {
+     "input_tokens": 1963,
+     "output_tokens": 0
+    }
+   },
+   "success": true,
+   "errors": [],
+   "messages": []
+  }
+ }
+}

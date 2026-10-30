@@ -65,7 +65,9 @@ type Replay struct {
 // Open reads every JSON exchange in dir. A missing directory has no
 // recordings. A file that does not parse, or two files that share an
 // exchange id, fails the open. The exchange id is that recording's
-// request key.
+// request key. A recorded image may name a file, relative to dir, in
+// place of its bytes; Open reads it, and a file it cannot read fails
+// the open.
 func Open(dir string) (*Replay, error) {
 	replay := &Replay{
 		byExchange: map[string]*stored{},
@@ -123,10 +125,14 @@ func (r *Replay) load(dir, name string) error {
 	if prev, ok := r.byExchange[env.Exchange]; ok {
 		return fmt.Errorf("systemone: request key %q is in %s and %s", env.Exchange, prev.file, name)
 	}
+	request, err := resolveFiles(dir, env.Request)
+	if err != nil {
+		return fmt.Errorf("systemone: %s: %w", name, err)
+	}
 	rec := &stored{
 		file:     name,
 		key:      env.Exchange,
-		request:  append(json.RawMessage(nil), env.Request...),
+		request:  request,
 		response: append(json.RawMessage(nil), env.Response...),
 	}
 	r.byExchange[rec.key] = rec
@@ -137,6 +143,120 @@ func (r *Replay) load(dir, name string) error {
 		return fmt.Errorf("systemone: %s: %w", name, err)
 	}
 	return nil
+}
+
+// fileImage is a recorded image that names a file instead of carrying
+// its bytes. File is relative to the recording's directory.
+type fileImage struct {
+	ContentType string `json:"content_type"`
+	File        string `json:"file"`
+}
+
+// resolveFiles reads every image a recorded request names by file, at
+// the top level or inside an HTTP body, and puts its bytes inline. The
+// request key is then the same as for the inline recording. A request
+// with no file image is returned as stored.
+func resolveFiles(dir string, raw json.RawMessage) (json.RawMessage, error) {
+	resolved, changed, err := resolveObject(dir, raw, true)
+	if err != nil {
+		return nil, err
+	}
+	if !changed {
+		return append(json.RawMessage(nil), raw...), nil
+	}
+	return resolved, nil
+}
+
+func resolveObject(dir string, raw json.RawMessage, outer bool) (json.RawMessage, bool, error) {
+	if !jsonObject(raw) {
+		return raw, false, nil
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return raw, false, nil
+	}
+	changed := false
+	if images, ok := fields["images"]; ok {
+		out, ok2, err := resolveImages(dir, images)
+		if err != nil {
+			return nil, false, err
+		}
+		if ok2 {
+			fields["images"] = out
+			changed = true
+		}
+	}
+	if body, ok := fields["body"]; ok && outer {
+		out, ok2, err := resolveObject(dir, body, false)
+		if err != nil {
+			return nil, false, err
+		}
+		if ok2 {
+			fields["body"] = out
+			changed = true
+		}
+	}
+	if !changed {
+		return raw, false, nil
+	}
+	encoded, err := json.Marshal(fields)
+	if err != nil {
+		return nil, false, err
+	}
+	return encoded, true, nil
+}
+
+func resolveImages(dir string, raw json.RawMessage) (json.RawMessage, bool, error) {
+	var images []json.RawMessage
+	if err := json.Unmarshal(raw, &images); err != nil {
+		return raw, false, nil
+	}
+	changed := false
+	for i, image := range images {
+		if !jsonObject(image) {
+			continue
+		}
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(image, &fields); err != nil {
+			continue
+		}
+		if _, ok := fields["file"]; !ok {
+			continue
+		}
+		var ref fileImage
+		dec := json.NewDecoder(bytes.NewReader(image))
+		dec.DisallowUnknownFields()
+		if err := dec.Decode(&ref); err != nil {
+			return nil, false, fmt.Errorf("image %d: %w", i, err)
+		}
+		if ref.ContentType == "" || ref.File == "" {
+			return nil, false, fmt.Errorf("image %d: content_type and file are required", i)
+		}
+		if filepath.IsAbs(ref.File) {
+			return nil, false, fmt.Errorf("image %d: %s is not relative to the recording", i, ref.File)
+		}
+		data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(ref.File)))
+		if err != nil {
+			return nil, false, fmt.Errorf("image %d: %s: %w", i, ref.File, err)
+		}
+		if len(data) == 0 {
+			return nil, false, fmt.Errorf("image %d: %s is empty", i, ref.File)
+		}
+		inline, err := json.Marshal(imageWire{ContentType: ref.ContentType, Base64: data})
+		if err != nil {
+			return nil, false, err
+		}
+		images[i] = inline
+		changed = true
+	}
+	if !changed {
+		return raw, false, nil
+	}
+	encoded, err := json.Marshal(images)
+	if err != nil {
+		return nil, false, err
+	}
+	return encoded, true, nil
 }
 
 func (r *Replay) indexContent(rec *stored) error {

@@ -1,0 +1,137 @@
+{
+ "exchange": "judge-P15-funeral",
+ "request": {
+  "method": "POST",
+  "path": "/ai/run/@cf/cloudflare/clef",
+  "body": {
+   "model": "clef",
+   "state": {
+    "occasion": "funeral",
+    "name": "Funeral"
+   },
+   "questions": {
+    "funeral-garment-dark": {
+     "type": "noul",
+     "instructions": "Is the garment dark and plain, rather than bright, patterned, or festive?"
+    },
+    "funeral-collar-plain": {
+     "type": "noul",
+     "instructions": "Is the collar plain and closed, rather than open and bright?"
+    },
+    "funeral-jewellery-quiet": {
+     "type": "noul",
+     "instructions": "Is jewellery either absent or one small plain stud, not a festive earring or a large necklace?"
+    },
+    "lip-quiet": {
+     "type": "noul",
+     "instructions": "Is the lip either bare or a quiet nude, not a bright colour?"
+    },
+    "funeral-hair-plain": {
+     "type": "noul",
+     "instructions": "Is the hair plain and off the face, rather than across the eyes?"
+    },
+    "funeral-beard-close": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or a short close shape, not a long or patchy outline?"
+    },
+    "funeral-expression-still": {
+     "type": "noul",
+     "instructions": "Is the expression still, with the mouth closed, rather than a wide smile?"
+    },
+    "funeral-light-plain": {
+     "type": "noul",
+     "instructions": "Is the light plain and even, without a dramatic side shadow or a bright coloured wash?"
+    },
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "funeral-garment-dark": "the garment",
+      "funeral-collar-plain": "the collar",
+      "funeral-jewellery-quiet": "the jewellery",
+      "lip-quiet": "the lip",
+      "funeral-hair-plain": "the hair",
+      "funeral-beard-close": "the facial hair",
+      "funeral-expression-still": "the expression",
+      "funeral-light-plain": "the light",
+      "none": "none",
+      "cant-tell": "can't tell"
+     }
+    }
+   },
+   "images": [
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/man-eastasian/P15-funeral.jpg"
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "elapsed_ms": 983,
+  "body": {
+   "result": {
+    "model": "clef",
+    "answers": {
+     "funeral-garment-dark": {
+      "type": "noul",
+      "noul": 0.9465
+     },
+     "funeral-collar-plain": {
+      "type": "noul",
+      "noul": 0.8866
+     },
+     "funeral-jewellery-quiet": {
+      "type": "noul",
+      "noul": 0.8799
+     },
+     "lip-quiet": {
+      "type": "noul",
+      "noul": 0.8603
+     },
+     "funeral-hair-plain": {
+      "type": "noul",
+      "noul": 0.7195
+     },
+     "funeral-beard-close": {
+      "type": "noul",
+      "noul": 0.642
+     },
+     "funeral-expression-still": {
+      "type": "noul",
+      "noul": 0.8732
+     },
+     "funeral-light-plain": {
+      "type": "noul",
+      "noul": 0.8684
+     },
+     "biggest_issue": {
+      "type": "choice",
+      "choice": "funeral-beard-close",
+      "probabilities": {
+       "funeral-garment-dark": 0.0176,
+       "funeral-collar-plain": 0.026,
+       "funeral-jewellery-quiet": 0.0186,
+       "lip-quiet": 0.0084,
+       "funeral-hair-plain": 0.0202,
+       "funeral-beard-close": 0.4155,
+       "funeral-expression-still": 0.0206,
+       "funeral-light-plain": 0.0109,
+       "none": 0.4139,
+       "cant-tell": 0.0483
+      },
+      "confidence": 0.2763
+     }
+    },
+    "usage": {
+     "input_tokens": 2081,
+     "output_tokens": 0
+    }
+   },
+   "success": true,
+   "errors": [],
+   "messages": []
+  }
+ }
+}

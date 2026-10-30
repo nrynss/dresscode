@@ -1,0 +1,362 @@
+{
+ "exchange": "check-clef-flash-V04-to-V05",
+ "request": {
+  "method": "POST",
+  "path": "/ai/run/@cf/cloudflare/clef-flash",
+  "body": {
+   "model": "clef-flash",
+   "images": [
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/woman/V04-family-function.jpg"
+    },
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/woman/V05-family-function.jpg"
+    }
+   ],
+   "state": {
+    "occasion": "family-function",
+    "name": "Family function",
+    "images": "The first image is the original photo. The second image is the render. Answer every question about the render.",
+    "requested_change": "Adds gold jhumkas and paints the lip red.",
+    "criterion": "family-earring-festive"
+   },
+   "questions": {
+    "change_made": {
+     "type": "noul",
+     "instructions": "Was the requested change made in the render?"
+    },
+    "same_person": {
+     "type": "noul",
+     "instructions": "Is the person in the render the same person as in the original, with the face shape and skin texture unchanged?"
+    },
+    "criterion_met": {
+     "type": "noul",
+     "instructions": "Are gold jhumkas visible, rather than a bare ear or a plain stud?"
+    },
+    "look.jewellery": {
+     "type": "choice",
+     "instructions": "What earring is visible?",
+     "criteria": {
+      "none": "none",
+      "jhumkas": "jhumkas",
+      "studs": "studs",
+      "hoops": "hoops",
+      "drops": "drops",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.jewellery_colour": {
+     "type": "choice",
+     "instructions": "What colour is that earring?",
+     "criteria": {
+      "none": "none",
+      "gold": "gold",
+      "silver": "silver",
+      "pearl": "pearl",
+      "red": "red",
+      "multicolour": "multicolour",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.necklace": {
+     "type": "choice",
+     "instructions": "What necklace is visible?",
+     "criteria": {
+      "none": "none",
+      "chain": "chain",
+      "pendant": "pendant",
+      "choker": "choker",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.necklace_colour": {
+     "type": "choice",
+     "instructions": "What colour is that necklace?",
+     "criteria": {
+      "none": "none",
+      "gold": "gold",
+      "silver": "silver",
+      "pearl": "pearl",
+      "black": "black",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.lip_colour": {
+     "type": "choice",
+     "instructions": "What lip colour is visible?",
+     "criteria": {
+      "none": "none",
+      "red": "red",
+      "nude": "nude",
+      "berry": "berry",
+      "brown": "brown",
+      "pink": "pink",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.collar": {
+     "type": "choice",
+     "instructions": "How does the collar read?",
+     "criteria": {
+      "none": "none",
+      "open": "open",
+      "buttoned": "buttoned",
+      "mandarin": "mandarin",
+      "crew": "crew",
+      "covered": "covered",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.hair": {
+     "type": "choice",
+     "instructions": "How is the hair arranged?",
+     "criteria": {
+      "none": "none",
+      "loose": "loose",
+      "tied-back": "tied-back",
+      "short": "short",
+      "bun": "bun",
+      "fringe": "fringe",
+      "covered": "covered",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.hair_colour": {
+     "type": "choice",
+     "instructions": "What hair colour is visible?",
+     "criteria": {
+      "none": "none",
+      "black": "black",
+      "brown": "brown",
+      "blonde": "blonde",
+      "grey": "grey",
+      "red": "red",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.beard": {
+     "type": "choice",
+     "instructions": "What facial hair is visible?",
+     "criteria": {
+      "none": "none",
+      "short": "short",
+      "full": "full",
+      "mustache": "mustache",
+      "goatee": "goatee",
+      "patchy": "patchy",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.expression": {
+     "type": "choice",
+     "instructions": "What expression is visible?",
+     "criteria": {
+      "none": "none",
+      "flat": "flat",
+      "closed-mouth-smile": "closed-mouth-smile",
+      "open-smile": "open-smile",
+      "tense": "tense",
+      "can't tell": "can't tell"
+     }
+    },
+    "look.garment": {
+     "type": "choice",
+     "instructions": "What garment is visible at the neck and shoulders?",
+     "criteria": {
+      "none": "none",
+      "relaxed-shirt": "relaxed-shirt",
+      "plain-shirt": "plain-shirt",
+      "festive-top": "festive-top",
+      "dark-plain": "dark-plain",
+      "tee": "tee",
+      "suit": "suit",
+      "can't tell": "can't tell"
+     }
+    }
+   }
+  }
+ },
+ "response": {
+  "status": 200,
+  "elapsed_ms": 2712,
+  "body": {
+   "result": {
+    "model": "clef-flash",
+    "answers": {
+     "change_made": {
+      "type": "noul",
+      "noul": 0.9385
+     },
+     "same_person": {
+      "type": "noul",
+      "noul": 0.9345
+     },
+     "criterion_met": {
+      "type": "noul",
+      "noul": 0.9737
+     },
+     "look.jewellery": {
+      "type": "choice",
+      "choice": "jhumkas",
+      "probabilities": {
+       "none": 0.0067,
+       "jhumkas": 0.9573,
+       "studs": 0.0062,
+       "hoops": 0.0058,
+       "drops": 0.0183,
+       "can't tell": 0.0057
+      },
+      "confidence": 0.9003
+     },
+     "look.jewellery_colour": {
+      "type": "choice",
+      "choice": "gold",
+      "probabilities": {
+       "none": 0.0081,
+       "gold": 0.9494,
+       "silver": 0.0083,
+       "pearl": 0.009,
+       "red": 0.0078,
+       "multicolour": 0.0084,
+       "can't tell": 0.009
+      },
+      "confidence": 0.8854
+     },
+     "look.necklace": {
+      "type": "choice",
+      "choice": "none",
+      "probabilities": {
+       "none": 0.7841,
+       "chain": 0.0034,
+       "pendant": 0.0049,
+       "choker": 0.0098,
+       "can't tell": 0.1978
+      },
+      "confidence": 0.5676
+     },
+     "look.necklace_colour": {
+      "type": "choice",
+      "choice": "none",
+      "probabilities": {
+       "none": 0.9508,
+       "gold": 0.0154,
+       "silver": 0.0033,
+       "pearl": 0.0041,
+       "black": 0.0039,
+       "can't tell": 0.0225
+      },
+      "confidence": 0.8857
+     },
+     "look.lip_colour": {
+      "type": "choice",
+      "choice": "red",
+      "probabilities": {
+       "none": 0.0166,
+       "red": 0.8893,
+       "nude": 0.0193,
+       "berry": 0.0242,
+       "brown": 0.0125,
+       "pink": 0.0256,
+       "can't tell": 0.0125
+      },
+      "confidence": 0.7586
+     },
+     "look.collar": {
+      "type": "choice",
+      "choice": "mandarin",
+      "probabilities": {
+       "none": 0.0332,
+       "open": 0.0713,
+       "buttoned": 0.0632,
+       "mandarin": 0.7525,
+       "crew": 0.0286,
+       "covered": 0.0192,
+       "can't tell": 0.032
+      },
+      "confidence": 0.5085
+     },
+     "look.hair": {
+      "type": "choice",
+      "choice": "tied-back",
+      "probabilities": {
+       "none": 0.0217,
+       "loose": 0.0116,
+       "tied-back": 0.8347,
+       "short": 0.0119,
+       "bun": 0.0767,
+       "fringe": 0.0096,
+       "covered": 0.0151,
+       "can't tell": 0.0187
+      },
+      "confidence": 0.6617
+     },
+     "look.hair_colour": {
+      "type": "choice",
+      "choice": "black",
+      "probabilities": {
+       "none": 0.011,
+       "black": 0.9471,
+       "brown": 0.0164,
+       "blonde": 0.0054,
+       "grey": 0.0043,
+       "red": 0.0044,
+       "can't tell": 0.0114
+      },
+      "confidence": 0.8805
+     },
+     "look.beard": {
+      "type": "choice",
+      "choice": "none",
+      "probabilities": {
+       "none": 0.9206,
+       "short": 0.0049,
+       "full": 0.002,
+       "mustache": 0.0035,
+       "goatee": 0.0021,
+       "patchy": 0.0071,
+       "can't tell": 0.0598
+      },
+      "confidence": 0.8264
+     },
+     "look.expression": {
+      "type": "choice",
+      "choice": "flat",
+      "probabilities": {
+       "none": 0.2399,
+       "flat": 0.5912,
+       "closed-mouth-smile": 0.0524,
+       "open-smile": 0.0081,
+       "tense": 0.0394,
+       "can't tell": 0.069
+      },
+      "confidence": 0.2994
+     },
+     "look.garment": {
+      "type": "choice",
+      "choice": "festive-top",
+      "probabilities": {
+       "none": 0.0248,
+       "relaxed-shirt": 0.0312,
+       "plain-shirt": 0.0432,
+       "festive-top": 0.8028,
+       "dark-plain": 0.0311,
+       "tee": 0.0124,
+       "suit": 0.0114,
+       "can't tell": 0.0431
+      },
+      "confidence": 0.6012
+     }
+    },
+    "usage": {
+     "input_tokens": 4092,
+     "output_tokens": 0
+    }
+   },
+   "success": true,
+   "errors": [],
+   "messages": []
+  }
+ }
+}

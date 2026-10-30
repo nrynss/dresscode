@@ -15,9 +15,6 @@ import (
 func TestAskMissesWhenNothingIsRecorded(t *testing.T) {
 	t.Parallel()
 	dir := filepath.Join(repoRoot(t), "testdata", "clef")
-	if _, err := os.Stat(dir); err == nil {
-		t.Fatal("testdata/clef exists; this task must not invent Clef fixtures")
-	}
 	replay := openDir(t, dir)
 	req := sampleRequest(t, nil)
 	_, err := replay.Ask(context.Background(), req)
@@ -149,6 +146,113 @@ func TestAskServesARecordedBody(t *testing.T) {
 	})
 	var ambiguous *Ambiguous
 	if !errors.As(err, &ambiguous) || !strings.Contains(err.Error(), "judge-date") || !strings.Contains(err.Error(), "judge-date-copy") {
+		t.Fatal(err)
+	}
+}
+
+func TestAFileImageServesLikeItsInlineTwin(t *testing.T) {
+	t.Parallel()
+	image := []byte{0xff, 0xd8, 0xff, 0x01, 0x02}
+	state, err := json.Marshal(map[string]string{"occasion": "date"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	questions := sampleQuestions(t)
+	noul := 0.5
+	confidence := 0.3
+	recorded := Response{
+		Model: ModelClef,
+		Answers: map[string]Answer{
+			"met":   {Type: TypeNoul, Noul: &noul},
+			"issue": {Type: TypeChoice, Choice: "none", Probabilities: map[string]float64{"collar": 0.2, "none": 0.8}, Confidence: &confidence},
+		},
+	}
+	body := func(images any) json.RawMessage {
+		raw, err := json.Marshal(map[string]any{"model": ModelClef, "state": json.RawMessage(state), "images": images, "questions": questions})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return raw
+	}
+	inlineBody := body([]Image{{ContentType: "image/jpeg", Bytes: image}})
+	fileBody := body([]map[string]string{{"content_type": "image/jpeg", "file": "../photos/one.jpg"}})
+
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "photos"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "photos", "one.jpg"), image, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inlineDir := filepath.Join(root, "inline")
+	fileDir := filepath.Join(root, "file")
+	for _, dir := range []string{inlineDir, fileDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	path := "/ai/run/@cf/cloudflare/clef"
+	writeExchange(t, inlineDir, "judge", map[string]any{"method": "POST", "path": path, "body": inlineBody}, map[string]any{"result": recorded})
+	writeExchange(t, fileDir, "judge", map[string]any{"method": "POST", "path": path, "body": fileBody}, map[string]any{"result": recorded})
+
+	req := Request{Model: ModelClef, Images: []Image{{ContentType: "image/jpeg", Bytes: image}}, State: state, Questions: questions}
+	want, err := req.key()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, dir := range []string{inlineDir, fileDir} {
+		replay := openDir(t, dir)
+		got, err := replay.Ask(context.Background(), req)
+		if err != nil {
+			t.Fatalf("%s: %v", dir, err)
+		}
+		if got.Answers["issue"].Choice != "none" {
+			t.Fatalf("%s: %#v", dir, got.Answers)
+		}
+		served, err := replay.Serve("POST", path, inlineBody)
+		if err != nil || served.Key != "judge" {
+			t.Fatalf("%s: serve %v", dir, err)
+		}
+		var env struct {
+			Body json.RawMessage `json:"body"`
+		}
+		if err := json.Unmarshal(served.Request, &env); err != nil {
+			t.Fatal(err)
+		}
+		var stored Request
+		if err := json.Unmarshal(env.Body, &stored); err != nil {
+			t.Fatal(err)
+		}
+		key, err := stored.key()
+		if err != nil || key != want {
+			t.Fatalf("%s: key %q, want %q (%v)", dir, key, want, err)
+		}
+	}
+
+	other := req
+	other.Images = []Image{{ContentType: "image/jpeg", Bytes: []byte{0x00}}}
+	_, err = openDir(t, fileDir).Ask(context.Background(), other)
+	var missing *Missing
+	if !errors.As(err, &missing) {
+		t.Fatalf("other bytes: %v", err)
+	}
+}
+
+func TestAMissingImageFileFailsOpen(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	body, err := json.Marshal(map[string]any{
+		"model":     ModelClef,
+		"state":     "date",
+		"images":    []map[string]string{{"content_type": "image/jpeg", "file": "../gone/photo.jpg"}},
+		"questions": sampleQuestions(t),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeExchange(t, dir, "judge-gone", map[string]any{"method": "POST", "path": "/ai/run/@cf/cloudflare/clef", "body": json.RawMessage(body)}, map[string]any{"result": map[string]any{}})
+	_, err = Open(dir)
+	if err == nil || !strings.Contains(err.Error(), "judge-gone.json") || !strings.Contains(err.Error(), "../gone/photo.jpg") {
 		t.Fatal(err)
 	}
 }

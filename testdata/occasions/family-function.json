@@ -24,7 +24,7 @@
     {
       "id": "family-hair-finished",
       "kind": "grooming",
-      "clef": "Is the hair tied into one shape, rather than loose across the eyes?",
+      "clef": "Does the hair look finished and off the eyes, either tied back or cut short and neat?",
       "suggestion": "The hair is unfinished; try it tied back."
     },
     {

@@ -193,7 +193,7 @@ requires:   T0.2, T0.3, T0.4
 fixture-ok: no
 size:       M · mid
 owns:       testdata/clef/, docs/clef.md
-status:     claimed:claude-opus-5-5
+status:     in-review
 ```
 Record what Clef returns, and what it costs, on the sample set. Workers AI spend: within the free daily allowance.
 
@@ -204,6 +204,20 @@ Record what Clef returns, and what it costs, on the sample set. Workers AI spend
 - Fix selection is Clef. This probe records Clef. The Jev comparison on the same pick request is still required and is not part of this probe.
 
 **Done when:** replies for every sample photo are recorded; the stability spread and tokens per image are in `docs/clef.md` and the handoff log.
+
+Notes:
+
+- The request and response shapes come from the Workers AI model pages and their raw input and output schemas. They are in `docs/clef.md`.
+- I recorded 37 judge calls on `clef`, one per sample variant. Each sends the photo as committed, `state` `{"occasion", "name"}`, one `noul` per criterion in the data's wording, and the `biggest_issue` choice. No YouCam analysis was sent. Recordings are in `testdata/clef/judge-<variant>.json`, in the envelope `replay.go` loads. The path has no account id, and no header is stored.
+- The check is recorded on proxies only, because there is no render before T0.5. (a) is V04 against V05, which adds the jhumkas and the lip. (b) is V04 against the white woman's anchor, which must read as a different person. Each ran on `clef` and `clef-flash`. Both models put (a) at 0.94 to 0.99 and (b) at 0.02 to 0.06 on change made, same person and criterion met. The real check recordings must be redone after T0.5.
+- Stability: ten repeats of the V04 judge were identical to the last digit, so every spread is 0. They are in `stability/`, because identical requests make `Ask` answer `Ambiguous`.
+- Cost: an 896 × 1200 photo counts 1,002 input tokens. At 1024, 768 and 512 px on the long side it counts 771, 435 and 195. That is exactly the documented tokenizer. The question text is 942 to 1,079 tokens. One look (judge plus check) is about 132 neurons all on Clef, or 57 with the check on Clef-flash. On V04, no flag crosses 0.5 at smaller sizes. The expression probability moves the most, from 0.5943 at full size to between 0.53 and 0.62.
+- Agreement with the README at a 0.5 reading, used only to count and not as a threshold: 260 of 273 answers. By person: woman 72/74, woman-white 59/59, man 75/81 and man-eastasian 54/59. The misses gather on the men's beard and light. V08 is the weakest row: its light reads 0.6223 and its beard 0.609, both against an expected no.
+- `family-hair-finished` first read every man's short hair as not finished (0.04 to 0.22), because it asked whether the hair was "tied". The user approved a rewording to "Does the hair look finished and off the eyes, either tied back or cut short and neat?". I changed that one `clef` field and re-recorded every family-function judge, the stability repeats and the cost runs. Now the men read 0.84 to 0.89, the women expected yes read 0.77 to 0.93, and the two expected no read 0.03. The rewording also moved the other six family-function answers on the same photos (P12's expression went from 0.46 to 0.61, for example). Any wording change means re-recording the whole occasion.
+- Recordings name their images by file, not bytes. On review I changed `replay.go` so a recorded image may be `{"content_type", "file"}`, with the path relative to the recording. `Open` reads the file and keys it exactly as if inline, and a missing file fails `Open` naming the recording and the path. Tests in `replay_test.go` cover a file twin serving like its inline twin with the same key, a missing file, and the inline form. The 55 first-round recordings were converted with every key unchanged. `testdata/clef` went from 20 MB to 0.6 MB. The resized cost photos are in `testdata/clef/cost/images/`.
+- The guard in `TestAskMissesWhenNothingIsRecorded` that failed whenever `testdata/clef` existed is removed. An unrecorded request still fails as `Missing` with its key.
+- Spend: 78 calls, 3,292 neurons computed from the reported tokens. 55 in the first round, then 23 to re-record on the new wording.
+- Surprised that Clef answers confidently with no image at all, that the question text costs as much as the photo, and that rewording one question moves the answers to the others.
 
 ---
 
