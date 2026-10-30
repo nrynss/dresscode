@@ -1,0 +1,38 @@
+{
+ "exchange": "http-earring-put-src",
+ "request": {
+  "method": "PUT",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780303965/v2/USER/4c532fdf-f97f-4138-a554-69380906dcec.jpg",
+  "headers": {
+   "Content-Length": "278400",
+   "Content-Type": "image/jpeg"
+  },
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": {
+   "sent_file": "../samples/woman/V04-family-function.jpg",
+   "bytes": 278400
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Length": "0",
+   "Connection": "close",
+   "x-amz-id-2": "dDaXxlY5dJCdxrF1YVg5Q2t4vRJYc7vNKVDunWxmo/OZjgumgQEi0YWPCWeRniuYb11Ono1smFXoKbgTAFRfTDKD4VwqsiBt",
+   "x-amz-request-id": "N70EEH2YXTV4TB0H",
+   "Server": "AmazonS3",
+   "Date": "Fri, 30 Oct 2026 15:25:05 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "x-amz-server-side-encryption": "AES256",
+   "ETag": "\"f5e109bcedca32f124e4ce102ec10fbe\"",
+   "x-amz-checksum-crc64nvme": "oViPsO77Tzw=",
+   "x-amz-checksum-type": "FULL_OBJECT",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 a49f020132dfafabe09a4d42b8bfbc4c.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "M7N2q-yLudiQRUCVpjNGKVXefjgxGj5CQWtNRUDaCjnM_gaxBxnzmQ=="
+  },
+  "body": "",
+  "elapsed_ms": 924
+ }
+}

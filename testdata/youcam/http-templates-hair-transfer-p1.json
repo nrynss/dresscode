@@ -1,0 +1,177 @@
+{
+ "exchange": "http-templates-hair-transfer-p1",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.1/task/template/hair-transfer?page_size=20",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:19:46 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "4236",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170893620970732",
+   "ETag": "W/\"076812b07508b9df033200a92c6d066b0\"",
+   "Cache-Control": "max-age=1800, private",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "next_token": "4144",
+    "templates": [
+     {
+      "id": "male_short_curly",
+      "thumb": "https://app-cdn.makeupar.com/cms/47633eff-2086-4791-b454-825aa6f9e160/1780481384535/file.jpg",
+      "title": "Short Curly",
+      "category_name": "Male",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_sleek_middle_part",
+      "thumb": "https://app-cdn.makeupar.com/cms/658e8776-fdd0-4d78-8f35-1bbe27e902d4/1780543845278/file.jpg",
+      "title": "Sleek Middle Part",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_blunt_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/9bc19ca5-2e6d-4816-8dc3-a6a1daf6593d/1781145851280/file.jpg",
+      "title": "Blunt Bob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_s_wave_brunette",
+      "thumb": "https://app-cdn.makeupar.com/cms/8074cf6e-9299-4b2e-a10a-19849c5be4c2/1780540769370/file.jpg",
+      "title": "S-Wave Brunette",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_combover",
+      "thumb": "https://app-cdn.makeupar.com/cms/32a0e78f-31e8-4a7f-a19d-6a4084b68ff6/1781072606913/file.jpg",
+      "title": "Combover",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_messy_bun_brown",
+      "thumb": "https://app-cdn.makeupar.com/cms/0fcab08b-2e07-4173-bd91-aee43d6ad4a7/1780541079712/file.jpg",
+      "title": "Messy Bun Brown",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_two_braids",
+      "thumb": "https://app-cdn.makeupar.com/cms/174d25bc-b623-4a33-8069-ba6a1b97851f/1781079933103/file.jpg",
+      "title": "Two Braids",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_slicked_back_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/857dbcb2-94bf-4863-a0ba-fd45c2240ca3/1781110592389/file.jpg",
+      "title": "Slicked-Back Bob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_retro_brown_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/ed330fc6-41b1-4d12-abcb-71dd43e620f8/1780540975822/file.jpg",
+      "title": "Retro Brown Waves",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_crimped_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/6966ba54-f8b2-481a-9248-a412869d87ff/1781110699172/file.jpg",
+      "title": "Crimped Bob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_dark_tone_fringe_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/6d42c131-d435-42de-bed1-95c14ae53f6b/1780543673483/file.jpg",
+      "title": "Dark-Tone Fringe Bob",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_soft_red_ombre_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/76b16f51-fc51-4640-a5a1-7ea6e5ebd50d/1780481443123/file.jpg",
+      "title": "Soft Red Ombre Waves",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_loose_crimped_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/b6d441a7-7cc4-4387-aebb-d2dbb7ffee8b/1781110796167/file.jpg",
+      "title": "Loose Crimped Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_buzz_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/c9ecae17-d0ee-45fc-b0d7-f7575d672454/1781145545980/file.jpg",
+      "title": "Buzz Cut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_neon_root_black_hair",
+      "thumb": "https://app-cdn.makeupar.com/cms/4f48c736-3a09-442b-9435-44870edf8088/1780540714947/file.jpg",
+      "title": "Neon Root Black Hair",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_long_brown_crimps",
+      "thumb": "https://app-cdn.makeupar.com/cms/544b9d72-e09f-49b0-b7e5-b2d6e54f9c40/1780540289515/file.jpg",
+      "title": "Long Brown Crimps",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_bouncy_curls",
+      "thumb": "https://app-cdn.makeupar.com/cms/f0f7cd99-88ef-4c4c-925d-b327649c6bcd/1780543784410/file.png",
+      "title": "Bouncy Curls",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_pink_brown_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/78248248-9984-4ed9-a7a0-d69695e47117/1781062362695/file.jpg",
+      "title": "Pink & Brown Waves",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "male_gray_taper_fade",
+      "thumb": "https://app-cdn.makeupar.com/cms/02a90e43-398a-4eda-b0bc-e9595d75430f/1778825209411/file.jpg",
+      "title": "Gray Taper Fade",
+      "category_name": "Male",
+      "keep_users_color": false
+     },
+     {
+      "id": "male_textured_crop",
+      "thumb": "https://app-cdn.makeupar.com/cms/430a5763-f41c-4ea6-a9c8-7c64b9b3b942/1778665908784/file.jpg",
+      "title": "Textured Crop",
+      "category_name": "Male",
+      "keep_users_color": false
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 853
+ }
+}

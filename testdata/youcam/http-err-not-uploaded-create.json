@@ -1,0 +1,37 @@
+{
+ "exchange": "http-err-not-uploaded-create",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/task/ai-smile",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "src_file_id": "40njW1/WgGy9v1iq/6uBE+1n585RTMBj6PI6InhH64MLbKfeLEmuXUa9yH4wuc2K",
+   "expression_type": "closed_mouth_smile"
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:50 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "122",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171914711696829",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "task_id": "40njW1_WgGy9v1iq_6uBE-1n585RTMBj6PI6InhH64OEaLxifWzoTjjb9gdOHnJynSwkG57crvtLKRsy_195kw"
+   }
+  },
+  "elapsed_ms": 958
+ }
+}

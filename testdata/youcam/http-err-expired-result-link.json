@@ -1,0 +1,18 @@
+{
+ "exchange": "http-err-expired-result-link",
+ "request": {
+  "method": "GET",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780129210/v2/USER/41f5d941-ed0c-4b3b-b155-68ad2bff582e.jpg",
+  "headers": {},
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": null
+ },
+ "response": {
+  "status": 403,
+  "headers": {
+   "Content-Type": "application/xml"
+  },
+  "body": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Error><Code>AccessDenied</Code><Message>Request has expired</Message><X-Amz-Expires>…</X-Amz-Expires><Expires>…</Expires><ServerTime>…</ServerTime><RequestId>…</RequestId><HostId>…</HostId></Error>",
+  "note": "The smile result link from smile-poll, fetched again 239.7 minutes after it was issued. It had fetched 200 at 14.8 minutes. Timestamps and request ids are elided."
+ }
+}

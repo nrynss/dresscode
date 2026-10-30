@@ -1,0 +1,58 @@
+{
+ "exchange": "http-hair-updo-slot-src",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "V06-family-function.jpg",
+     "file_size": 291154
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:27:30 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "730",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519172837240483601",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "V06-family-function.jpg",
+      "file_id": "Mo3sunhCfvS4Z+KREbCrBEVCT87N93joyGrnEV97X9YLbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780450168/v2/USER/f766cd32-c54d-413f-a075-9bec6041ef48.jpg",
+        "headers": {
+         "Content-Length": "291154",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 847
+ }
+}

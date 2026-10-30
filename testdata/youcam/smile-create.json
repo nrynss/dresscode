@@ -1,0 +1,13 @@
+{
+ "exchange": "smile-create",
+ "request": {
+  "name": "ai-smile",
+  "payload": {
+   "src_file_id": "1CtI2li5gOtWLL38dZlXzPQh6hvtNrE2Rhch/5dvHPcLbKfeLEmuXUa9yH4wuc2K",
+   "expression_type": "closed_mouth_smile"
+  }
+ },
+ "response": {
+  "task_id": "1CtI2li5gOtWLL38dZlXzPQh6hvtNrE2Rhch_5dvHPexGN5xX28gq6NruHintyGjnSwkG57crvtLKRsy_195kw"
+ }
+}

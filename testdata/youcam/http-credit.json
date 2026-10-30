@@ -1,0 +1,47 @@
+{
+ "exchange": "http-credit",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v1.0/client/credit",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:20:52 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "234",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171168473722323",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "results": [
+    {
+     "id": 0,
+     "type": "ApiPaygToken",
+     "amount": 1000,
+     "amount_dec": 1000.0,
+     "expiry": 1798415999000
+    },
+    {
+     "id": 0,
+     "type": "ApiPaygToken",
+     "amount": 40,
+     "amount_dec": 40.0,
+     "expiry": 1824854399000
+    }
+   ]
+  },
+  "elapsed_ms": 853
+ }
+}

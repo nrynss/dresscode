@@ -184,7 +184,7 @@ requires:   T0.2, T0.3, T0.4, T0.4a
 fixture-ok: no
 size:       M · mid
 owns:       testdata/youcam/, docs/youcam.md
-status:     claimed:claude-opus-5-5
+status:     in-review
 ```
 Turn the API docs into recorded replies the clients are built against. **Unit budget: 150.** Run the cheapest case first, read the units it cost, stop and report before going over.
 
@@ -194,6 +194,19 @@ Turn the API docs into recorded replies the clients are built against. **Unit bu
 - `docs/youcam.md`: the calls, their shapes, units per call, the timings, the surprises (also in `feedback.md`).
 
 **Done when:** every task the menus name has a recorded success and its unit cost; the error shapes are recorded; the units spent are in the handoff log.
+
+Notes:
+
+- Recorded every task the menus name, plus face shape: `ai-smile`, `makeup-vto` (red lip), `2d-vto/earring`, `2d-vto/necklace`, `cloth-v4`, `hair-transfer` v2.1, `beard-style` and `face-attr-analysis`, each as upload slot, PUT, create, poll and fetch. Facial Color Tones is off the menu (docs/occasions.md) and was not run, per the brief. `docs/youcam.md` has the shapes, the bodies, the units, the timings, the errors and a look at every render.
+- `testdata/youcam/` holds 149 recordings: typed ones that feed the replay's `Upload`, `Create`, `Poll` and `Fetch`, and `http-*` ones with the wire shapes for `Serve`. No recording embeds image bytes. Uploads name the sample photo and results name a JPEG in `results/`. I changed `internal/youcam/replay.go` to read those files at `Open`, in the style of the System One replay: keys unchanged, a missing file fails `Open` naming it, inline still works. `replay_test.go` covers each case. The test that failed whenever `testdata/youcam` existed now opens an absent temp directory.
+- Units: 24 of the 150 budget, 1,040 to 1,016. The v1 credit endpoint answers to the v2 key, so I read the balance before and after every task instead of stopping after the first one. Every measured cost matched the documented price. The ledger at `/s2s/v1.0/client/credit/history` shows the same charges.
+- Error cases spent nothing net. They were no face, a bad file, too small, a file never uploaded (the reachable stand-in for an expired file), an unknown file id, a bad parameter, an unknown task, an unknown task id and a wrong key.
+- Decisions. Makeup sends `skin_smooth` at 0, because leaving it out applies smoothing at 50; one extra unit recorded the default to prove it. Hair sends `hair_color: src`. The garment is `upper_body`. No hair template is titled "tied back", so I ran Casual Updo and High Pony Tail; the updo is the one off the eyes. No beard template is short and even, so I ran Circle, which reads as a goatee. The necklace on engine placement drew a line over the hair, so I re-ran it with anchor and wearing points (one unit). Both are kept: the first as a known bad render.
+- The kurta renders fine on an adult in a chest-up selfie. It is not visibly short or tight, but its length never shows in that frame, and it reads brighter red than the product.
+- Render quality, for the render check: lip (with smoothing off), earring and the placed necklace leave the face alone. AI Smile and both hair renders smooth the skin. The hair updo also removed the jhumkas. The cloth render regenerated the face with harsher texture. The beard came back downscaled to 764 × 1024.
+- Result link: `200` at 14.8 minutes, `403 AccessDenied` "Request has expired" at 239.7 minutes. It is signed for two hours. Polling the finished task again (free) gives a new link to the same picture.
+- Gaps for later tasks: the seam's `Status` has no field for analysis results, so face shape is only in the HTTP recording. The hair and beard templates do not map one-to-one onto the vocabulary's `tied-back` and `short`.
+- Surprised that the balance endpoint works, and that a failed task is charged and refunded across pools with different expiries. Also that files and results sit in a US bucket behind the India host, that makeup smooths skin by default, and that the size limits are looser than documented while the makeup minimum is stricter.
 
 ---
 

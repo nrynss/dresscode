@@ -1,0 +1,38 @@
+{
+ "exchange": "http-necklace-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/2d-vto/necklace/V804R6YXYcHAsYjxgW0u2J40YrsSf7ZGO1gSS929wDm0iP6t3UvclyCLcFJk7uDarsVEnq3ffBAO2Lf_ZLul6Q",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:26:33 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "496",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519172599020784475",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": null,
+    "results": {
+     "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780386738/v2/USER/86046061-b4c9-4a80-9946-6bd81ba9cf01.png"
+    },
+    "task_status": "success"
+   }
+  },
+  "elapsed_ms": 846,
+  "since_create_s": 6.58
+ }
+}

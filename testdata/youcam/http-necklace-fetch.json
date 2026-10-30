@@ -1,0 +1,37 @@
+{
+ "exchange": "http-necklace-fetch",
+ "request": {
+  "method": "GET",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780386738/v2/USER/86046061-b4c9-4a80-9946-6bd81ba9cf01.png",
+  "headers": {},
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Type": "binary/octet-stream",
+   "Content-Length": "1753049",
+   "Connection": "close",
+   "x-amz-id-2": "JXk+hLUWDK9yajVw4wytXM3TPzf8vKfD+VbBgB6A+UFAPX/XPQJeBZK6ybYwyX5sHeMAk9x89iE=",
+   "x-amz-request-id": "DD1PCNCBB5GJKE53",
+   "Date": "Fri, 30 Oct 2026 15:26:34 GMT",
+   "Last-Modified": "Fri, 30 Oct 2026 15:26:30 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "ETag": "\"e0b911c55a01dea4c0321d58e38864c3\"",
+   "x-amz-server-side-encryption": "AES256",
+   "Accept-Ranges": "bytes",
+   "Server": "AmazonS3",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 e4257444e1baa2e44ac1a48dd385109c.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "dcf2UtkR9kle8K2peLXs4RftKgdCvdySO6e_VLBzPCOHr66BikqiyQ=="
+  },
+  "body": {
+   "result_file": "results/necklace-chain-V14.jpg",
+   "note": "provider bytes re-encoded as JPEG q92, metadata stripped",
+   "provider_bytes": 1753049
+  },
+  "elapsed_ms": 1310
+ }
+}

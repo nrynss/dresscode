@@ -1,0 +1,38 @@
+{
+ "exchange": "http-earring-put-ref",
+ "request": {
+  "method": "PUT",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780305749/v2/USER/abab1d16-02b6-41bd-9a39-be33c83de68c.jpg",
+  "headers": {
+   "Content-Length": "107183",
+   "Content-Type": "image/jpeg"
+  },
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": {
+   "sent_file": "../samples/products/gold-jhumkas.jpg",
+   "bytes": 107183
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Length": "0",
+   "Connection": "close",
+   "x-amz-id-2": "clTODkZN/xEfHqwUnY/18Bf/xrkMTc8Ht+3y7lxiN3nbCty1z9wcwfZ3KK2R4yaYsXSafkWbHd8=",
+   "x-amz-request-id": "A09T3M53AYF69SBD",
+   "Date": "Fri, 30 Oct 2026 15:25:07 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "x-amz-server-side-encryption": "AES256",
+   "ETag": "\"78df8f08a1e0d1114e13ca2e291ef6b5\"",
+   "x-amz-checksum-crc64nvme": "Sxa8bSRrOQk=",
+   "x-amz-checksum-type": "FULL_OBJECT",
+   "Server": "AmazonS3",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 5d782e204f31cf29d8ed8448ac335be4.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "FARdZoOez7kiyQgRs2DnaXgUHA-S8UqSzDyIQjkyfAtStmUBD7UQNQ=="
+  },
+  "body": "",
+  "elapsed_ms": 626
+ }
+}

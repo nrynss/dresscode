@@ -1,0 +1,12 @@
+{
+ "exchange": "hair-updo-poll",
+ "request": {
+  "task": "hair-transfer",
+  "task_id": "Mo3sunhCfvS4Z-KREbCrBEVCT87N93joyGrnEV97X9byZQKydkszaVUxAwlihmXuAO6h9Y273R6RR5V6m9KYNQ"
+ },
+ "response": {
+  "task_id": "Mo3sunhCfvS4Z-KREbCrBEVCT87N93joyGrnEV97X9byZQKydkszaVUxAwlihmXuAO6h9Y273R6RR5V6m9KYNQ",
+  "status": "success",
+  "result_url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780452449/v2/USER/8f16174d-277d-4dfe-a4c9-2cd587dd07fd.jpg"
+ }
+}

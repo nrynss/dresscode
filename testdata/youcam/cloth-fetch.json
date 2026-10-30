@@ -1,0 +1,12 @@
+{
+ "exchange": "cloth-fetch",
+ "request": {
+  "task_id": "2Iw59qUUru5StwPukCV1weV7dMl9dbV_wgBTPluseI9-j4LChsrmu1o3Yky1kwP9Gi4M447Ki6l9hDTl1ySvww",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780417826/v2/USER/a2e44f13-71e2-47a2-871a-d08a3dbd8b33.jpg"
+ },
+ "response": {
+  "task_id": "2Iw59qUUru5StwPukCV1weV7dMl9dbV_wgBTPluseI9-j4LChsrmu1o3Yky1kwP9Gi4M447Ki6l9hDTl1ySvww",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780417826/v2/USER/a2e44f13-71e2-47a2-871a-d08a3dbd8b33.jpg",
+  "file": "results/cloth-kurta-V08.jpg"
+ }
+}

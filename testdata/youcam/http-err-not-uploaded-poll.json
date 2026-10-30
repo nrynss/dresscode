@@ -1,0 +1,37 @@
+{
+ "exchange": "http-err-not-uploaded-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/ai-smile/40njW1_WgGy9v1iq_6uBE-1n585RTMBj6PI6InhH64OEaLxifWzoTjjb9gdOHnJynSwkG57crvtLKRsy_195kw",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:51 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "184",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171918738229966",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": "error_download_image",
+    "error_message": "The source image could not be downloaded from the provided URL or file ID.",
+    "results": null,
+    "task_status": "error"
+   }
+  },
+  "elapsed_ms": 876,
+  "since_create_s": 0.88
+ }
+}

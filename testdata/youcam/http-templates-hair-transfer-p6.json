@@ -1,0 +1,149 @@
+{
+ "exchange": "http-templates-hair-transfer-p6",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.1/task/template/hair-transfer?page_size=20&starting_token=1682",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:19:51 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "3346",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170912084307360",
+   "ETag": "W/\"0dc2e5b85dd5baebfa96c6f3534e80ba5\"",
+   "Cache-Control": "max-age=1800, private",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "next_token": null,
+    "templates": [
+     {
+      "id": "all_mist_violet_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/fa8af219-7f61-47f6-884e-7a8c756e3318/1768890498317/file.jpg",
+      "title": "Mist Violet Bob",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_highlight_wave_rainbow",
+      "thumb": "https://app-cdn.makeupar.com/cms/a1636330-5307-4c5e-a754-a89ef5f31691/1771912532102/file.jpg",
+      "title": "Highlight Wave Rainbow",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_dreadlocks",
+      "thumb": "https://app-cdn.makeupar.com/cms/ee789d47-c009-4bde-b585-5cb76dc02576/1774603196507/file.jpg",
+      "title": "Dreadlocks",
+      "category_name": "Male",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_side_swept_undercut",
+      "thumb": "https://app-cdn.makeupar.com/cms/b7554bb7-a51e-413c-89c3-e36e71df51bc/1770086982870/file.jpg",
+      "title": "Side-Swept Undercut",
+      "category_name": "Male",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_hippie_wave",
+      "thumb": "https://app-cdn.makeupar.com/cms/52e611d2-3b52-4a1d-9c86-7e35ab53d0f4/1770006588603/file.jpg",
+      "title": "Hippie Wave",
+      "category_name": "Male",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_buzz_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/9e1bbc56-f235-4609-beb3-213e91c0f984/1770091124492/file.jpg",
+      "title": "Buzz Cut",
+      "category_name": "Male",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_medium_curve_hair",
+      "thumb": "https://app-cdn.makeupar.com/cms/48805d1c-2632-449f-bba8-e923b42d9795/1768811431421/file.jpg",
+      "title": "Medium Curve Hair",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_short_feather_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/15dd8ba1-d1ff-457d-9332-41412e1be14a/1771829284476/file.jpg",
+      "title": "Short Feather Cut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_classic_hollywood_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/d288812e-638e-4622-8a05-dcc967e58e6e/1770880858767/file.jpg",
+      "title": "Classic Hollywood Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_bubble_braids",
+      "thumb": "https://app-cdn.makeupar.com/cms/c125a6e1-718a-4747-a569-11043ccb5c4b/1774603055486/file.jpg",
+      "title": "Bubble Braids",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_french_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/3ec08a45-89a4-4855-a51e-144caa2870a3/1770091312495/file.jpg",
+      "title": "French Bob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_face_framing_shag_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/2ead8fe5-76f3-4233-94f2-98684a3f9d41/1770007724171/file.jpg",
+      "title": "Face Framing Shag Cut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_baby_braids",
+      "thumb": "https://app-cdn.makeupar.com/cms/475bc9ff-76be-4f41-956e-3e93bebd13b1/1774603159718/file.jpg",
+      "title": "Baby braids",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_wolf_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/bbb40a9e-7113-4428-83b0-86b8d832cbb5/1771829230119/file.jpg",
+      "title": "Wolf Cut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_hush_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/ac74e18d-30d1-4f49-9134-e2dee0baed8f/1771829255242/file.jpg",
+      "title": "Hush Cut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_two_tone_blonde_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/51cada39-b0a9-4d98-a708-19111064fb8f/1771902897142/file.jpg",
+      "title": "Two-Tone Blonde Cut",
+      "category_name": "Female",
+      "keep_users_color": false
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 848
+ }
+}

@@ -1,0 +1,23 @@
+{
+ "exchange": "necklace-auto-create",
+ "request": {
+  "name": "2d-vto/necklace",
+  "payload": {
+   "src_file_id": "4yO+ZN5qDRtplY2ZbEcq2pjc96ROlXCHTLIWtBd50f8LbKfeLEmuXUa9yH4wuc2K",
+   "ref_file_ids": [
+    "NCe8g0IQKT5DElaqGGZ+Nq2VYjoBzRl/v9Cr5PCWyx0LbKfeLEmuXUa9yH4wuc2K"
+   ],
+   "source_info": {
+    "name": "4yO+ZN5qDRtplY2ZbEcq2pjc96ROlXCHTLIWtBd50f8LbKfeLEmuXUa9yH4wuc2K"
+   },
+   "object_infos": [
+    {
+     "name": "NCe8g0IQKT5DElaqGGZ+Nq2VYjoBzRl/v9Cr5PCWyx0LbKfeLEmuXUa9yH4wuc2K"
+    }
+   ]
+  }
+ },
+ "response": {
+  "task_id": "4yO-ZN5qDRtplY2ZbEcq2pjc96ROlXCHTLIWtBd50f8LV1xS2z4xZmfmSgM2dhW6rsVEnq3ffBAO2Lf_ZLul6Q"
+ }
+}

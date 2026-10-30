@@ -1,0 +1,175 @@
+{
+ "exchange": "http-feature-cost-p4",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/credit/feature-cost?page_size=20&starting_token=NDE6MA",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:18:57 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "3696",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170684916599235",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "result": {
+    "skus": [
+     {
+      "description": "Face Attribute & Ratio Analysis (1-5 features)",
+      "amount": 10.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/face-attr-analysis"
+     },
+     {
+      "description": "Face Attribute & Ratio Analysis (6-14 features)",
+      "amount": 20.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/face-attr-analysis"
+     },
+     {
+      "description": "Face Attribute & Ratio Analysis (15-28 features)",
+      "amount": 30.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/face-attr-analysis"
+     },
+     {
+      "description": "AI Facial Color Tones Analyzer V1.0",
+      "amount": 20.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-tone-analysis"
+     },
+     {
+      "description": "AI Hair Length Detection V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-length-detection"
+     },
+     {
+      "description": "AI Hair Type Detection V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-type-detection"
+     },
+     {
+      "description": "AI Hair Frizziness Detection V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-frizziness-detection"
+     },
+     {
+      "description": "AI Beard Style Generator V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/beard-style"
+     },
+     {
+      "description": "AI Aging Simulation V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 16,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/aging"
+     },
+     {
+      "description": "AI Look Virtual Try-On V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/look-vto"
+     },
+     {
+      "description": "AI Makeup Virtual Try-On V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/makeup-vto"
+     },
+     {
+      "description": "AI Earrings Virtual Try-On V1.0 (Stacked)",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/2d-vto/earring"
+     },
+     {
+      "description": "AI Earrings Virtual Try-On V1.0 (Single)",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/2d-vto/earring"
+     },
+     {
+      "description": "AI Necklace Virtual Try-On V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/2d-vto/necklace"
+     },
+     {
+      "description": "AI Ring Virtual Try-On V1.0 (Stacked)",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/2d-vto/ring"
+     },
+     {
+      "description": "AI Ring Virtual Try-On V1.0 (Single)",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/2d-vto/ring"
+     },
+     {
+      "description": "AI Bracelet Virtual Try-On V1.0 (Stacked)",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/2d-vto/bracelet"
+     },
+     {
+      "description": "AI Bracelet Virtual Try-On V1.0 (Single)",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/2d-vto/bracelet"
+     },
+     {
+      "description": "AI Watch Virtual Try-On V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/2d-vto/watch"
+     },
+     {
+      "description": "AI Bag Virtual Try-On V2.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/bag"
+     }
+    ],
+    "next_token": "NTY6MA"
+   }
+  },
+  "elapsed_ms": 1082
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "exchange": "http-face-attr-create",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/task/face-attr-analysis",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "src_file_id": "bEHTaB51xfL+J0W1aTtAOp+WsCnq1/CG5VQ+EFQ12QcLbKfeLEmuXUa9yH4wuc2K",
+   "features": [
+    "faceShape"
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:29:15 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "122",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519173278355436130",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "task_id": "bEHTaB51xfL-J0W1aTtAOp-WsCnq1_CG5VQ-EFQ12QcFJ5x0VxKfIk5aCLtCxPlXScgIlJTAJUMBSj2Ri1JFpA"
+   }
+  },
+  "elapsed_ms": 949
+ }
+}

@@ -1,0 +1,58 @@
+{
+ "exchange": "http-err-bad-file-slot-src",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "not-an-image.jpg",
+     "file_size": 58
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:34 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "719",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171848068411744",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "not-an-image.jpg",
+      "file_id": "2a0cdWZAFVYmSyYaqivIdVlCjqP1kXjL78wlSqwgn4QLbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780214331/v2/USER/4e5cc4d7-acad-40b6-a3db-65135ac0ee2d.jpg",
+        "headers": {
+         "Content-Length": "58",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 852
+ }
+}

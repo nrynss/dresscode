@@ -1,0 +1,14 @@
+{
+ "exchange": "hair-updo-create",
+ "request": {
+  "name": "hair-transfer",
+  "payload": {
+   "src_file_id": "Mo3sunhCfvS4Z+KREbCrBEVCT87N93joyGrnEV97X9YLbKfeLEmuXUa9yH4wuc2K",
+   "template_id": "female_casual_updo",
+   "hair_color": "src"
+  }
+ },
+ "response": {
+  "task_id": "Mo3sunhCfvS4Z-KREbCrBEVCT87N93joyGrnEV97X9byZQKydkszaVUxAwlihmXuAO6h9Y273R6RR5V6m9KYNQ"
+ }
+}

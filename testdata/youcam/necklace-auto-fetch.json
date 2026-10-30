@@ -1,0 +1,12 @@
+{
+ "exchange": "necklace-auto-fetch",
+ "request": {
+  "task_id": "4yO-ZN5qDRtplY2ZbEcq2pjc96ROlXCHTLIWtBd50f8LV1xS2z4xZmfmSgM2dhW6rsVEnq3ffBAO2Lf_ZLul6Q",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780332915/v2/USER/c06c0f96-f6d5-4a69-a524-1a91c8e8dcb0.png"
+ },
+ "response": {
+  "task_id": "4yO-ZN5qDRtplY2ZbEcq2pjc96ROlXCHTLIWtBd50f8LV1xS2z4xZmfmSgM2dhW6rsVEnq3ffBAO2Lf_ZLul6Q",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780332915/v2/USER/c06c0f96-f6d5-4a69-a524-1a91c8e8dcb0.png",
+  "file": "results/necklace-chain-V14-auto.jpg"
+ }
+}

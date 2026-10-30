@@ -1,0 +1,15 @@
+{
+ "exchange": "err-bad-file-poll",
+ "request": {
+  "task": "ai-smile",
+  "task_id": "2a0cdWZAFVYmSyYaqivIdVlCjqP1kXjL78wlSqwgn4SaIBIgiRmTYFQX4zKC7CUenSwkG57crvtLKRsy_195kw"
+ },
+ "response": {
+  "task_id": "2a0cdWZAFVYmSyYaqivIdVlCjqP1kXjL78wlSqwgn4SaIBIgiRmTYFQX4zKC7CUenSwkG57crvtLKRsy_195kw",
+  "status": "error",
+  "error": {
+   "kind": "bad file",
+   "detail": "error_decode_image"
+  }
+ }
+}

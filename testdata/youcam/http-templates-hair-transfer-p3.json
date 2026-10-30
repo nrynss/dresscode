@@ -1,0 +1,177 @@
+{
+ "exchange": "http-templates-hair-transfer-p3",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.1/task/template/hair-transfer?page_size=20&starting_token=2969",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:19:48 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "4183",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170900793231856",
+   "ETag": "W/\"02d55c0c6b11efecb1b5772c9bb69108a\"",
+   "Cache-Control": "max-age=1800, private",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "next_token": "2471",
+    "templates": [
+     {
+      "id": "female_side_part_straight",
+      "thumb": "https://app-cdn.makeupar.com/cms/015eb8f2-eba5-4f59-980e-a5b4ad16687b/1770112894136/file.jpg",
+      "title": "Side-Part Straight",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_bobcut_curly",
+      "thumb": "https://app-cdn.makeupar.com/cms/e4f56b76-d492-45a6-a992-e5d7e800ede6/1770174109275/file.jpg",
+      "title": "Bobcut Curly",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_long_boho_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/1a8c911c-8336-4fb1-a94e-f62e5c414933/1770174497405/file.jpg",
+      "title": "Long Boho Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_messy_bun",
+      "thumb": "https://app-cdn.makeupar.com/cms/af5db364-8a4b-4447-978c-f4579592f1f7/1770170840959/file.jpg",
+      "title": "Messy Bun",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_pixie_pink",
+      "thumb": "https://app-cdn.makeupar.com/cms/99c1677e-21df-4a2e-9833-b8a620bc47e2/1770170809981/file.jpg",
+      "title": "Pixie Pink",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_medium_straight",
+      "thumb": "https://app-cdn.makeupar.com/cms/85e1151e-a616-4cdc-8ace-204033e347d7/1770174183367/file.jpg",
+      "title": "Medium Straight",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_bobcut_wavy",
+      "thumb": "https://app-cdn.makeupar.com/cms/faffd75d-bad1-4bea-8f35-107077372911/1770198811895/file.jpg",
+      "title": "Bobcut Wavy",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_long_spiral_curls",
+      "thumb": "https://app-cdn.makeupar.com/cms/d8ebd3f0-503f-4ad3-baf6-11ba77b2d756/1775543705441/file.jpg",
+      "title": "Long Spiral Curls",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_modern_wavy_lob",
+      "thumb": "https://app-cdn.makeupar.com/cms/6f5ed48c-541f-4a22-b967-b3f77f50fb68/1773991575084/file.jpg",
+      "title": "Modern Wavy Lob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_fresh_fringe_lob",
+      "thumb": "https://app-cdn.makeupar.com/cms/0b9d5c31-2f8e-4f4c-8159-82c8ae0ed765/1773991602850/file.jpg",
+      "title": "Fresh Fringe Lob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_boho_side_braid",
+      "thumb": "https://app-cdn.makeupar.com/cms/e8c94fe7-6d94-445f-9653-0ecdfecae73a/1773994281256/file.jpg",
+      "title": "Boho Side Braid",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_goddess_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/a6339fb0-03f8-4cd3-8ba9-d85895b4ddfd/1776757568161/file.jpg",
+      "title": "Goddess Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_bow_accents",
+      "thumb": "https://app-cdn.makeupar.com/cms/db0b320b-7f83-443c-912a-27a70ff63439/1776757082414/file.jpg",
+      "title": "Bow Accents",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_split_rainbow",
+      "thumb": "https://app-cdn.makeupar.com/cms/426d2981-5725-4d9c-b07a-4a3af1908b61/1776670174933/file.jpg",
+      "title": "Split Rainbow",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_curly_double_buns",
+      "thumb": "https://app-cdn.makeupar.com/cms/c9f5ddf3-2c18-4665-a937-acdfa27bff9c/1776669869952/file.jpg",
+      "title": "Curly Double Buns",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_leopard_highlights",
+      "thumb": "https://app-cdn.makeupar.com/cms/9111b26e-3edd-4c71-b4eb-ae019fc42b4d/1776669843095/file.jpg",
+      "title": "Leopard Highlights",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_half_up_curls",
+      "thumb": "https://app-cdn.makeupar.com/cms/a4c91db2-a316-40be-8ab8-a113d792ac3a/1776669736020/file.jpg",
+      "title": "Half-Up Curls",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_crewcut",
+      "thumb": "https://app-cdn.makeupar.com/cms/9771949d-a29c-4ae8-8e0a-aea5d83b28b6/1774947461596/file.jpg",
+      "title": "Crewcut",
+      "category_name": "Male",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_messy_tapered_fade",
+      "thumb": "https://app-cdn.makeupar.com/cms/619e705a-beb9-4ebf-98d8-a59168df6c7e/1775122911642/file.jpg",
+      "title": "Messy Tapered Fade",
+      "category_name": "Male",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_tousled_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/5f7c2a40-03e5-4ec1-8df4-74a7c1f5eecc/1775100852986/file.jpg",
+      "title": "Tousled Waves",
+      "category_name": "Male",
+      "keep_users_color": true
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 863
+ }
+}

@@ -1,0 +1,36 @@
+{
+ "exchange": "lip-red-create",
+ "request": {
+  "name": "makeup-vto",
+  "payload": {
+   "src_file_id": "ELAYg2+9JABOopTk6F3OY91Yo3ZV5f3gXH01glNsMCoLbKfeLEmuXUa9yH4wuc2K",
+   "version": "1.0",
+   "effects": [
+    {
+     "category": "skin_smooth",
+     "skinSmoothStrength": 0,
+     "skinSmoothColorIntensity": 0
+    },
+    {
+     "category": "lip_color",
+     "shape": {
+      "name": "original"
+     },
+     "palettes": [
+      {
+       "color": "#B0172F",
+       "texture": "matte",
+       "colorIntensity": 70
+      }
+     ],
+     "style": {
+      "type": "full"
+     }
+    }
+   ]
+  }
+ },
+ "response": {
+  "task_id": "ELAYg2-9JABOopTk6F3OY91Yo3ZV5f3gXH01glNsMCqR61t0kPffhAxrnfXSfLrcd-BTT-LvvMAmKHuvXEbI5Q"
+ }
+}

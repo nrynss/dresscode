@@ -1,0 +1,36 @@
+{
+ "exchange": "http-err-bad-parameter",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/task/ai-smile",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "src_file_id": "not-a-file-id",
+   "expression_type": "grin"
+  }
+ },
+ "response": {
+  "status": 400,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:26 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "108",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171814694324930",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 400,
+   "error": "expression_type is not one of the accepted values.",
+   "error_code": "InvalidParameters"
+  },
+  "elapsed_ms": 846
+ }
+}

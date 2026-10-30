@@ -1,0 +1,38 @@
+{
+ "exchange": "http-smile-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/ai-smile/1CtI2li5gOtWLL38dZlXzPQh6hvtNrE2Rhch_5dvHPexGN5xX28gq6NruHintyGjnSwkG57crvtLKRsy_195kw",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:22:15 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "496",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171518819741211",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": null,
+    "results": {
+     "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780129210/v2/USER/41f5d941-ed0c-4b3b-b155-68ad2bff582e.jpg"
+    },
+    "task_status": "success"
+   }
+  },
+  "elapsed_ms": 870,
+  "since_create_s": 6.58
+ }
+}

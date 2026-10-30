@@ -1,0 +1,12 @@
+{
+ "exchange": "beard-upload-src",
+ "request": {
+  "task": "beard-style",
+  "content_type": "image/jpeg",
+  "file": "../samples/man/V08-family-function.jpg"
+ },
+ "response": {
+  "file_id": "GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2+6fAOQ6MNYLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780512617/v2/USER/b49348ef-af7d-406e-9601-83828c9b53e0.jpg"
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "exchange": "lip-red-poll",
+ "request": {
+  "task": "makeup-vto",
+  "task_id": "ELAYg2-9JABOopTk6F3OY91Yo3ZV5f3gXH01glNsMCqR61t0kPffhAxrnfXSfLrcd-BTT-LvvMAmKHuvXEbI5Q"
+ },
+ "response": {
+  "task_id": "ELAYg2-9JABOopTk6F3OY91Yo3ZV5f3gXH01glNsMCqR61t0kPffhAxrnfXSfLrcd-BTT-LvvMAmKHuvXEbI5Q",
+  "status": "success",
+  "result_url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780253212/v2/USER/96de8c4f-23ed-4350-9b6e-d949b9287b1c.jpg"
+ }
+}

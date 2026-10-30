@@ -1,0 +1,15 @@
+{
+ "exchange": "err-no-face-poll",
+ "request": {
+  "task": "ai-smile",
+  "task_id": "PYIK1UM5JUd3H21C-GG4s7aNqLDh9yPW49qsPb8xHQpDwBulzLAG-HFxP5YEGc-qnSwkG57crvtLKRsy_195kw"
+ },
+ "response": {
+  "task_id": "PYIK1UM5JUd3H21C-GG4s7aNqLDh9yPW49qsPb8xHQpDwBulzLAG-HFxP5YEGc-qnSwkG57crvtLKRsy_195kw",
+  "status": "error",
+  "error": {
+   "kind": "no face",
+   "detail": "error_no_face"
+  }
+ }
+}

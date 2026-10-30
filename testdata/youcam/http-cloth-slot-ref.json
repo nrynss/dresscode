@@ -1,0 +1,58 @@
+{
+ "exchange": "http-cloth-slot-ref",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "top-festive.jpg",
+     "file_size": 61236
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:26:55 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "721",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519172693501685490",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "top-festive.jpg",
+      "file_id": "qgOF1uML46I5utAceZq8GMF457Dqh6/JhjTzX97o2a8LbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780415898/v2/USER/9d6f1793-6770-4e9c-8dea-e964dd6a7f85.jpg",
+        "headers": {
+         "Content-Length": "61236",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 848
+ }
+}

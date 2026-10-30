@@ -1,0 +1,37 @@
+{
+ "exchange": "http-earring-fetch",
+ "request": {
+  "method": "GET",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780307263/v2/USER/723f06bf-c52c-4000-8342-7f6d4b2f972d.png",
+  "headers": {},
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Type": "binary/octet-stream",
+   "Content-Length": "1637745",
+   "Connection": "close",
+   "x-amz-id-2": "Js0UuqtQ2fUoftsflURnf1X0qXsjixvp6g/OkRZe7TicFowmjvMLkSWOzGnC7w2FBNSWxPVvrWRsIKysXSrDG/H7z2CdYo7A",
+   "x-amz-request-id": "AM9R7G9VVK5919M7",
+   "Server": "AmazonS3",
+   "Date": "Fri, 30 Oct 2026 15:25:12 GMT",
+   "Last-Modified": "Fri, 30 Oct 2026 15:25:10 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "ETag": "\"c7d293decdd0bb13deb8fab603b5f908\"",
+   "x-amz-server-side-encryption": "AES256",
+   "Accept-Ranges": "bytes",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 eacc4bc352ad91f6c2b8728046877502.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "RpZznyxdVQoKAgJwQw0GaYYtbbvJr9uzVRmJcbPDj7K9S866Q2Kw7w=="
+  },
+  "body": {
+   "result_file": "results/earring-jhumka-V04.jpg",
+   "note": "provider bytes re-encoded as JPEG q92, metadata stripped",
+   "provider_bytes": 1637745
+  },
+  "elapsed_ms": 1691
+ }
+}

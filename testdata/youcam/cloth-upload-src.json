@@ -1,0 +1,12 @@
+{
+ "exchange": "cloth-upload-src",
+ "request": {
+  "task": "cloth-v4",
+  "content_type": "image/jpeg",
+  "file": "../samples/man/V08-family-function.jpg"
+ },
+ "response": {
+  "file_id": "2Iw59qUUru5StwPukCV1weV7dMl9dbV/wgBTPluseI8LbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780413671/v2/USER/2128f0dd-b925-4c20-a349-653273ac8429.jpg"
+ }
+}

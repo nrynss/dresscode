@@ -1,0 +1,319 @@
+{
+ "exchange": "http-credit-history",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v1.0/client/credit/history?page_size=10",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:31:31 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "4738",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519173851117007595",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "result": {
+    "next_token": "416616245274611871",
+    "history": [
+     {
+      "id": 0,
+      "timestamp": 1793374180000,
+      "unique_id": "ACCOUNT",
+      "action": "api_makeup_vto",
+      "target_id": "m6v7mJKzyggVPk3FQG1MBeoTJZG9iM_69shZ4TkJralBfnjuR6AO_CZCSWPU3SRgd-BTT-LvvMAmKHuvXEbI5Q:123780580069",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -1.0,
+         "amount": -1
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793374155000,
+      "unique_id": "ACCOUNT",
+      "action": "api_face_attr_analyzer",
+      "target_id": "bEHTaB51xfL-J0W1aTtAOp-WsCnq1_CG5VQ-EFQ12QcFJ5x0VxKfIk5aCLtCxPlXScgIlJTAJUMBSj2Ri1JFpA:123780555344",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -10.0,
+         "amount": -10
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ],
+       "dst_actions": [
+        "faceShape"
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793374115000,
+      "unique_id": "ACCOUNT",
+      "action": "api_beard_style",
+      "target_id": "GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2-6fAOQ6MNYtA_dxylL9KpesnLmlo9KkGb81HLK0wBtEhzB9wwg7RQ:123780514838",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -2.0,
+         "amount": -2
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793374096000,
+      "unique_id": "ACCOUNT",
+      "action": "api_hair_transfer",
+      "target_id": "JRNaH_fywO7IXKg8HcITuv-sG4cT8nMPjGC56k962HsNX5UGmSuxGO7-EAitXPfMAO6h9Y273R6RR5V6m9KYNQ:123780496081",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -2.0,
+         "amount": -2
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793374052000,
+      "unique_id": "ACCOUNT",
+      "action": "api_hair_transfer",
+      "target_id": "Mo3sunhCfvS4Z-KREbCrBEVCT87N93joyGrnEV97X9byZQKydkszaVUxAwlihmXuAO6h9Y273R6RR5V6m9KYNQ:123780452426",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -2.0,
+         "amount": -2
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793374018000,
+      "unique_id": "ACCOUNT",
+      "action": "api_cloth_v4",
+      "target_id": "2Iw59qUUru5StwPukCV1weV7dMl9dbV_wgBTPluseI9-j4LChsrmu1o3Yky1kwP9Gi4M447Ki6l9hDTl1ySvww:123780417751",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -2.0,
+         "amount": -2
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793373987000,
+      "unique_id": "ACCOUNT",
+      "action": "api_2d_vto_necklace",
+      "target_id": "V804R6YXYcHAsYjxgW0u2J40YrsSf7ZGO1gSS929wDm0iP6t3UvclyCLcFJk7uDarsVEnq3ffBAO2Lf_ZLul6Q:123780386719",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -1.0,
+         "amount": -1
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793373933000,
+      "unique_id": "ACCOUNT",
+      "action": "api_2d_vto_necklace",
+      "target_id": "4yO-ZN5qDRtplY2ZbEcq2pjc96ROlXCHTLIWtBd50f8LV1xS2z4xZmfmSgM2dhW6rsVEnq3ffBAO2Lf_ZLul6Q:123780332894",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -1.0,
+         "amount": -1
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793373907000,
+      "unique_id": "ACCOUNT",
+      "action": "api_2d_vto_earring",
+      "target_id": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58Ej9iRm4xFXFokahyNUxpMLrsVEnq3ffBAO2Lf_ZLul6Q:123780307242",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -1.0,
+         "amount": -1
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     },
+     {
+      "id": 0,
+      "timestamp": 1793373853000,
+      "unique_id": "ACCOUNT",
+      "action": "api_makeup_vto",
+      "target_id": "ELAYg2-9JABOopTk6F3OY91Yo3ZV5f3gXH01glNsMCqR61t0kPffhAxrnfXSfLrcd-BTT-LvvMAmKHuvXEbI5Q:123780253190",
+      "creator_id": "ACCOUNT",
+      "info": {
+       "tokens": null,
+       "credits": [
+        {
+         "id": 0,
+         "amount_dec": -1.0,
+         "amount": -1
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        },
+        {
+         "id": 0,
+         "amount_dec": 0.0,
+         "amount": 0
+        }
+       ]
+      }
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 862
+ }
+}

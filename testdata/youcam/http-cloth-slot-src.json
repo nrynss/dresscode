@@ -1,0 +1,58 @@
+{
+ "exchange": "http-cloth-slot-src",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "V08-family-function.jpg",
+     "file_size": 240627
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:26:53 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "730",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519172684152581869",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "V08-family-function.jpg",
+      "file_id": "2Iw59qUUru5StwPukCV1weV7dMl9dbV/wgBTPluseI8LbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780413671/v2/USER/2128f0dd-b925-4c20-a349-653273ac8429.jpg",
+        "headers": {
+         "Content-Length": "240627",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 852
+ }
+}

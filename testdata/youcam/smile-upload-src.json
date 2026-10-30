@@ -1,0 +1,12 @@
+{
+ "exchange": "smile-upload-src",
+ "request": {
+  "task": "ai-smile",
+  "content_type": "image/jpeg",
+  "file": "../samples/man-eastasian/P12-family-function.jpg"
+ },
+ "response": {
+  "file_id": "1CtI2li5gOtWLL38dZlXzPQh6hvtNrE2Rhch/5dvHPcLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780127055/v2/USER/e040c007-2ec1-4c72-b881-59d14be5da48.jpg"
+ }
+}

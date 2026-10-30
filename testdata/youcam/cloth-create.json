@@ -1,0 +1,14 @@
+{
+ "exchange": "cloth-create",
+ "request": {
+  "name": "cloth-v4",
+  "payload": {
+   "src_file_id": "2Iw59qUUru5StwPukCV1weV7dMl9dbV/wgBTPluseI8LbKfeLEmuXUa9yH4wuc2K",
+   "ref_file_id": "qgOF1uML46I5utAceZq8GMF457Dqh6/JhjTzX97o2a8LbKfeLEmuXUa9yH4wuc2K",
+   "garment_category": "upper_body"
+  }
+ },
+ "response": {
+  "task_id": "2Iw59qUUru5StwPukCV1weV7dMl9dbV_wgBTPluseI9-j4LChsrmu1o3Yky1kwP9Gi4M447Ki6l9hDTl1ySvww"
+ }
+}

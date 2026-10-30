@@ -53,8 +53,8 @@ type stored struct {
 var _ YouCam = (*Replay)(nil)
 
 // Replay serves recordings from a directory of JSON exchanges. A directory
-// that is not there yet is an empty set: T0.5 has not recorded YouCam.
-// A missing recording fails with its key. Replay does not dial.
+// that is not there is an empty set. A missing recording fails with its
+// key. Replay does not dial.
 type Replay struct {
 	byExchange map[string]*stored
 	byContent  map[string][]*stored
@@ -67,6 +67,9 @@ type Replay struct {
 // Open reads every JSON exchange in dir. A missing directory has no
 // recordings. A broken file, or two files that share an exchange id,
 // fails the open. The exchange id is that recording's request key.
+// A recorded upload request or result response may name a file,
+// relative to dir, in place of its bytes; Open reads it, keys it exactly
+// as the inline recording, and fails naming the file when it cannot.
 func Open(dir string) (*Replay, error) {
 	replay := &Replay{
 		byExchange: map[string]*stored{},
@@ -127,17 +130,109 @@ func (r *Replay) load(dir, name string) error {
 	if prev, ok := r.byExchange[env.Exchange]; ok {
 		return fmt.Errorf("youcam: request key %q is in %s and %s", env.Exchange, prev.file, name)
 	}
+	request, err := resolveUpload(dir, env.Request)
+	if err != nil {
+		return fmt.Errorf("youcam: %s: %w", name, err)
+	}
+	response, err := resolveResult(dir, env.Response)
+	if err != nil {
+		return fmt.Errorf("youcam: %s: %w", name, err)
+	}
 	rec := &stored{
 		file:     name,
 		key:      env.Exchange,
-		request:  bytes.Clone(env.Request),
-		response: bytes.Clone(env.Response),
+		request:  request,
+		response: response,
 	}
 	r.byExchange[rec.key] = rec
 	if err := r.index(rec); err != nil {
 		return fmt.Errorf("youcam: %s: %w", name, err)
 	}
 	return nil
+}
+
+// fileUpload is a recorded upload that names a file instead of carrying
+// its bytes. File is relative to the recording's directory.
+type fileUpload struct {
+	Task        string `json:"task"`
+	ContentType string `json:"content_type"`
+	File        string `json:"file"`
+}
+
+// fileResult is a recorded result that names a file instead of carrying
+// its bytes. File is relative to the recording's directory.
+type fileResult struct {
+	TaskID string `json:"task_id"`
+	URL    string `json:"url,omitempty"`
+	File   string `json:"file"`
+}
+
+// resolveUpload reads the file a recorded upload request names and puts
+// its bytes inline, so the request key is the same as for the inline
+// recording. A request that names no file is returned as stored.
+func resolveUpload(dir string, raw json.RawMessage) (json.RawMessage, error) {
+	if !namesFile(raw) {
+		return bytes.Clone(raw), nil
+	}
+	ref, ok := decodeAs[fileUpload](raw)
+	if !ok {
+		return nil, errors.New("a request that names a file must be an upload: task, content_type, and file")
+	}
+	if ref.Task == "" || ref.ContentType == "" || ref.File == "" {
+		return nil, errors.New("upload: task, content_type, and file are required")
+	}
+	data, err := readRecorded(dir, ref.File)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(File{Task: ref.Task, ContentType: ref.ContentType, Bytes: data})
+}
+
+// resolveResult reads the file a recorded result names and puts its bytes
+// inline. A response that names no file is returned as stored.
+func resolveResult(dir string, raw json.RawMessage) (json.RawMessage, error) {
+	if !namesFile(raw) {
+		return bytes.Clone(raw), nil
+	}
+	ref, ok := decodeAs[fileResult](raw)
+	if !ok {
+		return nil, errors.New("a response that names a file must be a result: task_id, url, and file")
+	}
+	if ref.TaskID == "" || ref.File == "" {
+		return nil, errors.New("result: task_id and file are required")
+	}
+	data, err := readRecorded(dir, ref.File)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(Result{TaskID: ref.TaskID, URL: ref.URL, Bytes: data})
+}
+
+func namesFile(raw json.RawMessage) bool {
+	trimmed := bytes.TrimSpace(raw)
+	if len(trimmed) == 0 || trimmed[0] != '{' {
+		return false
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(trimmed, &fields); err != nil {
+		return false
+	}
+	_, ok := fields["file"]
+	return ok
+}
+
+func readRecorded(dir, file string) ([]byte, error) {
+	if filepath.IsAbs(file) {
+		return nil, fmt.Errorf("%s is not relative to the recording", file)
+	}
+	data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(file)))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", file, err)
+	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("%s is empty", file)
+	}
+	return data, nil
 }
 
 func (r *Replay) index(rec *stored) error {

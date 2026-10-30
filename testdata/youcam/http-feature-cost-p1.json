@@ -1,0 +1,175 @@
+{
+ "exchange": "http-feature-cost-p1",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/credit/feature-cost?page_size=20",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:18:54 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "3570",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170672677618860",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "result": {
+    "skus": [
+     {
+      "description": "AI Photo Enhance V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/enhance"
+     },
+     {
+      "description": "AI Object Removal (Standard)",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/obj-removal"
+     },
+     {
+      "description": "AI Object Removal (Professional)",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/generative-fill"
+     },
+     {
+      "description": "AI Photo Background Removal V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/sod"
+     },
+     {
+      "description": "AI Photo Colorize V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/colorize"
+     },
+     {
+      "description": "AI Image Generator V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/text-to-image"
+     },
+     {
+      "description": "AI Image Generator V2.0 (Text to Image)",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/text-to-image/youcam"
+     },
+     {
+      "description": "AI Image Generator V2.0 (Image to Image)",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/image-to-image/youcam"
+     },
+     {
+      "description": "AI Hair Style Virtual Try-On V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-style"
+     },
+     {
+      "description": "AI Hair Style Virtual Try-On V2.0 (Custom)",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-transfer"
+     },
+     {
+      "description": "AI Hair Style Virtual Try-On V2.0 (Custom)",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.1/task/hair-transfer"
+     },
+     {
+      "description": "AI Hair Style Virtual Try-On V2.0 (Preset)",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.1/task/hair-transfer"
+     },
+     {
+      "description": "AI Hair Extension Virtual Try-On V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-ext"
+     },
+     {
+      "description": "AI Bangs Filter Virtual Try-On V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-bang"
+     },
+     {
+      "description": "AI Hair Volume Virtual Try-On V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-vol"
+     },
+     {
+      "description": "AI Wavy Hair Virtual Try-On V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/hair-curl"
+     },
+     {
+      "description": "AI Image Extender V2.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/out-paint"
+     },
+     {
+      "description": "AI Photo Lighting V2.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/lighting"
+     },
+     {
+      "description": "AI Replace V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/obj-replace"
+     },
+     {
+      "description": "AI Photo Background Change V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/sod/change-background"
+     }
+    ],
+    "next_token": "MjA6MA"
+   }
+  },
+  "elapsed_ms": 986
+ }
+}

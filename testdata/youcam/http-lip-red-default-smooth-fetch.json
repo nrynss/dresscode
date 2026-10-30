@@ -1,0 +1,37 @@
+{
+ "exchange": "http-lip-red-default-smooth-fetch",
+ "request": {
+  "method": "GET",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780580106/v2/USER/c58a7d8a-a5ac-4d48-b632-47236676f6c5.jpg",
+  "headers": {},
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Type": "binary/octet-stream",
+   "Content-Length": "1534258",
+   "Connection": "close",
+   "x-amz-id-2": "iAVVKGaSbip2VZg3P+vUwqqrZ+JyvCLZJJg4YIDM/+RckpFBva7rlT87xs+LTeiIZvhYgY+nhukWzUlp91KDfOwtfFlg5Hjp",
+   "x-amz-request-id": "SHJ1CJATQSFSDHCM",
+   "Server": "AmazonS3",
+   "Date": "Fri, 30 Oct 2026 15:29:51 GMT",
+   "Last-Modified": "Fri, 30 Oct 2026 15:29:48 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "ETag": "\"c9f69c22fa95af8275911fbc1113fb7b\"",
+   "x-amz-server-side-encryption": "AES256",
+   "Accept-Ranges": "bytes",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 2f8bce85b3232f01dc0a9ceec714d90c.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "m54q0I-5RDSadLRrUa4lc6SjqRw9YvfWR5i594PvLgKBpsHowwUbpw=="
+  },
+  "body": {
+   "result_file": "results/lip-red-default-smooth-V04.jpg",
+   "note": "provider bytes re-encoded as JPEG q92, metadata stripped",
+   "provider_bytes": 1534258
+  },
+  "elapsed_ms": 1454
+ }
+}

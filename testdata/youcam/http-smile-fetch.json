@@ -1,0 +1,37 @@
+{
+ "exchange": "http-smile-fetch",
+ "request": {
+  "method": "GET",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780129210/v2/USER/41f5d941-ed0c-4b3b-b155-68ad2bff582e.jpg",
+  "headers": {},
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Type": "image/jpeg",
+   "Content-Length": "302007",
+   "Connection": "close",
+   "x-amz-id-2": "X+RwB4JAjM3e4gYgKc/FI3yQSxqLrDNiwVvITU1ZvSGorHZH/5mKt+2OZ/OPt1ij3wlnlNyoxXA=",
+   "x-amz-request-id": "JDKXA67P8BCMD0FK",
+   "Date": "Fri, 30 Oct 2026 15:22:17 GMT",
+   "Last-Modified": "Fri, 30 Oct 2026 15:22:15 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "ETag": "\"5862086a79e903be6a868c2033f6ccd5\"",
+   "x-amz-server-side-encryption": "AES256",
+   "Accept-Ranges": "bytes",
+   "Server": "AmazonS3",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 f3d62788f3df70f3fa8c3dd61fd3216a.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "mi_VvZT_6z8VelVgxFDleRT2K3jSele06M-hRGPDGcPf-I6l1nfrjg=="
+  },
+  "body": {
+   "result_file": "results/smile-P12.jpg",
+   "note": "provider bytes re-encoded as JPEG q92, metadata stripped",
+   "provider_bytes": 302007
+  },
+  "elapsed_ms": 976
+ }
+}

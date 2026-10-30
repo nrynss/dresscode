@@ -1,0 +1,12 @@
+{
+ "exchange": "hair-ponytail-poll",
+ "request": {
+  "task": "hair-transfer",
+  "task_id": "JRNaH_fywO7IXKg8HcITuv-sG4cT8nMPjGC56k962HsNX5UGmSuxGO7-EAitXPfMAO6h9Y273R6RR5V6m9KYNQ"
+ },
+ "response": {
+  "task_id": "JRNaH_fywO7IXKg8HcITuv-sG4cT8nMPjGC56k962HsNX5UGmSuxGO7-EAitXPfMAO6h9Y273R6RR5V6m9KYNQ",
+  "status": "success",
+  "result_url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780496118/v2/USER/59c696ac-7fec-41c5-87fe-1570d505c485.jpg"
+ }
+}

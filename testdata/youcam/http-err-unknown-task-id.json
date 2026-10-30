@@ -1,0 +1,33 @@
+{
+ "exchange": "http-err-unknown-task-id",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/ai-smile/not-a-real-task-id",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 400,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:21:22 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "106",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171294294453744",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 400,
+   "error": "This task ID doesn't exist, or the task has expired.",
+   "error_code": "InvalidTaskId"
+  },
+  "elapsed_ms": 853
+ }
+}

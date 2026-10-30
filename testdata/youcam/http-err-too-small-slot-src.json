@@ -1,0 +1,58 @@
+{
+ "exchange": "http-err-too-small-slot-src",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "V04-family-function-86.jpg",
+     "file_size": 3637
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:41 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "731",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171879550857573",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "V04-family-function-86.jpg",
+      "file_id": "Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qQLbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780221837/v2/USER/1cbb3fb4-e77a-4183-bbb9-8a0f65d86328.jpg",
+        "headers": {
+         "Content-Length": "3637",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 851
+ }
+}

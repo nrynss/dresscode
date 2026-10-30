@@ -1,0 +1,12 @@
+{
+ "exchange": "necklace-upload-src",
+ "request": {
+  "task": "2d-vto/necklace",
+  "content_type": "image/jpeg",
+  "file": "../samples/woman/V14-festival.jpg"
+ },
+ "response": {
+  "file_id": "V804R6YXYcHAsYjxgW0u2J40YrsSf7ZGO1gSS929wDkLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780383357/v2/USER/f2b87c93-d921-4cf9-bb42-6e915e2571a9.jpg"
+ }
+}

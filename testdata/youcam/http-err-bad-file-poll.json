@@ -1,0 +1,37 @@
+{
+ "exchange": "http-err-bad-file-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/ai-smile/2a0cdWZAFVYmSyYaqivIdVlCjqP1kXjL78wlSqwgn4SaIBIgiRmTYFQX4zKC7CUenSwkG57crvtLKRsy_195kw",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:39 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "148",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171868805039536",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": "error_decode_image",
+    "error_message": "The source image file could not be read.",
+    "results": null,
+    "task_status": "error"
+   }
+  },
+  "elapsed_ms": 849,
+  "since_create_s": 3.71
+ }
+}

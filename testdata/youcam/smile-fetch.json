@@ -1,0 +1,12 @@
+{
+ "exchange": "smile-fetch",
+ "request": {
+  "task_id": "1CtI2li5gOtWLL38dZlXzPQh6hvtNrE2Rhch_5dvHPexGN5xX28gq6NruHintyGjnSwkG57crvtLKRsy_195kw",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780129210/v2/USER/41f5d941-ed0c-4b3b-b155-68ad2bff582e.jpg"
+ },
+ "response": {
+  "task_id": "1CtI2li5gOtWLL38dZlXzPQh6hvtNrE2Rhch_5dvHPexGN5xX28gq6NruHintyGjnSwkG57crvtLKRsy_195kw",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780129210/v2/USER/41f5d941-ed0c-4b3b-b155-68ad2bff582e.jpg",
+  "file": "results/smile-P12.jpg"
+ }
+}

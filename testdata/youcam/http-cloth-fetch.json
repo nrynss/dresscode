@@ -1,0 +1,37 @@
+{
+ "exchange": "http-cloth-fetch",
+ "request": {
+  "method": "GET",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780417826/v2/USER/a2e44f13-71e2-47a2-871a-d08a3dbd8b33.jpg",
+  "headers": {},
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Type": "image/jpeg",
+   "Content-Length": "276347",
+   "Connection": "close",
+   "x-amz-id-2": "nPZnLSmdmqOc7rM01/QQb4fiVOC9q8jojsY7kyf39T2xKYuP4sCMn7FgBbwgyLtXnbrOQEmo/tI=",
+   "x-amz-request-id": "ZZGA4ZASH319Z8PQ",
+   "Date": "Fri, 30 Oct 2026 15:27:11 GMT",
+   "Last-Modified": "Fri, 30 Oct 2026 15:27:08 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "ETag": "\"101cfe13d4bdc1c7cf5753a364110094\"",
+   "x-amz-server-side-encryption": "AES256",
+   "Accept-Ranges": "bytes",
+   "Server": "AmazonS3",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 4f394bb2485ab8cd24ff0ea2fe25855e.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "3ZLxJVl4xSl78pL7xR13lX7W8i_FKq9haDDUT7UGB02hGWbmBdWq-Q=="
+  },
+  "body": {
+   "result_file": "results/cloth-kurta-V08.jpg",
+   "note": "provider bytes re-encoded as JPEG q92, metadata stripped",
+   "provider_bytes": 276347
+  },
+  "elapsed_ms": 1066
+ }
+}

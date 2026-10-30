@@ -1,0 +1,177 @@
+{
+ "exchange": "http-templates-hair-transfer-p2",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.1/task/template/hair-transfer?page_size=20&starting_token=4144",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:19:47 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "4111",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170897165158895",
+   "ETag": "W/\"0b76991f7fff104b9a9ea297d13c7b9c7\"",
+   "Cache-Control": "max-age=1800, private",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "next_token": "2969",
+    "templates": [
+     {
+      "id": "male_textured_comma",
+      "thumb": "https://app-cdn.makeupar.com/cms/ceea0fd7-a766-4d39-a067-625f4638954c/1778825131587/file.jpg",
+      "title": "Textured Comma",
+      "category_name": "Male",
+      "keep_users_color": true
+     },
+     {
+      "id": "male_afro",
+      "thumb": "https://app-cdn.makeupar.com/cms/59db293e-2053-4c7a-90a1-70781e8b7949/1778750239189/file.jpg",
+      "title": "Afro",
+      "category_name": "Male",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_dark_c_curl_layers",
+      "thumb": "https://app-cdn.makeupar.com/cms/c0678f27-af7f-4f1b-902a-cbb22be12a0f/1778825368023/file.jpg",
+      "title": "Dark C-Curl Layers",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_blunt_fringe_straight",
+      "thumb": "https://app-cdn.makeupar.com/cms/2de504ff-60d8-477f-bae1-027f16d0491e/1778750396458/file.jpg",
+      "title": "Blunt Fringe Straight",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_afro",
+      "thumb": "https://app-cdn.makeupar.com/cms/bceafb66-3743-42c1-989f-842a480fe93e/1778749474456/file.jpg",
+      "title": "Afro",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_tousled_black_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/e6355428-6d46-488f-9667-bff0d6e559dc/1778659320287/file.jpg",
+      "title": "Tousled black bob",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_casual_updo",
+      "thumb": "https://app-cdn.makeupar.com/cms/d2990bab-1a72-4ac5-865a-091e4e165b09/1778749407727/file.jpg",
+      "title": "Casual Updo",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_soft_flip",
+      "thumb": "https://app-cdn.makeupar.com/cms/56652402-6cc8-4f9c-b017-f363e9930158/1778658595539/file.jpg",
+      "title": "Soft Flip",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_crewcut",
+      "thumb": "https://app-cdn.makeupar.com/cms/f704b694-6896-4783-b33b-07102dbc7840/1778825631669/file.jpg",
+      "title": "Crewcut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_brunette_wolf_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/cce45445-cbef-4105-b91b-c82d94918214/1778750321675/file.jpg",
+      "title": "Brunette Wolf Cut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_bangs_updo",
+      "thumb": "https://app-cdn.makeupar.com/cms/2b90cd17-7ce3-4a5f-91d6-c25b95c7688b/1778663068840/file.jpg",
+      "title": "Bangs Updo",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "male_bald",
+      "thumb": "https://app-cdn.makeupar.com/cms/e4955b95-f99a-46fa-9931-8ed5927959d0/1770199528708/file.jpg",
+      "title": "Bald",
+      "category_name": "Male",
+      "keep_users_color": false
+     },
+     {
+      "id": "male_wavy_undercut",
+      "thumb": "https://app-cdn.makeupar.com/cms/f9bb06a7-fd1b-42ae-938d-275f3fde65cc/1770112938420/file.jpg",
+      "title": "Wavy Undercut",
+      "category_name": "Male",
+      "keep_users_color": true
+     },
+     {
+      "id": "male_tousled_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/e7912a84-747b-4ac2-93db-cf26179d319c/1773989170905/file.jpg",
+      "title": "Tousled Cut",
+      "category_name": "Male",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_long_wavy",
+      "thumb": "https://app-cdn.makeupar.com/cms/f7a7ff02-2988-4729-bdde-a52ac978ede7/1770112816917/file.jpg",
+      "title": "Long Wavy",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_bald",
+      "thumb": "https://app-cdn.makeupar.com/cms/64f2ad78-a39d-4b2c-ada5-f10ef484db3c/1770194745048/file.jpg",
+      "title": "Bald",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_choppy_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/a9f78e07-8917-41ec-97bd-8d47167d29f5/1770174371623/file.jpg",
+      "title": "Choppy Bob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_long_straight",
+      "thumb": "https://app-cdn.makeupar.com/cms/e9dae350-1313-46a2-9cad-1f94988da1e2/1770194631310/file.jpg",
+      "title": "Long Straight",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "female_soft_chestnut_midcut",
+      "thumb": "https://app-cdn.makeupar.com/cms/5d2e0c82-c8a9-49bf-9485-c7e860d46edb/1770192746597/file.jpg",
+      "title": "Soft Chestnut Midcut",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "female_light_brown_wisps",
+      "thumb": "https://app-cdn.makeupar.com/cms/0844a9f8-7b25-45ae-acb8-68af3a56f4fc/1770177230975/file.jpg",
+      "title": "Light Brown Wisps",
+      "category_name": "Female",
+      "keep_users_color": false
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 850
+ }
+}

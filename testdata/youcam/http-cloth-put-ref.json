@@ -1,0 +1,38 @@
+{
+ "exchange": "http-cloth-put-ref",
+ "request": {
+  "method": "PUT",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780415898/v2/USER/9d6f1793-6770-4e9c-8dea-e964dd6a7f85.jpg",
+  "headers": {
+   "Content-Length": "61236",
+   "Content-Type": "image/jpeg"
+  },
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": {
+   "sent_file": "../samples/products/top-festive.jpg",
+   "bytes": 61236
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Length": "0",
+   "Connection": "close",
+   "x-amz-id-2": "1/NDR9NX4GQB0frXTbCwKdu6P7SbnC4cB7r0ZR8qAZgHuM97WnKVBUmegNBHk+VlbwSx6081cVQ=",
+   "x-amz-request-id": "7NJBNJQK63KSVE7M",
+   "Date": "Fri, 30 Oct 2026 15:26:57 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "x-amz-server-side-encryption": "AES256",
+   "ETag": "\"2bb8cb9fdd02e1b29acbe755e5ec8c52\"",
+   "x-amz-checksum-crc64nvme": "Mda7+b1VcJU=",
+   "x-amz-checksum-type": "FULL_OBJECT",
+   "Server": "AmazonS3",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 b05256e5803ee48f876b62991082abe4.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "Fvj7_-_5k7c3rsz-winGojoUuIwwlaZzHOuC2ogKA63prp3IktQTsQ=="
+  },
+  "body": "",
+  "elapsed_ms": 1001
+ }
+}

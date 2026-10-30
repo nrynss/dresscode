@@ -1,0 +1,58 @@
+{
+ "exchange": "http-smile-slot-src",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "P12-family-function.jpg",
+     "file_size": 219774
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:22:07 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "730",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171482002140690",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "P12-family-function.jpg",
+      "file_id": "1CtI2li5gOtWLL38dZlXzPQh6hvtNrE2Rhch/5dvHPcLbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780127055/v2/USER/e040c007-2ec1-4c72-b881-59d14be5da48.jpg",
+        "headers": {
+         "Content-Length": "219774",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 849
+ }
+}

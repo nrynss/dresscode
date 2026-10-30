@@ -1,0 +1,12 @@
+{
+ "exchange": "earring-upload-src",
+ "request": {
+  "task": "2d-vto/earring",
+  "content_type": "image/jpeg",
+  "file": "../samples/woman/V04-family-function.jpg"
+ },
+ "response": {
+  "file_id": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58ELbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780303965/v2/USER/4c532fdf-f97f-4138-a554-69380906dcec.jpg"
+ }
+}

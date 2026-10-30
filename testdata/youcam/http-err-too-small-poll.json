@@ -1,0 +1,37 @@
+{
+ "exchange": "http-err-too-small-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/makeup-vto/Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qSC3i-V1vQUnJDJsi3oQqphd-BTT-LvvMAmKHuvXEbI5Q",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:46 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "177",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171900329428411",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": "error_below_min_image_size",
+    "error_message": "The input image is smaller than the minimum size (320x320px).",
+    "results": null,
+    "task_status": "error"
+   }
+  },
+  "elapsed_ms": 859,
+  "since_create_s": 3.74
+ }
+}

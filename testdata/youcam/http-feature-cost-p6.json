@@ -1,0 +1,56 @@
+{
+ "exchange": "http-feature-cost-p6",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/credit/feature-cost?page_size=20&starting_token=NzU6MA",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:18:59 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "544",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519170693892419693",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "result": {
+    "skus": [
+     {
+      "description": "AI Watermark Removal V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/wmk-removal"
+     },
+     {
+      "description": "AI Shoes Virtual Try-On V3.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/shoes-transfer"
+     },
+     {
+      "description": "AI Retake",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/retake"
+     }
+    ],
+    "next_token": null
+   }
+  },
+  "elapsed_ms": 882
+ }
+}

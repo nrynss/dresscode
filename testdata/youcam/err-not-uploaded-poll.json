@@ -1,0 +1,15 @@
+{
+ "exchange": "err-not-uploaded-poll",
+ "request": {
+  "task": "ai-smile",
+  "task_id": "40njW1_WgGy9v1iq_6uBE-1n585RTMBj6PI6InhH64OEaLxifWzoTjjb9gdOHnJynSwkG57crvtLKRsy_195kw"
+ },
+ "response": {
+  "task_id": "40njW1_WgGy9v1iq_6uBE-1n585RTMBj6PI6InhH64OEaLxifWzoTjjb9gdOHnJynSwkG57crvtLKRsy_195kw",
+  "status": "error",
+  "error": {
+   "kind": "expired",
+   "detail": "error_download_image"
+  }
+ }
+}

@@ -1,0 +1,58 @@
+{
+ "exchange": "http-necklace-slot-ref",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "gold-chain.jpg",
+     "file_size": 27606
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:26:25 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "720",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519172564430368484",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "gold-chain.jpg",
+      "file_id": "HyG9SN4OE5kfUWBy6MaJmXv5+sGxl1kd+zRlVfGasi0LbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780385126/v2/USER/6a9e8cd5-205b-470e-8bd7-fd817df7b07f.jpg",
+        "headers": {
+         "Content-Length": "27606",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 849
+ }
+}

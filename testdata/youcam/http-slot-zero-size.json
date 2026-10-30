@@ -1,0 +1,58 @@
+{
+ "exchange": "http-slot-zero-size",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "empty.jpg",
+     "file_size": 0
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:21:19 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "711",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171283607367908",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "empty.jpg",
+      "file_id": "eprc6R7B0PpkPkoKCFVkME8up0psbxtCMeFJ6Jie2jALbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780079753/v2/USER/1167f67b-8b68-49c9-973f-5eeb5420eb80.jpg",
+        "headers": {
+         "Content-Length": "0",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 848
+ }
+}

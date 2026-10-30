@@ -1,0 +1,15 @@
+{
+ "exchange": "face-attr-create",
+ "request": {
+  "name": "face-attr-analysis",
+  "payload": {
+   "src_file_id": "bEHTaB51xfL+J0W1aTtAOp+WsCnq1/CG5VQ+EFQ12QcLbKfeLEmuXUa9yH4wuc2K",
+   "features": [
+    "faceShape"
+   ]
+  }
+ },
+ "response": {
+  "task_id": "bEHTaB51xfL-J0W1aTtAOp-WsCnq1_CG5VQ-EFQ12QcFJ5x0VxKfIk5aCLtCxPlXScgIlJTAJUMBSj2Ri1JFpA"
+ }
+}

@@ -6,18 +6,13 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 )
 
 func TestCallsMissWhenNothingIsRecorded(t *testing.T) {
 	t.Parallel()
-	dir := filepath.Join(repoRoot(t), "testdata", "youcam")
-	if _, err := os.Stat(dir); err == nil {
-		t.Fatal("testdata/youcam exists; this task must not invent YouCam fixtures")
-	}
-	replay := openDir(t, dir)
+	replay := openDir(t, filepath.Join(t.TempDir(), "absent"))
 	ctx := context.Background()
 	file := File{Task: "cloth-v4", ContentType: "image/jpeg", Bytes: []byte("a")}
 	keys := map[string]string{}
@@ -146,6 +141,110 @@ func TestServeHitsAndMisses(t *testing.T) {
 	}
 }
 
+func TestAFileUploadServesLikeItsInlineTwin(t *testing.T) {
+	t.Parallel()
+	image := []byte{0xff, 0xd8, 0xff, 0x01, 0x02}
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "photos", "one.jpg"), image)
+	inlineDir := filepath.Join(root, "inline")
+	fileDir := filepath.Join(root, "file")
+	slot := Slot{FileID: "file-1", URL: "https://example.test/slot"}
+	writeExchange(t, inlineDir, "upload", File{Task: "ai-smile", ContentType: "image/jpeg", Bytes: image}, slot)
+	writeExchange(t, fileDir, "upload", map[string]string{"task": "ai-smile", "content_type": "image/jpeg", "file": "../photos/one.jpg"}, slot)
+
+	file := File{Task: "ai-smile", ContentType: "image/jpeg", Bytes: image}
+	want, err := requestKey(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, dir := range []string{inlineDir, fileDir} {
+		replay := openDir(t, dir)
+		got, err := replay.Upload(context.Background(), file)
+		if err != nil || got.FileID != "file-1" {
+			t.Fatalf("%s: %#v %v", dir, got, err)
+		}
+		raw, err := replay.Reply("upload")
+		if err != nil {
+			t.Fatal(err)
+		}
+		stored, ok := decodeAs[File](raw.Request)
+		if !ok {
+			t.Fatalf("%s: stored request is not a file: %s", dir, raw.Request)
+		}
+		key, err := requestKey(stored)
+		if err != nil || key != want {
+			t.Fatalf("%s: key %q, want %q (%v)", dir, key, want, err)
+		}
+	}
+	other := File{Task: "ai-smile", ContentType: "image/jpeg", Bytes: []byte{0x00}}
+	if _, err := openDir(t, fileDir).Upload(context.Background(), other); !errors.As(err, new(*Missing)) {
+		t.Fatalf("other bytes: %v", err)
+	}
+}
+
+func TestAFileResultFetchesItsBytes(t *testing.T) {
+	t.Parallel()
+	image := []byte{0x89, 0x50, 0x4e, 0x47, 0x07}
+	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "results", "smile.jpg"), image)
+	ref := ResultRef{TaskID: "task-1", URL: "https://example.test/r.jpg"}
+	inlineDir := filepath.Join(root, "inline")
+	fileDir := root
+	writeExchange(t, inlineDir, "fetch", ref, Result{TaskID: "task-1", URL: ref.URL, Bytes: image})
+	writeExchange(t, fileDir, "fetch", ref, map[string]string{"task_id": "task-1", "url": ref.URL, "file": "results/smile.jpg"})
+	for _, dir := range []string{inlineDir, fileDir} {
+		got, err := openDir(t, dir).Fetch(context.Background(), ref)
+		if err != nil || string(got.Bytes) != string(image) || got.URL != ref.URL || got.TaskID != "task-1" {
+			t.Fatalf("%s: %#v %v", dir, got, err)
+		}
+	}
+}
+
+func TestAMissingRecordedFileFailsOpen(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		request  any
+		response any
+		path     string
+	}{
+		{"upload-gone", map[string]string{"task": "ai-smile", "content_type": "image/jpeg", "file": "../gone/photo.jpg"}, Slot{FileID: "file-1"}, "../gone/photo.jpg"},
+		{"fetch-gone", ResultRef{TaskID: "task-1", URL: "https://example.test/r"}, map[string]string{"task_id": "task-1", "file": "results/gone.jpg"}, "results/gone.jpg"},
+	}
+	for _, c := range cases {
+		dir := t.TempDir()
+		writeExchange(t, dir, c.name, c.request, c.response)
+		_, err := Open(dir)
+		if err == nil || !strings.Contains(err.Error(), c.name+".json") || !strings.Contains(err.Error(), c.path) {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+	}
+}
+
+func TestARecordedFileMustBeRelativeAndTyped(t *testing.T) {
+	t.Parallel()
+	abs := filepath.Join(t.TempDir(), "one.jpg")
+	writeFile(t, abs, []byte{0x01})
+	cases := []struct {
+		name     string
+		request  any
+		response any
+		want     string
+	}{
+		{"absolute", map[string]string{"task": "ai-smile", "content_type": "image/jpeg", "file": abs}, Slot{FileID: "file-1"}, "not relative"},
+		{"untyped-request", map[string]string{"task_id": "task-1", "file": "one.jpg"}, Slot{FileID: "file-1"}, "must be an upload"},
+		{"untyped-response", PollRef{Task: "ai-smile", TaskID: "task-1"}, map[string]string{"task": "ai-smile", "file": "one.jpg"}, "must be a result"},
+	}
+	for _, c := range cases {
+		dir := t.TempDir()
+		writeExchange(t, dir, c.name, c.request, c.response)
+		_, err := Open(dir)
+		if err == nil || !strings.Contains(err.Error(), c.want) || !strings.Contains(err.Error(), c.name+".json") {
+			t.Fatalf("%s: %v", c.name, err)
+		}
+	}
+}
+
 func TestEmptyFileIsNotAMiss(t *testing.T) {
 	t.Parallel()
 	replay := openDir(t, t.TempDir())
@@ -164,17 +263,21 @@ func openDir(t *testing.T, dir string) *Replay {
 	return replay
 }
 
-func repoRoot(t *testing.T) string {
+func writeFile(t *testing.T, path string, data []byte) {
 	t.Helper()
-	_, file, _, ok := runtime.Caller(0)
-	if !ok {
-		t.Fatal("runtime.Caller failed")
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
 	}
-	return filepath.Join(filepath.Dir(file), "..", "..")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func writeExchange(t *testing.T, dir, key string, request, response any) {
 	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
 	payload, err := json.Marshal(map[string]any{
 		"exchange": key,
 		"request":  request,

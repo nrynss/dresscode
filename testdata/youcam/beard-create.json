@@ -1,0 +1,13 @@
+{
+ "exchange": "beard-create",
+ "request": {
+  "name": "beard-style",
+  "payload": {
+   "src_file_id": "GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2+6fAOQ6MNYLbKfeLEmuXUa9yH4wuc2K",
+   "template_id": "all_circle"
+  }
+ },
+ "response": {
+  "task_id": "GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2-6fAOQ6MNYtA_dxylL9KpesnLmlo9KkGb81HLK0wBtEhzB9wwg7RQ"
+ }
+}

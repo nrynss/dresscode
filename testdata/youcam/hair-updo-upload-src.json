@@ -1,0 +1,12 @@
+{
+ "exchange": "hair-updo-upload-src",
+ "request": {
+  "task": "hair-transfer",
+  "content_type": "image/jpeg",
+  "file": "../samples/woman/V06-family-function.jpg"
+ },
+ "response": {
+  "file_id": "Mo3sunhCfvS4Z+KREbCrBEVCT87N93joyGrnEV97X9YLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780450168/v2/USER/f766cd32-c54d-413f-a075-9bec6041ef48.jpg"
+ }
+}

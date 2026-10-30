@@ -1,0 +1,37 @@
+{
+ "exchange": "http-beard-create",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/task/beard-style",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "src_file_id": "GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2+6fAOQ6MNYLbKfeLEmuXUa9yH4wuc2K",
+   "template_id": "all_circle"
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:28:34 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "122",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519173108452569674",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "task_id": "GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2-6fAOQ6MNYtA_dxylL9KpesnLmlo9KkGb81HLK0wBtEhzB9wwg7RQ"
+   }
+  },
+  "elapsed_ms": 947
+ }
+}

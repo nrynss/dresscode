@@ -1,0 +1,12 @@
+{
+ "exchange": "err-bad-file-upload-src",
+ "request": {
+  "task": "ai-smile",
+  "content_type": "image/jpeg",
+  "file": "inputs/not-an-image.jpg"
+ },
+ "response": {
+  "file_id": "2a0cdWZAFVYmSyYaqivIdVlCjqP1kXjL78wlSqwgn4QLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780214331/v2/USER/4e5cc4d7-acad-40b6-a3db-65135ac0ee2d.jpg"
+ }
+}

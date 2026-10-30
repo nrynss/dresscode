@@ -1,0 +1,38 @@
+{
+ "exchange": "http-necklace-auto-put-ref",
+ "request": {
+  "method": "PUT",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780331698/v2/USER/52381b40-0c6a-430d-bdd1-377512351263.jpg",
+  "headers": {
+   "Content-Length": "27606",
+   "Content-Type": "image/jpeg"
+  },
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": {
+   "sent_file": "../samples/products/gold-chain.jpg",
+   "bytes": 27606
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Length": "0",
+   "Connection": "close",
+   "x-amz-id-2": "KG5qrQOCk2bHmwhxmiS9fTqzvdxMPi5ZRn1lphtFrK0VEC/BWdzb7LrTKLonJNlZvxd5gaupC8dvFu/rUTG5yHBl/gmL94UO",
+   "x-amz-request-id": "YGGVATMX672ACPV9",
+   "Server": "AmazonS3",
+   "Date": "Fri, 30 Oct 2026 15:25:32 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "x-amz-server-side-encryption": "AES256",
+   "ETag": "\"3d1aaf952276fb857f607b3b84637a76\"",
+   "x-amz-checksum-crc64nvme": "bpCwOZIbsGQ=",
+   "x-amz-checksum-type": "FULL_OBJECT",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 a13dc769d7d600d4873ae50d0f0f8056.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "dpjT8OURRCWJL8rLdZ7_ntdqxGSXMCshW3inIGQlrELAllbgkBHxlg=="
+  },
+  "body": "",
+  "elapsed_ms": 329
+ }
+}

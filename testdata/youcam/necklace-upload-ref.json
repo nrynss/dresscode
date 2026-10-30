@@ -1,0 +1,12 @@
+{
+ "exchange": "necklace-upload-ref",
+ "request": {
+  "task": "2d-vto/necklace",
+  "content_type": "image/jpeg",
+  "file": "../samples/products/gold-chain.jpg"
+ },
+ "response": {
+  "file_id": "HyG9SN4OE5kfUWBy6MaJmXv5+sGxl1kd+zRlVfGasi0LbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780385126/v2/USER/6a9e8cd5-205b-470e-8bd7-fd817df7b07f.jpg"
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "exchange": "cloth-upload-ref",
+ "request": {
+  "task": "cloth-v4",
+  "content_type": "image/jpeg",
+  "file": "../samples/products/top-festive.jpg"
+ },
+ "response": {
+  "file_id": "qgOF1uML46I5utAceZq8GMF457Dqh6/JhjTzX97o2a8LbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780415898/v2/USER/9d6f1793-6770-4e9c-8dea-e964dd6a7f85.jpg"
+ }
+}

@@ -1,0 +1,38 @@
+{
+ "exchange": "http-lip-red-default-smooth-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/makeup-vto/m6v7mJKzyggVPk3FQG1MBeoTJZG9iM_69shZ4TkJralBfnjuR6AO_CZCSWPU3SRgd-BTT-LvvMAmKHuvXEbI5Q",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:29:49 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "496",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519173422090028794",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": null,
+    "results": {
+     "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780580106/v2/USER/c58a7d8a-a5ac-4d48-b632-47236676f6c5.jpg"
+    },
+    "task_status": "success"
+   }
+  },
+  "elapsed_ms": 846,
+  "since_create_s": 9.42
+ }
+}

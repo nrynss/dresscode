@@ -1,0 +1,23 @@
+{
+ "exchange": "earring-create",
+ "request": {
+  "name": "2d-vto/earring",
+  "payload": {
+   "src_file_id": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58ELbKfeLEmuXUa9yH4wuc2K",
+   "ref_file_ids": [
+    "fk5GB6NIALldhi1FX1SmaBvLlM9vqb2Q/0j7TKFKvu4LbKfeLEmuXUa9yH4wuc2K"
+   ],
+   "source_info": {
+    "name": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58ELbKfeLEmuXUa9yH4wuc2K"
+   },
+   "object_infos": [
+    {
+     "name": "fk5GB6NIALldhi1FX1SmaBvLlM9vqb2Q/0j7TKFKvu4LbKfeLEmuXUa9yH4wuc2K"
+    }
+   ]
+  }
+ },
+ "response": {
+  "task_id": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58Ej9iRm4xFXFokahyNUxpMLrsVEnq3ffBAO2Lf_ZLul6Q"
+ }
+}

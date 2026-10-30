@@ -1,0 +1,33 @@
+{
+ "exchange": "http-err-unknown-template-task",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/template/no-such-task",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 404,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:21:23 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "77",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171297880584434",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 404,
+   "error": "This endpoint doesn't exist.",
+   "error_code": "NotFound"
+  },
+  "elapsed_ms": 845
+ }
+}

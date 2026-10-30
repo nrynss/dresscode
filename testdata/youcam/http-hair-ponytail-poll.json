@@ -1,0 +1,38 @@
+{
+ "exchange": "http-hair-ponytail-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.1/task/hair-transfer/JRNaH_fywO7IXKg8HcITuv-sG4cT8nMPjGC56k962HsNX5UGmSuxGO7-EAitXPfMAO6h9Y273R6RR5V6m9KYNQ",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:28:28 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "496",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519173083169304374",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": null,
+    "results": {
+     "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780496118/v2/USER/59c696ac-7fec-41c5-87fe-1570d505c485.jpg"
+    },
+    "task_status": "success"
+   }
+  },
+  "elapsed_ms": 853,
+  "since_create_s": 12.61
+ }
+}

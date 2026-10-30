@@ -1,0 +1,12 @@
+{
+ "exchange": "face-attr-upload-src",
+ "request": {
+  "task": "face-attr-analysis",
+  "content_type": "image/jpeg",
+  "file": "../samples/woman/V06-family-function.jpg"
+ },
+ "response": {
+  "file_id": "bEHTaB51xfL+J0W1aTtAOp+WsCnq1/CG5VQ+EFQ12QcLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780553039/v2/USER/292e7a06-514d-4e1a-b6dd-dcdc013387b3.jpg"
+ }
+}

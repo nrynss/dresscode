@@ -1,0 +1,37 @@
+{
+ "exchange": "http-hair-ponytail-fetch",
+ "request": {
+  "method": "GET",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780496118/v2/USER/59c696ac-7fec-41c5-87fe-1570d505c485.jpg",
+  "headers": {},
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Type": "image/jpeg",
+   "Content-Length": "367938",
+   "Connection": "close",
+   "x-amz-id-2": "OKUS6UMhCZs/W4pQBwFF2wZuInLlXCak6QET51BqWsgmempfOLezSBcrX8iwb6LewDeJ9YYy8/E=",
+   "x-amz-request-id": "Z3CFTF6HBSQYYQA0",
+   "Date": "Fri, 30 Oct 2026 15:28:30 GMT",
+   "Last-Modified": "Fri, 30 Oct 2026 15:28:27 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "ETag": "\"377327f71599cf40aa6252b39212cf38\"",
+   "x-amz-server-side-encryption": "AES256",
+   "Accept-Ranges": "bytes",
+   "Server": "AmazonS3",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 f0baf1369e301dc8f36cd909a541181e.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "olyklV9nv0LhP2HihdZzDyX-VJgeU_LOMcIjaFmzH8azox3aAlOepA=="
+  },
+  "body": {
+   "result_file": "results/hair-ponytail-V06.jpg",
+   "note": "provider bytes re-encoded as JPEG q92, metadata stripped",
+   "provider_bytes": 367938
+  },
+  "elapsed_ms": 1185
+ }
+}

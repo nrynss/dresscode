@@ -1,0 +1,14 @@
+{
+ "exchange": "hair-ponytail-create",
+ "request": {
+  "name": "hair-transfer",
+  "payload": {
+   "src_file_id": "JRNaH/fywO7IXKg8HcITuv+sG4cT8nMPjGC56k962HsLbKfeLEmuXUa9yH4wuc2K",
+   "template_id": "all_high_pony_tail",
+   "hair_color": "src"
+  }
+ },
+ "response": {
+  "task_id": "JRNaH_fywO7IXKg8HcITuv-sG4cT8nMPjGC56k962HsNX5UGmSuxGO7-EAitXPfMAO6h9Y273R6RR5V6m9KYNQ"
+ }
+}

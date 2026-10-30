@@ -1,0 +1,12 @@
+{
+ "exchange": "beard-fetch",
+ "request": {
+  "task_id": "GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2-6fAOQ6MNYtA_dxylL9KpesnLmlo9KkGb81HLK0wBtEhzB9wwg7RQ",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780514857/v2/USER/ab047d25-df1d-43c5-8b5d-57d7756a4d4f.jpg"
+ },
+ "response": {
+  "task_id": "GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2-6fAOQ6MNYtA_dxylL9KpesnLmlo9KkGb81HLK0wBtEhzB9wwg7RQ",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780514857/v2/USER/ab047d25-df1d-43c5-8b5d-57d7756a4d4f.jpg",
+  "file": "results/beard-circle-V08.jpg"
+ }
+}

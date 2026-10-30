@@ -1,0 +1,12 @@
+{
+ "exchange": "hair-updo-fetch",
+ "request": {
+  "task_id": "Mo3sunhCfvS4Z-KREbCrBEVCT87N93joyGrnEV97X9byZQKydkszaVUxAwlihmXuAO6h9Y273R6RR5V6m9KYNQ",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780452449/v2/USER/8f16174d-277d-4dfe-a4c9-2cd587dd07fd.jpg"
+ },
+ "response": {
+  "task_id": "Mo3sunhCfvS4Z-KREbCrBEVCT87N93joyGrnEV97X9byZQKydkszaVUxAwlihmXuAO6h9Y273R6RR5V6m9KYNQ",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780452449/v2/USER/8f16174d-277d-4dfe-a4c9-2cd587dd07fd.jpg",
+  "file": "results/hair-updo-V06.jpg"
+ }
+}

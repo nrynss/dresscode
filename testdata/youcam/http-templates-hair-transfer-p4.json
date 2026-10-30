@@ -1,0 +1,177 @@
+{
+ "exchange": "http-templates-hair-transfer-p4",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.1/task/template/hair-transfer?page_size=20&starting_token=2471",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:19:49 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "4139",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170904350000365",
+   "ETag": "W/\"0fef99fe77e2c5989b811d904d41e254c\"",
+   "Cache-Control": "max-age=1800, private",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "next_token": "1989",
+    "templates": [
+     {
+      "id": "all_blonde_balayage",
+      "thumb": "https://app-cdn.makeupar.com/cms/9e7589a4-57ab-4918-8faa-a447bb11b547/1775123057470/file.jpg",
+      "title": "Blonde Balayage",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_curtain_wavy",
+      "thumb": "https://app-cdn.makeupar.com/cms/05699388-d710-4bdf-8460-c79f6bd4c641/1775120328122/file.jpg",
+      "title": "Curtain Wavy",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_bobcut",
+      "thumb": "https://app-cdn.makeupar.com/cms/162fb7a3-0067-4a3d-a591-8ca80e85bca7/1774950103533/file.jpg",
+      "title": "Bobcut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_caramel_bubble_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/7ffeaa9c-2e8a-4cab-ad43-f66482f1264a/1775122989473/file.jpg",
+      "title": "Caramel Bubble Bob",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_wavy_bob_with_bangs",
+      "thumb": "https://app-cdn.makeupar.com/cms/07411143-42e3-401a-9553-8ad71d97465b/1775120259313/file.jpg",
+      "title": "Wavy Bob With Bangs",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_dark_lob_bangs",
+      "thumb": "https://app-cdn.makeupar.com/cms/b41a87a6-39c6-444a-969d-684539834374/1775123948139/file.jpg",
+      "title": "Dark Lob & Bangs",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_long_straight_black",
+      "thumb": "https://app-cdn.makeupar.com/cms/0874fd3a-b905-45c2-9bec-1dd4b8fb8e69/1775123841558/file.jpg",
+      "title": "Long Straight Black",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_short_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/d098f031-6a16-41ae-9f61-6ac2f943ba61/1775101570916/file.jpg",
+      "title": "Short Bob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_pixie",
+      "thumb": "https://app-cdn.makeupar.com/cms/66060d01-0427-4bdd-8942-5bca565cfcbd/1775101460877/file.jpg",
+      "title": "Pixie",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_dark_kitty_bun",
+      "thumb": "https://app-cdn.makeupar.com/cms/975b93ad-ba27-4e0c-9856-f063b415a768/1775120148246/file.jpg",
+      "title": "Dark Kitty Bun",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_tousled_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/3825ee48-eaf4-46bb-ba57-bd2bd640652f/1775101403660/file.jpg",
+      "title": "Tousled Bob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_aura_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/4356b2e4-972f-4f5f-bd90-deb1ee826ce3/1775123764334/file.jpg",
+      "title": "Aura Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_spiral_buns",
+      "thumb": "https://app-cdn.makeupar.com/cms/40566453-2860-4708-8e29-8e4ac0eaafbe/1775022729090/file.jpg",
+      "title": "Spiral Buns",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_defined_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/31ab1008-a5c8-4f42-90ae-0650ce51debb/1775123843885/file.jpg",
+      "title": "Defined Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_copper_flipped_shag",
+      "thumb": "https://app-cdn.makeupar.com/cms/8becde21-7884-4d0f-bd2c-4608c9d29f1c/1775104003982/file.jpg",
+      "title": "Copper Flipped Shag",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_dark_idol_twintails",
+      "thumb": "https://app-cdn.makeupar.com/cms/ada1918b-2b2e-41de-8b2f-fc0b0764dc9a/1773304031372/file.jpg",
+      "title": "Dark Idol Twintails",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_honey_highlight",
+      "thumb": "https://app-cdn.makeupar.com/cms/0e4b7049-32aa-474c-9782-bffe027eaece/1773386938309/file.jpg",
+      "title": "Honey Highlight",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_wavy_shag",
+      "thumb": "https://app-cdn.makeupar.com/cms/7728b4fd-fe57-4beb-a09c-783a2dcbdef7/1773386859274/file.jpg",
+      "title": "Wavy Shag",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_curtain_wavy_red",
+      "thumb": "https://app-cdn.makeupar.com/cms/ca6fd02e-94e0-49d0-b15b-4f45e122d50c/1773386812034/file.jpg",
+      "title": "Curtain Wavy Red",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_gentle_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/865b61eb-9caf-4545-92ba-cdf6c9deb770/1773386759466/file.jpg",
+      "title": "Gentle Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 846
+ }
+}

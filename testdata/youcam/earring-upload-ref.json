@@ -1,0 +1,12 @@
+{
+ "exchange": "earring-upload-ref",
+ "request": {
+  "task": "2d-vto/earring",
+  "content_type": "image/jpeg",
+  "file": "../samples/products/gold-jhumkas.jpg"
+ },
+ "response": {
+  "file_id": "fk5GB6NIALldhi1FX1SmaBvLlM9vqb2Q/0j7TKFKvu4LbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780305749/v2/USER/abab1d16-02b6-41bd-9a39-be33c83de68c.jpg"
+ }
+}

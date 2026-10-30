@@ -1,0 +1,37 @@
+{
+ "exchange": "http-hair-updo-fetch",
+ "request": {
+  "method": "GET",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780452449/v2/USER/8f16174d-277d-4dfe-a4c9-2cd587dd07fd.jpg",
+  "headers": {},
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Type": "image/jpeg",
+   "Content-Length": "254418",
+   "Connection": "close",
+   "x-amz-id-2": "T/7ol6uGhpCjd5OCdI8FFDHzcCA86NPJETjfN/2KEz5GGeHRpplpZNAR9kmW+BtNDKi9Sk72dSEY1Vtpbz7c/djlfZLEq0iJ",
+   "x-amz-request-id": "RSSFKK1RCN8HEJQJ",
+   "Server": "AmazonS3",
+   "Date": "Fri, 30 Oct 2026 15:27:40 GMT",
+   "Last-Modified": "Fri, 30 Oct 2026 15:27:38 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "ETag": "\"d243df1b898fe94820fd0d7049947177\"",
+   "x-amz-server-side-encryption": "AES256",
+   "Accept-Ranges": "bytes",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 e6a37c61d86d6e0bcdada5b6b948004c.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "LlqQzEsl1_VB4Ua0y-CXhveR7SX8wNCj7Cwf81lUWsNPkFp2PD8aGQ=="
+  },
+  "body": {
+   "result_file": "results/hair-updo-V06.jpg",
+   "note": "provider bytes re-encoded as JPEG q92, metadata stripped",
+   "provider_bytes": 254418
+  },
+  "elapsed_ms": 1185
+ }
+}

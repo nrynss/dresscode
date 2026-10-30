@@ -1,0 +1,33 @@
+{
+ "exchange": "http-err-slot-missing-files",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {}
+ },
+ "response": {
+  "status": 400,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:21:20 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "112",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171287189293656",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 400,
+   "error": "files is required but wasn't included in your request.",
+   "error_code": "InvalidParameters"
+  },
+  "elapsed_ms": 851
+ }
+}

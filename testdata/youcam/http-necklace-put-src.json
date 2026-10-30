@@ -1,0 +1,38 @@
+{
+ "exchange": "http-necklace-put-src",
+ "request": {
+  "method": "PUT",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780383357/v2/USER/f2b87c93-d921-4cf9-bb42-6e915e2571a9.jpg",
+  "headers": {
+   "Content-Length": "270896",
+   "Content-Type": "image/jpeg"
+  },
+  "auth": "none: the signed query string carries the grant and is not recorded",
+  "body": {
+   "sent_file": "../samples/woman/V14-festival.jpg",
+   "bytes": 270896
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Content-Length": "0",
+   "Connection": "close",
+   "x-amz-id-2": "j2kFas7NtJANC1ryJ8OoLYNPUKKbdFMY2JH2Zf7AFRT8T3/v+Zc7pquxPdf2X4o9EcvScJk+a2VPoc3Sq0rLseuKfID2Vc51",
+   "x-amz-request-id": "N2JVQTY7H2ABBVBJ",
+   "Server": "AmazonS3",
+   "Date": "Fri, 30 Oct 2026 15:26:25 GMT",
+   "x-amz-expiration": "expiry-date=\"Mon, 30 Nov 2026 00:00:00 GMT\", rule-id=\"TTL_30\"",
+   "x-amz-server-side-encryption": "AES256",
+   "ETag": "\"7a0df1b6c40debff7e9b0b85f15fb9bc\"",
+   "x-amz-checksum-crc64nvme": "6mOfcrFNprQ=",
+   "x-amz-checksum-type": "FULL_OBJECT",
+   "X-Cache": "Miss from cloudfront",
+   "Via": "1.1 b05256e5803ee48f876b62991082abe4.cloudfront.net (CloudFront)",
+   "X-Amz-Cf-Pop": "BLR50-P4",
+   "X-Amz-Cf-Id": "nxADri395EGDjticlfhz2KZ1GR8qU5B592LozM8tAujaDhaVfA-LrQ=="
+  },
+  "body": "",
+  "elapsed_ms": 918
+ }
+}

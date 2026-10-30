@@ -1,0 +1,127 @@
+{
+ "exchange": "http-templates-beard-style-p1",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/template/beard-style?page_size=20",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:19:52 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "2567",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170915628494990",
+   "ETag": "W/\"0bd42d6a37516732bfd8bed1068585949\"",
+   "Cache-Control": "max-age=1800, private",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "next_token": null,
+    "templates": [
+     {
+      "id": "all_shaved",
+      "thumb": "https://app-cdn.makeupar.com/cms/050a7b4b-75b6-4dd0-86a7-f92f9930cc14/1755772313419/file.jpg",
+      "title": "Shaved",
+      "category_name": "All"
+     },
+     {
+      "id": "all_anchor",
+      "thumb": "https://app-cdn.makeupar.com/cms/ac9d09c6-4b84-42b9-84dd-be319a6da647/1755772099731/file.jpg",
+      "title": "Anchor",
+      "category_name": "All"
+     },
+     {
+      "id": "all_circle",
+      "thumb": "https://app-cdn.makeupar.com/cms/cebea27e-3876-4ebb-b6a9-1009746be4d7/1755772319217/file.jpg",
+      "title": "Circle",
+      "category_name": "All"
+     },
+     {
+      "id": "all_garibaldi",
+      "thumb": "https://app-cdn.makeupar.com/cms/90240313-e538-4d65-b1b4-ff4347137bea/1755772331886/file.jpg",
+      "title": "Garibaldi",
+      "category_name": "All"
+     },
+     {
+      "id": "all_mustache",
+      "thumb": "https://app-cdn.makeupar.com/cms/98f845f6-ece3-463b-84ba-58c434220bcd/1755772326766/file.jpg",
+      "title": "Mustache",
+      "category_name": "All"
+     },
+     {
+      "id": "all_soul_patch",
+      "thumb": "https://app-cdn.makeupar.com/cms/c28d298d-3a27-470b-870b-e8f54f22226c/1755772353989/file.jpg",
+      "title": "Soul Patch",
+      "category_name": "All"
+     },
+     {
+      "id": "all_long_bandholz",
+      "thumb": "https://app-cdn.makeupar.com/cms/36586efa-9c1d-4ebe-bae0-c2614eab112a/1755772347152/file.jpg",
+      "title": "Long Bandholz",
+      "category_name": "All"
+     },
+     {
+      "id": "all_ducktail",
+      "thumb": "https://app-cdn.makeupar.com/cms/bac26c6f-abf4-4c14-a87c-75014d25f8bb/1755772339484/file.jpg",
+      "title": "Ducktail",
+      "category_name": "All"
+     },
+     {
+      "id": "all_bandholz",
+      "thumb": "https://app-cdn.makeupar.com/cms/c55ff78f-1ea8-4dbc-95b5-12b50aa51abe/1755772374262/file.jpg",
+      "title": "Bandholz",
+      "category_name": "All"
+     },
+     {
+      "id": "all_chin_curtain",
+      "thumb": "https://app-cdn.makeupar.com/cms/d77a521f-cf45-4044-8265-17d2b7dfbf24/1755772382591/file.jpg",
+      "title": "Chin Curtain",
+      "category_name": "All"
+     },
+     {
+      "id": "all_walrus",
+      "thumb": "https://app-cdn.makeupar.com/cms/5f746baa-cc96-40b4-9405-3418c75cf35a/1755772361167/file.jpg",
+      "title": "Walrus",
+      "category_name": "All"
+     },
+     {
+      "id": "all_mutton_chops",
+      "thumb": "https://app-cdn.makeupar.com/cms/6810d121-e831-4e7f-910e-dc616b775168/1755772407818/file.jpg",
+      "title": "Mutton Chops",
+      "category_name": "All"
+     },
+     {
+      "id": "all_french_fork",
+      "thumb": "https://app-cdn.makeupar.com/cms/9dda641d-7144-45c1-bf22-9948cbeae72a/1755772396550/file.jpg",
+      "title": "French Fork",
+      "category_name": "All"
+     },
+     {
+      "id": "all_goatee",
+      "thumb": "https://app-cdn.makeupar.com/cms/434f4f5a-d2cf-450d-ad39-dedeea6a846a/1755772390559/file.jpg",
+      "title": "Goatee",
+      "category_name": "All"
+     },
+     {
+      "id": "all_horse_shoe",
+      "thumb": "https://app-cdn.makeupar.com/cms/018c03a7-cfb8-4c2d-9f78-a5057eed06ec/1755772452455/file.jpg",
+      "title": "Horse Shoe",
+      "category_name": "All"
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 852
+ }
+}

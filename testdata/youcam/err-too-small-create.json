@@ -1,0 +1,36 @@
+{
+ "exchange": "err-too-small-create",
+ "request": {
+  "name": "makeup-vto",
+  "payload": {
+   "src_file_id": "Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qQLbKfeLEmuXUa9yH4wuc2K",
+   "version": "1.0",
+   "effects": [
+    {
+     "category": "skin_smooth",
+     "skinSmoothStrength": 0,
+     "skinSmoothColorIntensity": 0
+    },
+    {
+     "category": "lip_color",
+     "shape": {
+      "name": "original"
+     },
+     "palettes": [
+      {
+       "color": "#B0172F",
+       "texture": "matte",
+       "colorIntensity": 70
+      }
+     ],
+     "style": {
+      "type": "full"
+     }
+    }
+   ]
+  }
+ },
+ "response": {
+  "task_id": "Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qSC3i-V1vQUnJDJsi3oQqphd-BTT-LvvMAmKHuvXEbI5Q"
+ }
+}

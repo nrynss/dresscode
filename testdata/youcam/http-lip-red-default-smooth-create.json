@@ -1,0 +1,55 @@
+{
+ "exchange": "http-lip-red-default-smooth-create",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/task/makeup-vto",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "src_file_id": "m6v7mJKzyggVPk3FQG1MBeoTJZG9iM/69shZ4TkJrakLbKfeLEmuXUa9yH4wuc2K",
+   "version": "1.0",
+   "effects": [
+    {
+     "category": "lip_color",
+     "shape": {
+      "name": "original"
+     },
+     "palettes": [
+      {
+       "color": "#B0172F",
+       "texture": "matte",
+       "colorIntensity": 70
+      }
+     ],
+     "style": {
+      "type": "full"
+     }
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:29:40 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "122",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519173382021853058",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "task_id": "m6v7mJKzyggVPk3FQG1MBeoTJZG9iM_69shZ4TkJralBfnjuR6AO_CZCSWPU3SRgd-BTT-LvvMAmKHuvXEbI5Q"
+   }
+  },
+  "elapsed_ms": 977
+ }
+}

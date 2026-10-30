@@ -1,0 +1,175 @@
+{
+ "exchange": "http-feature-cost-p2",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/credit/feature-cost?page_size=20&starting_token=MjA6MA",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:18:55 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "3575",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170676817407341",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "result": {
+    "skus": [
+     {
+      "description": "AI Photo Background Blur V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/sod/blur-background"
+     },
+     {
+      "description": "AI Photo Background Blur V2.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/bg-blur"
+     },
+     {
+      "description": "AI Color Correction V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/colorize/color-correct"
+     },
+     {
+      "description": "AI Face Swap V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/face-swap"
+     },
+     {
+      "description": "AI Video Enhancer V1.0",
+      "amount": 1.0,
+      "unit": "second",
+      "proc_unit": 2,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/video-sr"
+     },
+     {
+      "description": "AI Makeup Transfer V1.0",
+      "amount": 2.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/mu-transfer"
+     },
+     {
+      "description": "AI Headshot Generator V1.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 2,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/headshot"
+     },
+     {
+      "description": "AI Studio Generator V3.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 2,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/ai-studio"
+     },
+     {
+      "description": "AI Avatar Generator V3.0",
+      "amount": 1.0,
+      "unit": "result_image",
+      "proc_unit": 4,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/ai-avatar"
+     },
+     {
+      "description": "AI Video Style Transfer V1.0",
+      "amount": 4.0,
+      "unit": "second",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/video-trans"
+     },
+     {
+      "description": "AI Video Face Swap V1.0",
+      "amount": 1.0,
+      "unit": "second",
+      "proc_unit": 5,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/face-swap-vid"
+     },
+     {
+      "description": "AI Skin Analysis V2.0 HD (1-4 concerns)",
+      "amount": 12.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-analysis"
+     },
+     {
+      "description": "AI Skin Analysis V2.0 HD (5-8 concerns)",
+      "amount": 16.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-analysis"
+     },
+     {
+      "description": "AI Skin Analysis V2.0 HD (9-12 concerns)",
+      "amount": 20.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-analysis"
+     },
+     {
+      "description": "AI Skin Analysis V2.0 HD (13-16 concerns)",
+      "amount": 22.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-analysis"
+     },
+     {
+      "description": "AI Skin Analysis V2.0 SD (1-4 concerns)",
+      "amount": 9.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-analysis"
+     },
+     {
+      "description": "AI Skin Analysis V2.0 SD (5-8 concerns)",
+      "amount": 12.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-analysis"
+     },
+     {
+      "description": "AI Skin Analysis V2.0 SD (9-12 concerns)",
+      "amount": 14.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-analysis"
+     },
+     {
+      "description": "AI Skin Analysis V2.0 SD (13-16 concerns)",
+      "amount": 16.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.0/task/skin-analysis"
+     },
+     {
+      "description": "AI Skin Analysis V2.1 HD (1-4 concerns)",
+      "amount": 12.0,
+      "unit": "result_image",
+      "proc_unit": 1,
+      "run_task_url": "https://yce-api-01.makeupar.com/s2s/v2.1/task/skin-analysis"
+     }
+    ],
+    "next_token": "MzI6MQ"
+   }
+  },
+  "elapsed_ms": 1009
+ }
+}

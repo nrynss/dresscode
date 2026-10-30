@@ -1,0 +1,58 @@
+{
+ "exchange": "http-earring-slot-ref",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "gold-jhumkas.jpg",
+     "file_size": 107183
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:25:05 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "723",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519172231499099814",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "gold-jhumkas.jpg",
+      "file_id": "fk5GB6NIALldhi1FX1SmaBvLlM9vqb2Q/0j7TKFKvu4LbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780305749/v2/USER/abab1d16-02b6-41bd-9a39-be33c83de68c.jpg",
+        "headers": {
+         "Content-Length": "107183",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 856
+ }
+}

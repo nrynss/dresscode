@@ -1,0 +1,38 @@
+{
+ "exchange": "http-hair-ponytail-create",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.1/task/hair-transfer",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "src_file_id": "JRNaH/fywO7IXKg8HcITuv+sG4cT8nMPjGC56k962HsLbKfeLEmuXUa9yH4wuc2K",
+   "template_id": "all_high_pony_tail",
+   "hair_color": "src"
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:28:16 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "122",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519173029788397346",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "task_id": "JRNaH_fywO7IXKg8HcITuv-sG4cT8nMPjGC56k962HsNX5UGmSuxGO7-EAitXPfMAO6h9Y273R6RR5V6m9KYNQ"
+   }
+  },
+  "elapsed_ms": 959
+ }
+}

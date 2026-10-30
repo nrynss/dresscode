@@ -1,0 +1,58 @@
+{
+ "exchange": "http-lip-red-slot-src",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "V04-family-function.jpg",
+     "file_size": 278400
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:24:10 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "730",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519172001479274871",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "files": [
+     {
+      "content_type": "image/jpeg",
+      "file_name": "V04-family-function.jpg",
+      "file_id": "ELAYg2+9JABOopTk6F3OY91Yo3ZV5f3gXH01glNsMCoLbKfeLEmuXUa9yH4wuc2K",
+      "requests": [
+       {
+        "method": "PUT",
+        "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780250907/v2/USER/3689c740-cce9-4a48-bc56-d27d6a6d9a5f.jpg",
+        "headers": {
+         "Content-Length": "278400",
+         "Content-Type": "image/jpeg"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 854
+ }
+}

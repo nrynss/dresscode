@@ -1,0 +1,12 @@
+{
+ "exchange": "err-too-small-upload-src",
+ "request": {
+  "task": "makeup-vto",
+  "content_type": "image/jpeg",
+  "file": "inputs/V04-family-function-86.jpg"
+ },
+ "response": {
+  "file_id": "Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qQLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780221837/v2/USER/1cbb3fb4-e77a-4183-bbb9-8a0f65d86328.jpg"
+ }
+}

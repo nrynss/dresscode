@@ -1,0 +1,47 @@
+{
+ "exchange": "http-earring-create",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/task/2d-vto/earring",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "src_file_id": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58ELbKfeLEmuXUa9yH4wuc2K",
+   "ref_file_ids": [
+    "fk5GB6NIALldhi1FX1SmaBvLlM9vqb2Q/0j7TKFKvu4LbKfeLEmuXUa9yH4wuc2K"
+   ],
+   "source_info": {
+    "name": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58ELbKfeLEmuXUa9yH4wuc2K"
+   },
+   "object_infos": [
+    {
+     "name": "fk5GB6NIALldhi1FX1SmaBvLlM9vqb2Q/0j7TKFKvu4LbKfeLEmuXUa9yH4wuc2K"
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:25:07 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "122",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519172237694076409",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "task_id": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58Ej9iRm4xFXFokahyNUxpMLrsVEnq3ffBAO2Lf_ZLul6Q"
+   }
+  },
+  "elapsed_ms": 944
+ }
+}

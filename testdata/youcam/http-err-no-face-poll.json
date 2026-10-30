@@ -1,0 +1,37 @@
+{
+ "exchange": "http-err-no-face-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/ai-smile/PYIK1UM5JUd3H21C-GG4s7aNqLDh9yPW49qsPb8xHQpDwBulzLAG-HFxP5YEGc-qnSwkG57crvtLKRsy_195kw",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:21 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "144",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171793160778063",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": "error_no_face",
+    "error_message": "No face was detected in the source image.",
+    "results": null,
+    "task_status": "error"
+   }
+  },
+  "elapsed_ms": 848,
+  "since_create_s": 3.77
+ }
+}

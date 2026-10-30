@@ -1,0 +1,60 @@
+{
+ "exchange": "http-err-too-small-create",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/task/makeup-vto",
+  "headers": {
+   "Accept": "application/json",
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": {
+   "src_file_id": "Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qQLbKfeLEmuXUa9yH4wuc2K",
+   "version": "1.0",
+   "effects": [
+    {
+     "category": "skin_smooth",
+     "skinSmoothStrength": 0,
+     "skinSmoothColorIntensity": 0
+    },
+    {
+     "category": "lip_color",
+     "shape": {
+      "name": "original"
+     },
+     "palettes": [
+      {
+       "color": "#B0172F",
+       "texture": "matte",
+       "colorIntensity": 70
+      }
+     ],
+     "style": {
+      "type": "full"
+     }
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:23:43 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "122",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171884286226790",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "task_id": "Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qSC3i-V1vQUnJDJsi3oQqphd-BTT-LvvMAmKHuvXEbI5Q"
+   }
+  },
+  "elapsed_ms": 948
+ }
+}

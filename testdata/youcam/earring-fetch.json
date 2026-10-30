@@ -1,0 +1,12 @@
+{
+ "exchange": "earring-fetch",
+ "request": {
+  "task_id": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58Ej9iRm4xFXFokahyNUxpMLrsVEnq3ffBAO2Lf_ZLul6Q",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780307263/v2/USER/723f06bf-c52c-4000-8342-7f6d4b2f972d.png"
+ },
+ "response": {
+  "task_id": "vbmDBh7hefJoKdsTg3fkC1tH9IJmJlNh5FA4pRwU58Ej9iRm4xFXFokahyNUxpMLrsVEnq3ffBAO2Lf_ZLul6Q",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780307263/v2/USER/723f06bf-c52c-4000-8342-7f6d4b2f972d.png",
+  "file": "results/earring-jhumka-V04.jpg"
+ }
+}

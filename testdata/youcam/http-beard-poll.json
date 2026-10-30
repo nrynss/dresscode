@@ -1,0 +1,38 @@
+{
+ "exchange": "http-beard-poll",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.0/task/beard-style/GGCorrHRD4uwUzRPozUJfNUZf8zNOTgR2-6fAOQ6MNYtA_dxylL9KpesnLmlo9KkGb81HLK0wBtEhzB9wwg7RQ",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:28:38 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "496",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519173124411895616",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "error": null,
+    "results": {
+     "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780514857/v2/USER/ab047d25-df1d-43c5-8b5d-57d7756a4d4f.jpg"
+    },
+    "task_status": "success"
+   }
+  },
+  "elapsed_ms": 868,
+  "since_create_s": 3.73
+ }
+}

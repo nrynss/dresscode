@@ -1,0 +1,40 @@
+{
+ "exchange": "http-err-wrong-key",
+ "request": {
+  "method": "POST",
+  "path": "/s2s/v2.0/file",
+  "headers": {
+   "Content-Type": "application/json"
+  },
+  "auth": "bearer with a placeholder that is not a key",
+  "body": {
+   "files": [
+    {
+     "content_type": "image/jpeg",
+     "file_name": "probe.jpg",
+     "file_size": 1000
+    }
+   ]
+  }
+ },
+ "response": {
+  "status": 401,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:21:23 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "84",
+   "Connection": "close",
+   "Server": "nginx",
+   "x-request-id": "519171301424760118",
+   "Vary": "Access-Control-Request-Headers",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 401,
+   "error": "This API key isn't recognized.",
+   "error_code": "InvalidApiKey"
+  },
+  "elapsed_ms": 844
+ }
+}

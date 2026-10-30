@@ -1,0 +1,13 @@
+{
+ "exchange": "err-no-face-create",
+ "request": {
+  "name": "ai-smile",
+  "payload": {
+   "src_file_id": "PYIK1UM5JUd3H21C+GG4s7aNqLDh9yPW49qsPb8xHQoLbKfeLEmuXUa9yH4wuc2K",
+   "expression_type": "closed_mouth_smile"
+  }
+ },
+ "response": {
+  "task_id": "PYIK1UM5JUd3H21C-GG4s7aNqLDh9yPW49qsPb8xHQpDwBulzLAG-HFxP5YEGc-qnSwkG57crvtLKRsy_195kw"
+ }
+}

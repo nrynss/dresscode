@@ -1,0 +1,11 @@
+{
+ "exchange": "face-attr-poll",
+ "request": {
+  "task": "face-attr-analysis",
+  "task_id": "bEHTaB51xfL-J0W1aTtAOp-WsCnq1_CG5VQ-EFQ12QcFJ5x0VxKfIk5aCLtCxPlXScgIlJTAJUMBSj2Ri1JFpA"
+ },
+ "response": {
+  "task_id": "bEHTaB51xfL-J0W1aTtAOp-WsCnq1_CG5VQ-EFQ12QcFJ5x0VxKfIk5aCLtCxPlXScgIlJTAJUMBSj2Ri1JFpA",
+  "status": "success"
+ }
+}

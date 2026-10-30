@@ -1,0 +1,15 @@
+{
+ "exchange": "err-too-small-poll",
+ "request": {
+  "task": "makeup-vto",
+  "task_id": "Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qSC3i-V1vQUnJDJsi3oQqphd-BTT-LvvMAmKHuvXEbI5Q"
+ },
+ "response": {
+  "task_id": "Yx2Y6e9DH86uY01Sj55WmfLZVE51k949bFPeHuJk9qSC3i-V1vQUnJDJsi3oQqphd-BTT-LvvMAmKHuvXEbI5Q",
+  "status": "error",
+  "error": {
+   "kind": "bad file",
+   "detail": "error_below_min_image_size"
+  }
+ }
+}

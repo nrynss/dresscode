@@ -1,0 +1,12 @@
+{
+ "exchange": "err-no-face-upload-src",
+ "request": {
+  "task": "ai-smile",
+  "content_type": "image/jpeg",
+  "file": "../samples/products/gold-jhumkas.jpg"
+ },
+ "response": {
+  "file_id": "PYIK1UM5JUd3H21C+GG4s7aNqLDh9yPW49qsPb8xHQoLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780194971/v2/USER/ba56d7c6-9d4f-44ba-a52d-3da4767326cb.jpg"
+ }
+}

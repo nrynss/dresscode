@@ -1,0 +1,13 @@
+{
+ "exchange": "err-bad-file-create",
+ "request": {
+  "name": "ai-smile",
+  "payload": {
+   "src_file_id": "2a0cdWZAFVYmSyYaqivIdVlCjqP1kXjL78wlSqwgn4QLbKfeLEmuXUa9yH4wuc2K",
+   "expression_type": "closed_mouth_smile"
+  }
+ },
+ "response": {
+  "task_id": "2a0cdWZAFVYmSyYaqivIdVlCjqP1kXjL78wlSqwgn4SaIBIgiRmTYFQX4zKC7CUenSwkG57crvtLKRsy_195kw"
+ }
+}

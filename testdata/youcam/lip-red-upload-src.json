@@ -1,0 +1,12 @@
+{
+ "exchange": "lip-red-upload-src",
+ "request": {
+  "task": "makeup-vto",
+  "content_type": "image/jpeg",
+  "file": "../samples/woman/V04-family-function.jpg"
+ },
+ "response": {
+  "file_id": "ELAYg2+9JABOopTk6F3OY91Yo3ZV5f3gXH01glNsMCoLbKfeLEmuXUa9yH4wuc2K",
+  "url": "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/123780250907/v2/USER/3689c740-cce9-4a48-bc56-d27d6a6d9a5f.jpg"
+ }
+}

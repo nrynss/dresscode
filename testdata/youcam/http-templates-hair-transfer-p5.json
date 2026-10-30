@@ -1,0 +1,177 @@
+{
+ "exchange": "http-templates-hair-transfer-p5",
+ "request": {
+  "method": "GET",
+  "path": "/s2s/v2.1/task/template/hair-transfer?page_size=20&starting_token=1989",
+  "headers": {
+   "Accept": "application/json"
+  },
+  "auth": "bearer api key (not recorded)",
+  "body": null
+ },
+ "response": {
+  "status": 200,
+  "headers": {
+   "Date": "Fri, 30 Oct 2026 15:19:50 GMT",
+   "Content-Type": "application/json",
+   "Content-Length": "4199",
+   "Connection": "close",
+   "Server": "nginx",
+   "Vary": "Access-Control-Request-Headers",
+   "x-request-id": "519170907898392717",
+   "ETag": "W/\"0b62ea3b3088f2d279194c2b387d96817\"",
+   "Cache-Control": "max-age=1800, private",
+   "X-Frame-Options": "sameorigin",
+   "Strict-Transport-Security": "max-age=31536000; includeSubdomains;"
+  },
+  "body": {
+   "status": 200,
+   "data": {
+    "next_token": "1682",
+    "templates": [
+     {
+      "id": "all_modern_mid_part_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/c7b53c7f-9c04-42d9-b1fb-3c4a66a401f1/1773312271706/file.jpg",
+      "title": "Modern Mid-Part Bob",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_long_wavy_blonde",
+      "thumb": "https://app-cdn.makeupar.com/cms/f351afb1-91e0-42f7-8c40-504fa74ff0e3/1773386898927/file.jpg",
+      "title": "Long Wavy Blonde",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_bixie_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/1984ae3e-b53a-4437-b05c-52d53f7691e7/1773312166554/file.jpg",
+      "title": "Bixie Cut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_violet_space_buns",
+      "thumb": "https://app-cdn.makeupar.com/cms/faf4ce8a-283a-4932-a649-897cf3af8b59/1773304088346/file.jpg",
+      "title": "Violet Space Buns",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_romantic_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/ce59c9c4-c9ea-4ae0-8255-a619a52c4249/1773312224946/file.jpg",
+      "title": "Romantic Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_loose_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/092c4759-b384-4502-8de4-62f2a8437074/1773303942050/file.jpg",
+      "title": "Loose Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_beachy",
+      "thumb": "https://app-cdn.makeupar.com/cms/3ae8d2f5-791c-4879-8c8e-a158fae561a3/1773312098152/file.jpg",
+      "title": "Beachy",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_caramel_layers",
+      "thumb": "https://app-cdn.makeupar.com/cms/c4299133-9b17-46c8-b5a2-50f3153588e1/1773312030453/file.jpg",
+      "title": "Caramel Layers",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_headband_flipped_ends",
+      "thumb": "https://app-cdn.makeupar.com/cms/ce8b19d7-dd70-4c08-ba8f-47f2706a7ec3/1773295380730/file.jpg",
+      "title": "Headband Flipped Ends",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_curly_space_buns",
+      "thumb": "https://app-cdn.makeupar.com/cms/c98ca7ab-8bdc-4f0c-924c-5239438be170/1773295308739/file.jpg",
+      "title": "Curly Space Buns",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_wispy_fringe_pixie",
+      "thumb": "https://app-cdn.makeupar.com/cms/6e902e3f-53f7-4c92-9549-39ac8f6c529a/1773284369357/file.jpg",
+      "title": "Wispy Fringe Pixie",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_soft_flipped_layers",
+      "thumb": "https://app-cdn.makeupar.com/cms/be3dc88c-9b2f-461a-8f45-9e3d57220145/1773284249597/file.jpg",
+      "title": "Soft Flipped Layers",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_half_up_soft_waves",
+      "thumb": "https://app-cdn.makeupar.com/cms/9d4d9e61-4ae4-4837-ade1-e3fe47f05dce/1773306203428/file.jpg",
+      "title": "Half-Up Soft Waves",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_hime_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/a7c647f9-2a83-401a-8051-4871b6296eb8/1773305799124/file.jpg",
+      "title": "Hime Cut",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_pink_blue_fade",
+      "thumb": "https://app-cdn.makeupar.com/cms/5752427c-af4e-4304-9c61-08a28fbff7ba/1770016528785/file.jpg",
+      "title": "Pink Blue Fade",
+      "category_name": "Male",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_highlight_pixie_cut",
+      "thumb": "https://app-cdn.makeupar.com/cms/6dbce53c-35b6-4be4-a5c5-1f9430ec4371/1768899921847/file.jpg",
+      "title": "Highlight Pixie Cut",
+      "category_name": "Male",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_high_pony_tail",
+      "thumb": "https://app-cdn.makeupar.com/cms/9c0ef14d-1952-4c2c-b09e-3ffc00f378da/1768811140017/file.jpg",
+      "title": "High Pony Tail",
+      "category_name": "Female",
+      "keep_users_color": true
+     },
+     {
+      "id": "all_steel_blonde_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/c46f15a6-767c-43d2-8d3e-fe9849aeb92a/1768890408018/file.jpg",
+      "title": "Steel Blonde Bob",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_lavender_messy_bob",
+      "thumb": "https://app-cdn.makeupar.com/cms/337a5566-9ee6-441b-af22-534f4f8a0151/1770016322648/file.jpg",
+      "title": "Lavender Messy Bob",
+      "category_name": "Female",
+      "keep_users_color": false
+     },
+     {
+      "id": "all_purple_curly",
+      "thumb": "https://app-cdn.makeupar.com/cms/e9487a1e-2f1f-41e3-9cac-59ec15a61950/1770016047236/file.jpg",
+      "title": "Purple Curly",
+      "category_name": "Female",
+      "keep_users_color": false
+     }
+    ]
+   }
+  },
+  "elapsed_ms": 995
+ }
+}
