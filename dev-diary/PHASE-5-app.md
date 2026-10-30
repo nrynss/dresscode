@@ -138,11 +138,23 @@ requires:   T5.5
 fixture-ok: yes
 size:       S · mid
 owns:       web/src/routes/history/
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 The history switch, off by default, with a plain sentence of what is kept and where. The second visit shows what memory did: "Last family function you kept the gold jhumkas." Past looks by occasion.
 
 **Done when:** with history off, nothing mentions memory; with it on, the second-visit story plays on mock data.
+
+Notes:
+
+- The screen is `web/src/routes/history/`. The shell link "Style history" is on the home screen in `web/src/app/app.svelte`, on T5.4 and T5.5's accepted wiring pattern: an import, a branch in `currentRoute`, a hash setter, a render branch, and the home button. There is no router in Chaaya.
+- The switch is a checkbox, off until a `PUT` stores on. The recorded read is the fresh first visit, so a session that turned the switch on keeps the value it sent until a full reload asks again — the accepted opt-in rule from T5.2. The notice is the API's own sentence for each state; the screen adds no sentence of its own about memory, per the contract's "the app must not add a memory sentence of its own" when off.
+- Every word of memory arrives from the API through an expression: the notice, the recall sentence, the looks in words, the occasion names. The screen's own markup names only the switch and the sections, so a fresh screen's static markup carries none of the memory words. The test pins that absence across every `.svelte` file under `src`, and pins it at the network too: with the switch off, the second-visit read refuses before it fetches, so no call about memory is made at all.
+- With history on, the second visit reads past looks per occasion in the occasions' order, and recall for each occasion that has looks. An occasion whose list is not recorded (the mock answers its `not_found` envelope) carries no group and no line; any other failure surfaces through `ErrorNotice` and `humanMessage`. The reader refuses a word of memory beside a closed switch, and another occasion's memory beside the asked one, so neither can reach the screen however the wire misbehaves.
+- Fixture added: `recall-empty.json`, the contract's empty-memory recall example ("enabled true, the occasion, an empty line, and empty kept and dismissed"), recorded at the date occasion, which has no memory in the story. It is the only fixture added; the switch, the story, the off recall, and the past-looks examples were already recorded. A second occasion's look in the grouping test is pinned on the mock in the recorded item shape, the accepted T5.2 pattern.
+- The recorded story sentence is the recall fixture's own line, shown verbatim: "Last family function you kept the gold jhumkas and dismissed the red lip." The kept and dismissed fix ids ride along for the picker and reach no markup.
+- Surprised twice. A Svelte 5 state variable named `state` breaks `svelte-check` — svelte2tsx's generated code has its own `state` binding, and the rune then reads as "used before its declaration" — so the screen's state is `switchState`. And `lastFixtureFile` after a read that makes several calls is timing-fragile across a parallel suite run; the test asserts the recorded call list instead of the last file.
+- The 375 px clause: the screen was opened in a browser at a 375 px viewport on mock data, off and on; the off screen shows the switch and the notice and nothing else, the on screen shows Past looks with the Family function group and the look in words, and nothing overflows. The recall sentence does not show in the browser because the mock's story default for the recall path is the off recording; the on-world sentence is proven in the tests through the mock's documented `preferFixture` pin. No physical phone was used, the same unmet-note class as T5.1, T5.3 and T5.5.
+- A seam left for a handoff note: the account screen's "Delete style history" turns the stored switch off on the server, but this screen's session-held value learns of it only on a full reload. Both screens are landed; crossing that seam is a later task's call, not a change here.
 
 ---
 

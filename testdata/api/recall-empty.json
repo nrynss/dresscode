@@ -1,0 +1,16 @@
+{
+  "method": "GET",
+  "path": "/api/history/recall?occasion=date",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "enabled": true,
+    "occasion": "date",
+    "line": "",
+    "kept": [],
+    "dismissed": []
+  }
+}

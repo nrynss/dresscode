@@ -1,7 +1,9 @@
 <script lang="ts">
+  import History from "../routes/history/history.svelte";
   import Occasion from "../routes/occasion/occasion.svelte";
   import Render from "../routes/look/render/render.svelte";
   import Verdict from "../routes/look/verdict/verdict.svelte";
+  import { historyHash, isHistoryHash } from "../routes/history/route";
   import { isRenderHash, renderHash } from "../routes/look/render/route";
   import { isVerdictHash, verdictHash } from "../routes/look/verdict/route";
   import Home from "./home.svelte";
@@ -15,6 +17,7 @@
     if (hash === "/occasion" || hash === "occasion") return "/occasion";
     if (isVerdictHash(hash)) return "/look/verdict";
     if (isRenderHash(hash)) return "/look/render";
+    if (isHistoryHash(hash)) return "/history";
     return "/";
   }
 
@@ -38,6 +41,12 @@
     route = "/look/render";
   }
 
+  function openHistory(): void {
+    if (typeof window === "undefined") return;
+    window.location.hash = historyHash;
+    route = "/history";
+  }
+
   $effect(() => {
     if (typeof window === "undefined") return;
     const onChange = () => {
@@ -55,6 +64,8 @@
     <Verdict />
   {:else if route === "/look/render"}
     <Render />
+  {:else if route === "/history"}
+    <History />
   {:else}
     <Home />
     <div class="actions">
@@ -65,6 +76,9 @@
     </div>
     <div class="actions">
       <button type="button" onclick={openRender}>See the render</button>
+    </div>
+    <div class="actions">
+      <button type="button" onclick={openHistory}>Style history</button>
     </div>
   {/if}
 </Shell>
