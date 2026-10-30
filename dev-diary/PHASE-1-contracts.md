@@ -20,7 +20,7 @@ requires:   T0.3
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/domain/
-status:     in-review
+status:     done
 ```
 `Occasion`, `Criterion`, `Fix`, `LookAttribute`, `Look`, `Render`, `Product` and the fidelity label (architecture.md, "The domain model"). Load the occasions, menus and vocabulary from `testdata/occasions/` and validate them: every fix names a YouCam task and the criteria it addresses; every vocabulary question has a closed list with "none" and "can't tell"; no criterion is shared by two occasions under different wording.
 
@@ -46,7 +46,7 @@ requires:   T1.1
 fixture-ok: yes
 size:       M · mid
 owns:       internal/store/
-status:     not-started
+status:     claimed:grok-4.7
 ```
 SQLite through Keel `sqlite`, with namespaced migrations: looks, renders and their checks, the analysis cache keyed by the normalised photo's hash, products and labels, the user's opt-in menu per occasion, the history switch. Keel `identity` brings its own tables; don't duplicate them.
 
@@ -62,7 +62,7 @@ requires:   T1.1
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/systemone/systemone.go, internal/systemone/replay.go, internal/youcam/youcam.go, internal/youcam/replay.go, internal/memory/memory.go, internal/memory/fake.go
-status:     not-started
+status:     claimed:grok-4.7
 ```
 - `SystemOne`: images (optional, embedded bytes), a state object, questions (`choice`, `noul`, `score`) in; per-option probabilities and confidence out. Model by name.
 - `YouCam`: upload, create task, poll, fetch result; typed errors for no face, bad file, expired, out of units.
@@ -79,7 +79,7 @@ requires:   T1.1
 fixture-ok: yes
 size:       S · mid
 owns:       internal/config/, dresscode.toml.example
-status:     not-started
+status:     claimed:grok-4.7
 ```
 One TOML file through Keel `config`, keys resolved from the environment or the keyring, never written into it. Budgets: YouCam units as a `cost` credit budget with a share held for judging; Workers AI dollars per day; the judge lease (fresh selfies and renders per session). Flags: fresh uploads off, renders off, samples only.
 
