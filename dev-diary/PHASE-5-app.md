@@ -44,11 +44,18 @@ requires:   T5.1
 fixture-ok: yes
 size:       S · mid
 owns:       web/src/routes/occasion/
-status:     claimed:grok-4.7
+status:     in-review
 ```
 Pick an occasion; tick the fixes you're open to (remembered per occasion). Nothing asks or infers gender.
 
 **Done when:** the menu saves and reloads per occasion.
+
+Notes:
+
+- The screen is `web/src/routes/occasion/`. It lists the five occasions from `GET /api/occasions`, then loads `GET /api/occasions/{id}` and `GET /api/occasions/{id}/opt-in`. Save sends `PUT` with `{"ticked":[...]}`. A well-formed 200 means that set replaced the occasion's ticks, so this session keeps the set it sent, keyed by occasion id. Beard, lip, and jewellery are one list. Nothing is ticked until a stored set says so. Nothing on the screen asks who the fixes are for.
+- The recorded opt-in read is the empty first visit, and the recorded write is one example (three family-function ticks). Neither is applied over a choice this session already saved, or a different tick list would snap back to that example. A later read of an occasion already saved here does not ask again, so switching away and back reloads that occasion's set. A full reload asks the API again. The proof is `web/src/routes/occasion/menu.test.ts`: family function saves a set the recording does not return, date saves another, festival saves an empty list, and a reload in another order makes no further request. A missed write does not replace another occasion.
+- Only family function has a recorded menu. The other four names are on the list; opening one answers the recorded `not_found` until those responses exist. The date and festival writes in the test are pinned on the mock so a second occasion can answer 200. Their pinned bodies differ from the sets that reload.
+- The shell had nowhere to go. `web/src/app/app.svelte` is the smallest change: a button sets `#/occasion`, and that hash swaps the home placeholder for this screen. There is no router in Chaaya.
 
 ---
 
