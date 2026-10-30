@@ -70,7 +70,7 @@ requires:   T1.1
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/systemone/systemone.go, internal/systemone/replay.go, internal/youcam/youcam.go, internal/youcam/replay.go, internal/memory/memory.go, internal/memory/fake.go
-status:     in-review
+status:     done
 ```
 - `SystemOne`: images (optional, embedded bytes), a state object, questions (`choice`, `noul`, `score`) in; per-option probabilities and confidence out. Model by name.
 - `YouCam`: upload, create task, poll, fetch result; typed errors for no face, bad file, expired, out of units.
