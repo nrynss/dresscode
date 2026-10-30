@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** **P5 is complete** (`6914cca`), and **P5B (UX, Component System & Writing Overhaul, `T5.10`–`T5.14`) is planned and ready** (`T5.10` is ready immediately). In parallel: T0.5 (YouCam probe) is in flight elsewhere; then T2.2 → P3 → T4.4 → P6. `nryn.dev` verification and the phone checks remain with the user.
+**Current status:** T5.10 landed (`580b01e`) — product.md speaks human, mock mode serves real photographs, and the second-visit sentence renders in dev when history is on. T5.11 (brand mark, slim shell, button system, Account/History overhaul) dispatches next. T0.5 (YouCam probe) still in flight elsewhere; T2.2 queued behind it.
 
 ---
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 0 / 5 | T5.10 (UX writing, occasion fixtures and real mock media) is in flight; the chain is serial by design. |
+| P5B | 1 / 5 | T5.10 landed — human copy at the source, real sample media in mock, recall follows the switch. T5.11 next (serial chain). |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.10 UX writing, occasion fixtures and real mock media.** The overhaul's first task: product.md's four jargon sentences rewritten with privacy.ts's readers moved atomically (account.test.ts renders product.md's own sentences and stays green); fifteen `Renders …` fix descriptions replaced across the occasion fixtures (clef questions byte-untouched — the 37 recordings depend on them); three error sentences polished including the user's final `lease_refused`. Mock mode now serves the real sample photographs (V04, V05, the gold jhumkas) behind the recorded media ids — base64 through a virtual module, dynamically imported so the photos never enter the production bundle — and the recall story answers `recall.json` once the history switch is on, so dev shows the second-visit sentence. Two out-of-owns edits (one `preferFixture` line in history.test.ts, two ambient type lines) were taken mid-task, disclosed, verified minimal by review, and ratified at landing with the approval record corrected — the note had said "approved by the orchestrator mid-task", which was not accurate. Review came back CLEAN. Landed as `1dadce7`+`580b01e`, gate green in the worktree and the main checkout. `docs/occasions.md` needed no change — its fix column was already human.
 
 - **New phase P5B: UX, Component System & Writing Overhaul (`PHASE-5B-ux.md`, `T5.10`–`T5.14`).** Following the UI exploration and screenshot review (`/tmp/ui-explore/`), the user decided on a radical overhaul before shipping: unify the fragmented screens into a 3-step Mirror journey (Front Door with occasion cards, selectable fix chips, recall banner and one-tap judge samples → Arched Vanity Mirror Capture with button-styled file pickers, collapsible product drawer and `Check the dress code` CTA → Look screen with 4-step live pipeline stepper, arched Before/After comparator with visible split line/handle/chips, Fix hero card, 3-column verdict bar, and interactive fidelity popovers); add an arched vanity-mirror SVG brand mark and slim the header (`Appearance` moves into `Account` as a segmented 3-way pill bar, defaulting to `system`); upgrade `History` with a tactile toggle switch and neutral `.info-card` styling; upgrade `Account` with a 6-cell OTP code input, collapsible `Who sees what`, and `.danger` buttons; serve real sample JPEGs from `testdata/samples/` at `/media/*` in mock mode; and clean up the engineering/pipeline jargon across `product.md`, `testdata/occasions/` (`fixes[].changes` only, leaving `criteria[].clef` untouched), and `web/src/`. Split into `T5.10` → `T5.11` → `T5.12` → `T5.13` → `T5.14`. `T5.10` is ready now.
 
