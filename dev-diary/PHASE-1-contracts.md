@@ -46,13 +46,21 @@ requires:   T1.1
 fixture-ok: yes
 size:       M · mid
 owns:       internal/store/
-status:     claimed:grok-4.7
+status:     in-review
 ```
 SQLite through Keel `sqlite`, with namespaced migrations: looks, renders and their checks, the analysis cache keyed by the normalised photo's hash, products and labels, the user's opt-in menu per occasion, the history switch. Keel `identity` brings its own tables; don't duplicate them.
 
 Every row a user owns carries the user id, so deletion (T4.3) can find all of it.
 
 **Done when:** migrations run on a fresh file and again with no change; a test lists every table holding user data, and T4.3 reads that list.
+
+Notes:
+
+- Added `internal/store`. `Migrate` applies six files under the Keel namespace `store`. `UserTables` is the list T4.3 deletes by `user_id`. The same list is how a guest's rows are found when they attach to an account: every owned row carries `user_id`, not only the parent.
+- Looks, flags, renders, checks, check attributes, the user's products, and the labelled products on a look are separate tables. A render row stays when the check rejects it, so the mediastore id remains findable. The check row is absent until Clef has answered. Catalog products stay in `testdata`; a look records the id and the label it showed. Fidelity is the domain label (`exact product`, `approximate match`, `visual simulation`), not the catalog file's short spelling.
+- The analysis cache key is the normalised photo's hash, scoped to the user, plus the YouCam task. The value columns are the picker allowlist and nothing else, so age, gender, ratios and scores have no place to go. An opt-in row is one ticked fix on one occasion. No history row means the switch is off.
+- No foreign key to identity's `users`. The store migrates on a fresh file, and again beside identity, without creating `users`, `sessions`, `identities` or `sign_in_codes`. Child tables cascade, so walking `UserTables` in either order deletes one user and leaves the other.
+- `go.mod` gained the indirect modules Keel sqlite imports. No new direct dependency.
 
 ---
 
