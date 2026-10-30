@@ -832,6 +832,92 @@ func TestABudgetRefusalSpendsNothing(t *testing.T) {
 	if fakes.count() != 0 {
 		t.Fatal("a refused run kept a blob")
 	}
+
+	// Funded to the card line, over the same ledger, the same key runs
+	// fresh: the released claim left nothing behind, so this run creates
+	// once, keeps the recorded picture, and settles exactly once.
+	fundedBudget, err := cost.NewBudgetIn(UnitsDenomination, flow.units)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fundedMeter, err := cost.NewMeter(fundedBudget, ledger)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner, err = NewRunner(client, RunnerConfig{
+		Store:  store,
+		Meter:  fundedMeter,
+		Media:  fakes.store,
+		Config: providertask.Config{PollBase: time.Millisecond, PollCeiling: 2 * time.Millisecond},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runner.Run(t.Context(), job)
+	if err != nil {
+		t.Fatal(err)
+	}
+	uploads, creates, polls, fetches = client.counts()
+	if uploads != len(flow.uploads) || creates != 1 || polls != 2 || fetches != 1 {
+		t.Fatalf("uploads %d creates %d polls %d fetches %d, want one funded run", uploads, creates, polls, fetches)
+	}
+	want := recordedResult(t, rep, flow.fetch)
+	if got := fakes.blobBytes(t, out.MediaID); !bytes.Equal(got, want.Bytes) {
+		t.Fatalf("kept %d bytes, want the recorded %d", len(got), len(want.Bytes))
+	}
+	if len(ledger.Charges()) != 1 {
+		t.Fatalf("charges %d, want exactly one settle across both runs", len(ledger.Charges()))
+	}
+	charge := ledger.Charges()[0]
+	if charge.Kind != "youcam."+flow.task || charge.Ref != job.Key ||
+		charge.UnitPrice != flow.units || charge.Denomination != UnitsDenomination {
+		t.Fatalf("charge %+v, want youcam.%s of %d units on %s", charge, flow.task, flow.units, job.Key)
+	}
+	if fundedBudget.Spent() != flow.units || fundedBudget.Reserved() != 0 {
+		t.Fatalf("funded budget spent %d reserved %d, want %d settled", fundedBudget.Spent(), fundedBudget.Reserved(), flow.units)
+	}
+	claim, err := store.Get(t.Context(), job.Key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	created := recordedCreated(t, rep, flow.create)
+	if claim.State != providertask.StateSucceeded || claim.TaskID != created.TaskID {
+		t.Fatalf("claim %+v, want a succeeded %s", claim, created.TaskID)
+	}
+}
+
+// TestATaskOffTheRateCardRefusesBeforeAnythingRuns runs a job whose task
+// names nothing on the rate card: the refusal comes back before the claim
+// is taken and before the estimate is reserved, so the books stay empty
+// and no call of any kind leaves the process. UnitsFor runs first.
+func TestATaskOffTheRateCardRefusesBeforeAnythingRuns(t *testing.T) {
+	t.Parallel()
+	rep := openRecordings(t)
+	client := newStepClient(rep)
+	runner, budget, ledger, fakes, store := newRunner(t, client)
+	job := Job{
+		Key:     "look-off-card",
+		Task:    "no-such-task",
+		Payload: func([]string) (json.RawMessage, error) { return json.RawMessage(`{}`), nil },
+	}
+
+	_, err := runner.Run(t.Context(), job)
+	if err == nil || err.Error() != `youcam: task "no-such-task" is not on the rate card` {
+		t.Fatalf("%v, want the rate-card refusal", err)
+	}
+	if uploads, creates, polls, fetches := client.counts(); uploads != 0 || creates != 0 || polls != 0 || fetches != 0 {
+		t.Fatalf("uploads %d creates %d polls %d fetches %d, want no call at all", uploads, creates, polls, fetches)
+	}
+	if budget.Spent() != 0 || budget.Reserved() != 0 || len(ledger.Charges()) != 0 {
+		t.Fatalf("budget spent %d reserved %d, charges %d, want empty books", budget.Spent(), budget.Reserved(), len(ledger.Charges()))
+	}
+	if _, err := store.Get(t.Context(), job.Key); !errors.Is(err, providertask.ErrUnknownKey) {
+		t.Fatalf("claim %v, want no claim taken", err)
+	}
+	if fakes.count() != 0 {
+		t.Fatal("a refused job kept a blob")
+	}
 }
 
 // TestAnExpiredLinkIsRecoveredWithAFreshPoll replays the recorded result
@@ -877,6 +963,39 @@ func TestAnExpiredLinkIsRecoveredWithAFreshPoll(t *testing.T) {
 	}
 	if budget.Spent() != 1 || len(ledger.Charges()) != 1 {
 		t.Fatalf("spent %d over %d charges, want one settle", budget.Spent(), len(ledger.Charges()))
+	}
+}
+
+// TestASecondExpiredFetchSurfacesTyped expires the fresh link too: the
+// second fetch's typed ErrExpired is the error the Run returns, through
+// providertask's wrapping, after exactly two fetches and no third. It is
+// never turned into a status or a wrapped stranger, nothing is kept, and
+// a run that never reached a result settles nothing.
+func TestASecondExpiredFetchSurfacesTyped(t *testing.T) {
+	t.Parallel()
+	rep := openRecordings(t)
+	flow := flows[0]
+	client := newStepClient(rep)
+	runner, budget, ledger, fakes, _ := newRunner(t, client)
+	job := flowJob(t, flow, rep)
+	// Every fetch expires, the fresh link the recovery poll hands out too.
+	client.fetch = func(ctx context.Context, ref ResultRef) (Result, error) {
+		return Result{}, ErrExpired
+	}
+
+	_, err := runner.Run(t.Context(), job)
+	if !errors.Is(err, ErrExpired) {
+		t.Fatalf("%v, want the typed expired link", err)
+	}
+	_, creates, polls, fetches := client.counts()
+	if creates != 1 || polls != 3 || fetches != 2 {
+		t.Fatalf("creates %d polls %d fetches %d, want the recovery poll and the second fetch, then no third", creates, polls, fetches)
+	}
+	if fakes.count() != 0 {
+		t.Fatal("a failed fetch kept a blob")
+	}
+	if budget.Spent() != 0 || len(ledger.Charges()) != 0 {
+		t.Fatalf("spent %d over %d charges, want nothing settled for a failed run", budget.Spent(), len(ledger.Charges()))
 	}
 }
 

@@ -2,7 +2,8 @@
 // task, polls it, and fetches the result. No face, a bad file, an expired
 // file or link, and an empty unit balance are typed errors.
 //
-// The live client dials the v2 API. This package does not.
+// The live client (client.go) dials the v2 API; the replay (replay.go)
+// serves recordings and does not.
 package youcam
 
 import (

@@ -59,7 +59,7 @@ fixture-ok: yes
 size:       L · mid
 owns:       internal/youcam/client.go, internal/youcam/tasks.go, internal/youcam/youcam.go (the analysis field only)
 status:     in-review
-````
+```
 v2 REST on `https://yce-api-01.makeupar.com`, the key as a Bearer token. Upload through the File API; create and poll through Keel `providertask` under an idempotency key, so a restart resumes the recorded task and never creates (and pays for) it twice; copy each result into `mediastore` at once (links expire). Units quoted, reserved and settled through `cost`.
 
 - **Contract change (orchestrator's call, from T0.5):** the seam's `Status` has no field for analysis results. Add one that carries `faceShape` only; age, gender and ratios are never decoded into it.
@@ -78,6 +78,14 @@ Notes:
 - The four done-when classes: `TestRunnerCarriesEveryRecordedFlow` and `TestClientRunsEveryFlowOverTheWire` (success, one charge per flow, bytes kept match the recorded pictures); `TestEngineErrorsAreTypedAndSpendNothing` and `TestClientReplaysEveryRecordedRefusal` (all four engine verdicts typed with their details, plus wrong key, unknown file id, bad parameter, unknown task, unknown or expired task id, expired result link — each from its recording, each spending nothing where it ran); `TestARestartMidPollResumesWithoutASecondCreate` (a run cancelled on a scripted running poll, then the same key: one create total, one charge, the recorded bytes kept); `TestABudgetRefusalSpendsNothing` (a budget one unit short of the quote: no upload, no create, empty books, claim released, and a funded run of the same key succeeds).
 - Surprised that Keel `providertask` deliberately keeps a claimed key with no task id after a create refusal — a re-run refuses `ErrTaskPending` instead of creating again, and `Store.Release` is the caller's deliberate recovery. Pinned that rather than adding release logic. Surprised that the throttle clamps the Retry-After hint to `Max`: a first test with a 2 ms cap silently swallowed a 1 s hint. No new YouCam behaviour surfaced — everything here is offline over T0.5's recordings, and its surprises are already in docs/youcam.md.
 - Proposed, not taken: the package comment in `youcam.go` still says "This package does not [dial]", which the new `Client` makes half-wrong. That file is this task's for the analysis field only, so the line stands; the exact diff is in the report.
+
+Remediation (review):
+
+- `TestABudgetRefusalSpendsNothing` now carries the funded stanza its note described: after the refused run, a meter funded to the card line runs the same key again over the same ledger, and the test pins the one create, the kept bytes matching the recording, exactly one charge, and the succeeded claim. The note's last clause is now the test's own.
+- A runner-level test runs a task name off the rate card and pins the ordering: the refusal comes back with no claim, no reserve, and no call of any kind, because `UnitsFor` runs before the claim and the estimate.
+- The expired-link recovery test gained a sibling: a second fetch that expires again fails the run with the typed `ErrExpired` read through providertask's wrapping (`errors.Is`), after exactly two fetches — no third attempt, nothing kept, nothing settled.
+- The Keel throttle clamp that swallowed the Retry-After hint is recorded in feedback.md under Keel.
+- The package comment in `youcam.go` now carries the implementer's proposed line: the live client (client.go) dials the v2 API; the replay (replay.go) serves recordings and does not.
 
 ### T2.2b: YouCam live
 ```yaml
