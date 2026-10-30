@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { JobStream } from "@nrynss/chaaya/keel";
+  import { isTerminalStatus, type JobStream } from "@nrynss/chaaya/keel";
   import ErrorNotice from "../../../app/error-notice.svelte";
   import type { ShownError } from "../../../lib/api/types";
   import { openingSentence, pausedSentence, readingSentence, stageWord, type VerdictCopy } from "./copy";
@@ -11,7 +11,11 @@
 
   const word = $derived(stream ? stageWord(stream.stage) : "");
   const paused = $derived(stream?.connection === "paused");
-  const inProgress = $derived(stream !== undefined && stream.status !== "done" && stream.status !== "error");
+  const inProgress = $derived(stream !== undefined && !isTerminalStatus(stream.status));
+  /** A job that ended without an error envelope still owes the screen a sentence. */
+  const stopped = $derived(
+    stream !== undefined && isTerminalStatus(stream.status) && stream.status !== "done" && stream.error === undefined,
+  );
 
   $effect(() => {
     const follow = followLook(storyLookId, storyJobId, (opened) => {
@@ -53,6 +57,8 @@
     <ErrorNotice error={{ code: "network" }} />
   {:else if problem}
     <ErrorNotice error={problem} />
+  {:else if stopped}
+    <ErrorNotice error={{ code: "job_failed" }} />
   {/if}
 
   {#if word && inProgress}

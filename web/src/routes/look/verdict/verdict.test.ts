@@ -1,8 +1,9 @@
-import type { JobEvent, JobStream } from "@nrynss/chaaya/keel";
+import { isTerminalStatus, type JobEvent, type JobStream } from "@nrynss/chaaya/keel";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
+import { humanMessage } from "../../../lib/api/errors";
 import { installMock, pinAnswer } from "../../../lib/api/mock";
 import type { ApiFixture } from "../../../lib/api/types";
 import { openingSentence, pausedSentence, readingSentence, stageWord, verdictLines } from "./copy";
@@ -212,6 +213,42 @@ test("a replacement attempt keeps the look", async () => {
   expect(follow.lookId).toBe(storyLookId);
   expect(seen[0]).toBe(first);
   expect(follow.jobId).toBe(second);
+});
+
+test("a bare ending without an error clears the wait and says so", async () => {
+  installPage();
+  installMock();
+
+  for (const [job, ending] of [
+    ["10b0000000000000000000000000000c", "cancelled"],
+    ["10b0000000000000000000000000000d", "interrupted"],
+  ] as const) {
+    follow = followLook(storyLookId, job, () => {});
+    const stream = follow.stream;
+    await waitUntil(`${ending} frame`, () => stream.status === ending);
+    expect(stream.error).toBeUndefined();
+    // The stage word had been on its way, and the job can move no further.
+    expect(stageWord(stream.stage)).not.toBe("");
+    expect(isTerminalStatus(stream.status)).toBe(true);
+    follow?.close();
+    follow = undefined;
+  }
+
+  // The screen gates the stage word and the opening hint on the same terminal set,
+  // and a bare ending shows its own sentence through the usual failure path.
+  const screen = readFileSync(path.join(here, "verdict.svelte"), "utf8");
+  expect(screen).toContain("!isTerminalStatus(stream.status)");
+  expect(screen).toContain('{ code: "job_failed" }');
+  const sentence = humanMessage({ code: "job_failed" });
+  expect(sentence).not.toBe("");
+  const markup = screen.slice(screen.indexOf("</script>")).replace(/<style>[\s\S]*<\/style>/, "");
+  const staticText = markup
+    .replace(/\{#[^}]*\}/g, " ")
+    .replace(/\{:[^}]*\}/g, " ")
+    .replace(/\{\/[^}]*\}/g, " ")
+    .replace(/\{[^}]*\}/g, " ")
+    .replace(/<[^>]+>/g, " ");
+  expect(`${sentence}\n${staticText}`).not.toMatch(/\d/);
 });
 
 test("the screen and the shell link show no digit", () => {

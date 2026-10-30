@@ -1,0 +1,15 @@
+{
+  "method": "GET",
+  "path": "/api/jobs/10b0000000000000000000000000000d",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "job_id": "10b0000000000000000000000000000d",
+    "root_id": "10b0000000000000000000000000000d",
+    "status": "interrupted",
+    "stage": "judge"
+  }
+}

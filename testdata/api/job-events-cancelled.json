@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "path": "/api/jobs/10b0000000000000000000000000000c/events",
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream",
+    "cache-control": "no-store",
+    "x-accel-buffering": "no"
+  },
+  "body": "event: progress\nid: 1\ndata: {\"job_id\":\"10b0000000000000000000000000000c\",\"stage\":\"judge\"}\n\nevent: cancelled\nid: 2\ndata: {\"job_id\":\"10b0000000000000000000000000000c\",\"status\":\"cancelled\"}\n\n"
+}
