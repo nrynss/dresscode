@@ -44,11 +44,20 @@ requires:   T4.1, T2.4
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/signin.go
-status:     claimed:grok-4.7
+status:     in-review
 ```
 Keel `identity` code sign-in with the Resend sender: start (email in, code sent, send limits refuse before sending), verify (code in, session upgraded). **Signing in keeps the guest's looks:** the guest's rows attach to the account; when the address already has an account, the guest's looks are added to it, never overwrite it. No Google sign-in.
 
 **Done when:** tests cover a fresh sign-in, a returning account with guest looks merged, a wrong code, an expired code and the send limit.
+
+Notes:
+
+- `MountSignIn` serves `POST /api/session/code` and `POST /api/session/code/verify` with Keel's code handler. `Open` still leaves them unmounted, which is what the T4.1 miss test expects. The caller passes an `identity.Sender` and the code key. `mail.Client` is that sender for Resend. Tests pass `mail.Recorder` and do not dial.
+- `Open` builds identity with no sender and no code key, and Keel v0.9.0 does not set either later. `MountSignIn` opens a second identity service on the same database, with the sender, the code key, and the look check. The session middleware stays the one `Open` built. `SigningKey` is the key `Open` used, because verify signs the rotated cookie and that middleware checks the signature.
+- The look check is one row in `looks` for this user. A new address upgrades the guest in place, so the user id does not change and the look stays. An existing account, when this guest has a look, is `guest_data_conflict` and the code stays live. `choice` `merge` is `invalid_request`. `choice` `switch` moves the device onto the account. The guest's look stays on the guest. The account's look stays on the account. Nothing is copied. A guest with no looks joins the account on an empty choice, and no look row appears.
+- The send ceilings are Keel's. Five codes to one address are accepted. The sixth is `send_limited` with `Retry-After` of the 24 hour window, and the recorder still has five messages.
+- No Google route is mounted. A wrong code and a code past ten minutes on the injected clock are both `invalid_code`, and the guest is unchanged.
+- The older sentence in this task said a returning account gains the guest's looks. `docs/api.md` wins. Keel v0.9.0 `VerifySignInCode` accepts only an empty choice or `switch`, and `switch` does not move rows. The returning-account test pins that.
 
 ---
 
