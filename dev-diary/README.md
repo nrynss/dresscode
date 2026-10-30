@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** P4 server work landed through T4.3; main is red on a `postJSON` redeclaration in the server tests — a fix is in flight, and nothing else lands until the gate is green again.
+**Current status:** Gate green after the T4.3 landing fix (`41922c1`). T5.4 is in remediation from its review. The sample set is now two AI-generated people, which unblocks T0.4 and the probes.
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
-| P5 | 4 / 8 | T5.4 is being written. Phone camera and phone install still need you. |
+| P5 | 4 / 8 | T5.4 is in remediation from its review; T5.5 and T5.6 wait on it. Phone camera and phone install still need you. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
 ### Units and spend
@@ -160,7 +160,7 @@ Newest first. One entry per closed task, finding, or split.
 
 - **Decision: the sample people are AI-generated.** The user ruled out their own photos. Fixtures, the demo and the video use two generated people, a man and a woman, made with Chalachithram's character lock (an original seedream anchor per person, variants composed from it). No photo of a real person anywhere, the user included. The woman carries the second-visit story (jhumkas kept, red lip dismissed); the man covers the beard criteria. T0.4 is now `M · mid` with the user approving both anchors. Changed: AGENTS.md (photos and people), product.md (Sample people), docs/occasions.md (necklace reference, catalog source), T0.4, T6.4. Risks for T0.5 and T0.6 to check: YouCam's face detection and Clef's reading on generated faces.
 
-- **Finding against T4.3's landing: main is red.** `postJSON` is declared three times in package `server_test` (`signin_test.go:447`, `delete_test.go:467`, `intake_test.go:394`), so `go vet` fails and the server tests do not compile. The collision came in with the T4.5 and T4.3 merges: each implementer added its own helper, and each branch's gate ran on a base without the other's file. The post-merge gate of land step 4 evidently did not run on either landing. A remediation agent is fixing it on `task-t4.3-postjson-fix`; nothing else lands until main is green. Process note for every future landing: the gate runs in the main checkout after the merge, not only on the branch.
+- **Finding against T4.3's landing: main is red.** `postJSON` is declared three times in package `server_test` (`signin_test.go:447`, `delete_test.go:467`, `intake_test.go:394`), so `go vet` fails and the server tests do not compile. The collision came in with the T4.5 and T4.3 merges: each implementer added its own helper, and each branch's gate ran on a base without the other's file. The post-merge gate of land step 4 evidently did not run on either landing. A remediation agent collapsed the two colliding helpers in `package server_test` into one canonical `postJSON` in `server_test.go` (string payloads sent verbatim, variadic `remote` for the sign-in tests' IP pinning); `intake_test.go`'s identically named helper is `package server` and was never part of the collision. A review of `41922c1` came back clean and the gate passed in the worktree and again in the main checkout after the ff-merge. Process note for every future landing: the gate runs in the main checkout after the merge, not only on the branch.
 - **T4.3 Deletion.** Account deletion is one Keel erase over blobs, every user-data table, the identity rows, and the Lambo session. A job stopped halfway resumes and finishes empty. A guest gets `not_found`. A review of `7303a37` came back clean and the gate passed. Tests use fakes.
 - **T4.5 Intake.** Resumable uploads go through Keel into mediastore. A photo with GPS comes out without it. A private link is refused. A page with no image asks for a photo instead. A review of `a5fd021` came back clean and the gate passed.
 - **T5.7 Sign-in and deletion.** The account screen signs in by emailed code. An empty choice upgrades the guest. `switch` moves the device onto an existing account and does not copy the guest's looks. Account deletion follows the mock job to the end with no count on screen. The privacy lines are the product's sentences. A review of `c5739c4` came back clean. The shell keeps both the capture route and the account route.
