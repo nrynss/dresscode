@@ -1,0 +1,132 @@
+import type { PrepareImageOptions } from "@nrynss/chaaya/capture";
+import { ChunkUploader, UploadFailure, type UploadReceipt, type UploadStore } from "@nrynss/chaaya/keel";
+import { ApiError, api } from "../../lib/api/client";
+import type { ShownError } from "../../lib/api/types";
+
+/** One chunk, matching the recorded upload fixtures. */
+export const chunkBytes = 65536;
+
+/**
+ * Resize before upload. 4096 is Keel's default long side.
+ * 4 MiB is the cap on one image sent to Clef.
+ */
+export const stillOptions = {
+  maxLongSide: 4096,
+  maxBytes: 4 * 1024 * 1024,
+  mime: "image/jpeg",
+} as const satisfies PrepareImageOptions;
+
+const uploadOwner = "ignored";
+
+export interface SendOptions {
+  contentType: string;
+  store?: UploadStore;
+  onUploader?: (uploader: ChunkUploader) => void;
+}
+
+export interface NormalisedPhoto {
+  media_id: string;
+  url: string;
+  content_type: string;
+  sha256: string;
+}
+
+export interface UserProduct {
+  id: string;
+  category: string;
+  name: string;
+  fidelity: string;
+  origin: string;
+  media_id?: string;
+  url?: string;
+}
+
+/** Chaaya's open body has no group field. Omitted means selfie, including a product photo. */
+export async function sendImage(bytes: Uint8Array, options: SendOptions): Promise<UploadReceipt> {
+  const uploader = new ChunkUploader({
+    url: "/api/uploads",
+    owner: uploadOwner,
+    contentType: options.contentType,
+    visibility: "private",
+    chunkSize: chunkBytes,
+    store: options.store,
+  });
+  options.onUploader?.(uploader);
+  await uploader.start();
+  if (uploader.state === "failed") throw uploadFailure(uploader);
+  uploader.append(asBuffer(bytes));
+  return finishUpload(uploader);
+}
+
+export async function uploadCaptured(
+  blob: Blob,
+  options: Omit<SendOptions, "contentType"> & { contentType?: string } = {},
+): Promise<UploadReceipt> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const contentType = options.contentType ?? (blob.type.startsWith("image/") ? blob.type : "image/jpeg");
+  return sendImage(bytes, {
+    contentType,
+    store: options.store,
+    onUploader: options.onUploader,
+  });
+}
+
+export function resumeUpload(store?: UploadStore): Promise<ChunkUploader | undefined> {
+  return ChunkUploader.resume(store);
+}
+
+export async function finishUpload(uploader: ChunkUploader): Promise<UploadReceipt> {
+  await uploader.finish();
+  if (uploader.state !== "done" || uploader.receipt === undefined) throw uploadFailure(uploader);
+  return uploader.receipt;
+}
+
+export function registerSelfie(uploadId: string): Promise<NormalisedPhoto> {
+  return api<NormalisedPhoto>("/api/photos", {
+    method: "POST",
+    body: JSON.stringify({ upload_id: uploadId }),
+  });
+}
+
+export function registerProduct(uploadId: string, name: string, category: string): Promise<UserProduct> {
+  return api<UserProduct>("/api/products", {
+    method: "POST",
+    body: JSON.stringify({ upload_id: uploadId, name, category }),
+  });
+}
+
+export function registerLink(url: string): Promise<UserProduct> {
+  return api<UserProduct>("/api/products/link", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+}
+
+/** A wire failure, or a local capture failure the screen can say. */
+export function shownError(error: unknown): ShownError {
+  if (error instanceof ApiError) {
+    return { code: error.code, message: error.message, detail: error.detail, status: error.status };
+  }
+  if (error instanceof UploadFailure) {
+    return { code: error.code, message: error.message, detail: error.detail };
+  }
+  if (error instanceof Error && error.message.trim() !== "") {
+    return { code: "capture", message: error.message };
+  }
+  return { code: "network" };
+}
+
+function uploadFailure(uploader: ChunkUploader): UploadFailure {
+  const error = uploader.error;
+  if (!error) return new UploadFailure("network", "The upload stopped.", { retryable: true });
+  return new UploadFailure(error.code, error.message, {
+    detail: error.detail,
+    retryable: error.retryable,
+  });
+}
+
+function asBuffer(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
+  const copy = new Uint8Array(bytes.byteLength);
+  copy.set(bytes);
+  return copy;
+}
