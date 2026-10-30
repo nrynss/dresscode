@@ -10,6 +10,23 @@ const fixtureResolved = "\0virtual:dresscode-api-fixtures";
 const mediaModule = "virtual:dresscode-sample-media";
 const mediaResolved = "\0virtual:dresscode-sample-media";
 
+/** The dev-server surface the media middleware needs; the project's
+ * typecheck carries no Node types package. */
+interface DevServer {
+  middlewares: {
+    use(
+      handler: (
+        req: { method?: string; url?: string },
+        res: {
+          setHeader(name: string, value: string): void;
+          end(chunk: string, encoding?: string): void;
+        },
+        next: () => void,
+      ) => void,
+    ): void;
+  };
+}
+
 /** The recorded media ids the story screens show, and the committed sample
  * photograph each one serves in mock mode. */
 const mediaSamples: Record<string, string> = {
@@ -63,6 +80,25 @@ function dresscodeSampleMedia() {
         media[mediaPath] = fs.readFileSync(path.resolve(root, rel)).toString("base64");
       }
       return `export default ${JSON.stringify(media)};`;
+    },
+    /** An `<img>` load bypasses the fetch interception the mock installs, so
+     * the dev server itself answers the recorded ids from the same id-to-file
+     * map the virtual module embeds. */
+    configureServer(server: DevServer) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url ?? "";
+        if (req.method !== "GET" || !url.startsWith("/media/")) {
+          next();
+          return;
+        }
+        const sample = mediaSamples[new URL(url, "http://dresscode.local").pathname];
+        if (sample === undefined) {
+          next();
+          return;
+        }
+        res.setHeader("Content-Type", "image/jpeg");
+        res.end(fs.readFileSync(path.resolve(root, sample)).toString("base64"), "base64");
+      });
     },
   };
 }

@@ -8,6 +8,7 @@ import { humanMessage } from "../../lib/api/errors";
 import { loadFixtures } from "../../lib/api/fixtures";
 import { installMock, lastCredentials, pinAnswer } from "../../lib/api/mock";
 import type { ApiFixture } from "../../lib/api/types";
+import { resetOccasionMenu, writeOptIn } from "../occasion/menu";
 import { captureHash } from "./route";
 import {
   chunkBytes,
@@ -303,6 +304,41 @@ test("starting the look posts the occasion, the selfie and the products", async 
     body: { look_id: begin.look_id },
   });
   await expect(startLook("family-function", "5e1f1e00000000000000000000000001", [])).rejects.toThrow();
+});
+
+test("a saved picker occasion starts the look", async () => {
+  installMock();
+  resetOccasionMenu();
+  pinAnswer("PUT", "/api/occasions/interview/opt-in", {
+    file: "interview-opt-in-put",
+    method: "PUT",
+    path: "/api/occasions/interview/opt-in",
+    status: 200,
+    body: { occasion: "interview", ticked: ["interview-tie-hair"] },
+  });
+  const inner = globalThis.fetch;
+  const bodies = new Map<string, string>();
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+    const raw = input instanceof Request ? input.url : input instanceof URL ? input.href : String(input);
+    const target = new URL(raw, "http://dresscode.local").pathname;
+    if (method === "POST" && target === "/api/looks" && typeof init?.body === "string") {
+      bodies.set("POST /api/looks", init.body);
+    }
+    return inner(input, init);
+  }) as typeof fetch;
+
+  // Saving Interview hands the picker's choice to the next look start,
+  // whatever occasion the screen passes as its fresh-session fallback.
+  await writeOptIn("interview", ["interview-tie-hair"]);
+  await startLook(storyOccasion, "5e1f1e00000000000000000000000001", []);
+  expect(bodies.get("POST /api/looks")).toBe(
+    JSON.stringify({
+      occasion: "interview",
+      selfie_id: "5e1f1e00000000000000000000000001",
+      product_ids: [],
+    }),
+  );
 });
 
 test("the screen grabs a front-camera frame and keeps a gallery and a phone-camera fallback", () => {

@@ -9,8 +9,19 @@ import type { OccasionDetail, OccasionFix, OccasionSummary } from "./types";
  * session already saved. A full reload asks again. */
 const remembered = new Map<string, string[]>();
 
+/** The occasion whose fixes the user last saved this session. The next look
+ * starts on it; before any save, the caller keeps its own occasion. A write
+ * that fails keeps what was saved before. */
+let kept = "";
+
+/** The occasion the picker last saved, or "" before any save this session. */
+export function keptOccasion(): string {
+  return kept;
+}
+
 export function resetOccasionMenu(): void {
   remembered.clear();
+  kept = "";
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
@@ -119,11 +130,13 @@ export async function readOptIn(id: string, signal?: AbortSignal): Promise<strin
   return ticksOf(await getJson(optInPath(id), signal), id);
 }
 
-/** Replace the ticked fixes for one occasion. A well-formed 200 stores the set sent. */
+/** Replace the ticked fixes for one occasion. A well-formed 200 stores the
+ * set sent, and that occasion becomes the one the next look starts on. */
 export async function writeOptIn(id: string, ticked: readonly string[], signal?: AbortSignal): Promise<string[]> {
   const ids = copyIds(ticked);
   ticksOf(await putJson(optInPath(id), { ticked: ids }, signal), id);
   remembered.set(id, ids);
+  kept = id;
   return [...ids];
 }
 

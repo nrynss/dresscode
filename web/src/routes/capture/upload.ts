@@ -2,6 +2,7 @@ import type { PrepareImageOptions } from "@nrynss/chaaya/capture";
 import { ChunkUploader, UploadFailure, type UploadReceipt, type UploadStore } from "@nrynss/chaaya/keel";
 import { ApiError, api } from "../../lib/api/client";
 import type { ShownError } from "../../lib/api/types";
+import { keptOccasion } from "../occasion/menu";
 
 /** One chunk, matching the recorded upload fixtures. */
 export const chunkBytes = 65536;
@@ -41,9 +42,9 @@ export interface UserProduct {
   url?: string;
 }
 
-/** The occasion a fresh look starts on. The picker names five occasions; the
- * screens follow the one recorded story look, so the look this screen starts
- * is the story's occasion until the picker hands its choice over. */
+/** The occasion a look starts on when the picker has not saved a choice this
+ * session: a fresh-session judge who starts straight away gets the story's
+ * occasion. A save in the picker hands its choice over (keptOccasion). */
 export const storyOccasion = "family-function";
 
 export interface LookStart {
@@ -57,13 +58,20 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 }
 
 /** Start a look: the occasion, the registered selfie, and the products the
- * user is considering. The answer names the look and the job that follows it.
- * A body without both is not a started look. */
+ * user is considering. The occasion is the picker's saved choice when there
+ * is one; with none saved this session, the caller's occasion stands (the
+ * capture screen sends the story's). The answer names the look and the job
+ * that follows it. A body without both is not a started look. */
 export async function startLook(occasion: string, selfieId: string, productIds: readonly string[]): Promise<LookStart> {
+  const saved = keptOccasion();
   const body = asRecord(
     await api<unknown>("/api/looks", {
       method: "POST",
-      body: JSON.stringify({ occasion, selfie_id: selfieId, product_ids: [...productIds] }),
+      body: JSON.stringify({
+        occasion: saved === "" ? occasion : saved,
+        selfie_id: selfieId,
+        product_ids: [...productIds],
+      }),
     }),
   );
   const lookId = typeof body?.look_id === "string" ? body.look_id : "";
