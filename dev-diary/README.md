@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** P0 not started.
+**Current status:** P4 server work landed through T4.3; main is red on a `postJSON` redeclaration in the server tests — a fix is in flight, and nothing else lands until the gate is green again.
 
 ---
 
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **Finding against T4.3's landing: main is red.** `postJSON` is declared three times in package `server_test` (`signin_test.go:447`, `delete_test.go:467`, `intake_test.go:394`), so `go vet` fails and the server tests do not compile. The collision came in with the T4.5 and T4.3 merges: each implementer added its own helper, and each branch's gate ran on a base without the other's file. The post-merge gate of land step 4 evidently did not run on either landing. A remediation agent is fixing it on `task-t4.3-postjson-fix`; nothing else lands until main is green. Process note for every future landing: the gate runs in the main checkout after the merge, not only on the branch.
 - **T4.3 Deletion.** Account deletion is one Keel erase over blobs, every user-data table, the identity rows, and the Lambo session. A job stopped halfway resumes and finishes empty. A guest gets `not_found`. A review of `7303a37` came back clean and the gate passed. Tests use fakes.
 - **T4.5 Intake.** Resumable uploads go through Keel into mediastore. A photo with GPS comes out without it. A private link is refused. A page with no image asks for a photo instead. A review of `a5fd021` came back clean and the gate passed.
 - **T5.7 Sign-in and deletion.** The account screen signs in by emailed code. An empty choice upgrades the guest. `switch` moves the device onto an existing account and does not copy the guest's looks. Account deletion follows the mock job to the end with no count on screen. The privacy lines are the product's sentences. A review of `c5739c4` came back clean. The shell keeps both the capture route and the account route.
