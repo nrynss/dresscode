@@ -124,7 +124,7 @@ requires:   T2.4
 fixture-ok: no
 size:       XS · user
 owns:       internal/mail/live_test.go
-status:     in-review
+status:     done
 ```
 The user receives one sign-in code at their own address. **Done when:** the user confirms it arrived and how long it took.
 
@@ -142,7 +142,7 @@ requires:   T2.3
 fixture-ok: yes
 size:       S · light
 owns:       internal/memory/, testdata/lambo/ (one recorded 404 exchange)
-status:     in-review
+status:     done
 ```
 Lambo expires idle sessions in minutes: a call on a dead `Mcp-Session-Id` gets HTTP `404` with the plain text `Not Found: Session not found`, not a JSON-RPC error. A real user's second visit idles longer than that, so the client must treat that 404 as "initialize the session again, then replay the original call once". A second consecutive 404 is a typed error, never a loop.
 

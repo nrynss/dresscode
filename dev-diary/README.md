@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.5 landed (`f4e8065`); T5.6, the second-visit story, is ready and next. T0.4 is claimed elsewhere. T2.4b stays parked on the Resend console.
+**Current status:** T2.5 and T2.4b landed — Resend delivery proven to the account address by the quick path; `nryn.dev` verification still open. T0.4 is done, so the probes (T0.5, T0.6) are the critical path; T0.6 is claimed, T0.5 waits on T0.4a. T5.6 is closing its one review finding; T5.8 is the last app task after it.
 
 ---
 
@@ -139,7 +139,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 |---|---|---|
 | P0 | 5 / 8 | T0.4 done: four AI sample people, 37 variants. T0.6 is ready. T0.4a (product images) is ready; T0.5 waits on it. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
-| P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
+| P2 | 5 / 9 | T2.3, T2.3b, T2.4, T2.4b and T2.5 done. T2.1 and T2.2 (and their live siblings) wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 6 / 8 | T5.6 is ready now that T5.5 landed; T5.8 waits on it. Phone camera and phone install still need you. |
@@ -158,6 +158,10 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T2.4b Resend live — landed, done-when met on the user's confirmation.** The live test (`internal/mail/live_test.go` behind the `live` tag; reads `RESEND_API_KEY`/`RESEND_FROM`/`RESEND_TO`, skips without them; one send, no retry; the key cannot reach output on any path — verified path by path in review). The first send from the configured from-address was refused (Resend `403`, no error name; see feedback.md). With the user's approval, the account-owner quick path sent one code from `onboarding@resend.dev` at 2026-10-30T14:33:40Z, accepted in 415 ms; the user confirmed arrival within about a minute — in Gmail's spam (its own deliverability finding, feedback.md). The configured from-domain `nryn.dev` remains unverified: production-sender proof and a spam-free demo wait on the console fix. A review of the test came back clean; landed as `d1e7681` over the T2.5 landing, diary conflict resolved keeping both tasks' notes, gate green in the worktree and the main checkout.
+
+- **T2.5 The memory client survives session expiry.** `internal/memory.Client` reads a 404 on a call that carried an `Mcp-Session-Id` as an idle session the serve expired: it drops the dead id, runs the same initialize and notifications/initialized open a first call runs, and replays the tool call once; a second 404 is the typed `ErrSessionExpired`, no third attempt, one re-initialize per session in flight. Recorded `21-call-on-expired-session.json` in the T0.7 envelope. The first review found two LOWs — a 404 on the notifications/initialized leg left a poisoned gate that never re-initialized, and the doc comment understated where `ErrSessionExpired` can come from. The remediation (`15e8114`) drops the id on a notify 404 so the next call recovers, and states both Remember legs; the second review came back clean. Landed as `d7f366d` + `1cab332`, gate green in the worktree and the main checkout, `go test -race -count=1` clean.
 
 - **Decision: product images come from web image search** (user decision: fair use). T0.4a takes real product photos for the six exact products, never generated ones, because an exact-product label must stand for a real item; the lip colours are swatches. Each image's source URL is recorded; none may show a logo, a watermark or a person. Changed: T0.4a, docs/occasions.md (Catalog).
 
