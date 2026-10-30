@@ -108,7 +108,7 @@ requires:   T0.3
 fixture-ok: no
 size:       M · mid
 owns:       testdata/samples/, testdata/samples/README.md
-status:     in-review
+status:     done
 ```
 Four sample people, generated with AI (user decision): an Indian man and woman (the first pair), then a white woman and an East Asian man (the second pair, about 8 variants each). The user approves every anchor. No photo of a real person is in the samples, the demo or the video, the user included.
 
@@ -150,9 +150,23 @@ Notes:
 
 ---
 
+### T0.4a: The catalog product images
+```yaml
+requires:   T0.3, T0.4
+fixture-ok: no
+size:       S · mid
+owns:       testdata/samples/products/
+status:     not-started
+```
+Split from T0.4, which made the people. One reference image per catalog entry in docs/occasions.md (Catalog): gold jhumkas, gold chain, the red and nude lip colours, and the four shirts and tops. Generated with Chalachithram (FAL, its own key) or photographed, as the YouCam task for each fix needs it: a single jhumka front view with no ear; the chain flat, or worn on a sample person's neck only if YouCam rejects a flat shot; garments as product shots with no person; a lip colour as a swatch. No logo, no text, no third-party pattern. `testdata/samples/products/README.md` records each image's source, model and prompt or photo note, and cost. **FAL cap: $3.**
+
+**Done when:** every catalog entry has its reference image, meeting its YouCam file spec as docs/occasions.md states it; the README holds the source and cost for each.
+
+---
+
 ### T0.5: YouCam probe ★
 ```yaml
-requires:   T0.2, T0.3, T0.4
+requires:   T0.2, T0.3, T0.4, T0.4a
 fixture-ok: no
 size:       M · mid
 owns:       testdata/youcam/, docs/youcam.md

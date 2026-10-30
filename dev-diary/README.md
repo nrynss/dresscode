@@ -137,7 +137,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Phase | Tasks complete | Status |
 |---|---|---|
-| P0 | 4 / 7 | T0.4 makes two AI sample people and needs the user's approval of both. T0.5 and T0.6 wait on T0.4. |
+| P0 | 5 / 8 | T0.4 done: four AI sample people, 37 variants. T0.6 is ready. T0.4a (product images) is ready; T0.5 waits on it. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
@@ -150,6 +150,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | Service | Budget | Spent |
 |---|---|---|
 | YouCam | 1040 credits, they do not expire; 400 held back for judging | 0 |
+| FAL (sample images, Chalachithram's key) | $10 for T0.4, $3 for T0.4a, listed prices | $5.70 (T0.4: 12 Seedream at $0.135, 51 nano-banana-2/edit at $0.08) |
 | Workers AI | Free plan until T6.6; then Workers Paid | 7 embeddings (the access check, four in the T0.7 probe, two in the T2.3b live check) |
 
 ---
@@ -157,6 +158,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T0.4 The sample set** (`40e9cd4`). Four AI-generated sample people, each an original Seedream v5 pro design the user approved: an Indian man and woman, a white woman (red hair) and an East Asian man. 37 nano-banana-2/edit variants as JPEG in `testdata/samples/<person>/`; `testdata/samples/README.md` holds each variant's expected flags (the T3.9 ground truth), prompt and cost. Every criterion has a yes and a no, each from at least two people. The second-visit pair is V04 (bare ears and lip) and V05. The orchestrator's review had V02 (read as a monochrome filter) and V18 (magenta-dyed skin) redone, and the PNGs converted to JPEG q92 (35 MB to 11 MB); the branch was squashed so the PNGs and unchosen candidates never enter `main`'s history. Weakest calls: the light misses in V08 and P10 are moderate shadows, flagged in the README. FAL: $5.70 of $10. **Split:** the catalog product images became T0.4a; T0.5 now requires it. **Next agent should know:** Seedream v5 pro takes no seed, so the anchor files are the anchors. The edit model keeps the reference's beard (start a patchy beard from a thin one), leaves a man's top button open unless asked for a tie, resists a hard one-sided shadow, and dyes the skin when coloured light is asked for on the face (put it on the wall). Set `CHALACHITHRAM_ENV` to Chalachithram's own `.env`, or its search finds Dresscode's first.
 
 - **New task T2.5: the memory client survives session expiry.** Found while recording landings in Lambo: idle MCP sessions die with HTTP `404` `Not Found: Session not found` after roughly 10–20 idle minutes (two orchestrator sessions lost this way; see feedback.md under Lambo), and `internal/memory/lambo.go` has no 404 handling at all. A user idling past that before their second visit would fail recall. T2.5 (S · light, beside its siblings in PHASE-2) adds re-initialize-and-replay-once to the client, pinned by a recorded 404 exchange; a second 404 fails typed. T3.8 and the live demo depend on it.
 
