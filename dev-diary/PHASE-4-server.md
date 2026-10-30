@@ -95,7 +95,7 @@ requires:   T4.1
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/intake.go
-status:     in-review
+status:     done
 ```
 Resumable uploads through Keel `upload` into `mediastore`; every photo normalised by Keel `photo` (orientation applied, EXIF and GPS stripped, resized to YouCam's 1024 px and Clef's 4 MiB) and hashed for the cache. Product links through Keel `fetch` (SSRF-safe, `og:image`); a blocked retailer falls back to "upload a photo instead". The share-target intake for installed apps.
 
