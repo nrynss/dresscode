@@ -84,7 +84,7 @@ requires:   T5.10
 fixture-ok: yes
 size:       M · mid
 owns:       web/static/, web/index.html, web/src/app/, web/src/routes/account/, web/src/routes/history/, web/tests/a11y/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Replace the 180 px stacked header with a slim editorial top bar featuring an arched vanity-mirror SVG brand mark, introduce the 4-tier button system in `theme.css`, move the `Appearance` control into `Account` as a segmented 3-way pill bar (defaulting to `system`), upgrade `History` with a tactile toggle switch and neutral `.info` card styling, and upgrade `Account` with a 6-cell OTP code input, a collapsible `Who sees what` disclosure, danger buttons, and plain human copy.
 
