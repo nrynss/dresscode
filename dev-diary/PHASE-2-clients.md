@@ -90,7 +90,7 @@ requires:   T1.4
 fixture-ok: yes
 size:       S · light
 owns:       internal/mail/
-status:     in-review
+status:     done
 ```
 A Keel `identity.Sender` over Resend for sign-in codes only: plain text and a minimal HTML version, the from address from settings, Keel's send limits applied before sending. A recorder implementation for tests.
 

@@ -139,7 +139,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 |---|---|---|
 | P0 | 4 / 7 | T0.4 waits on the user's photos. T0.5 and T0.6 wait on T0.4. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
-| P2 | 0 / 4 | T2.3 and T2.4 are claimed. T2.1 and T2.2 wait on the photo probes. |
+| P2 | 1 / 4 | T2.4 done. T2.3 is in review. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 0 / 7 | T4.1 is claimed. |
 | P5 | 0 / 8 | T5.1 is claimed. |
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T2.4 The Resend sender.** `internal/mail.Client` implements Keel `identity.Sender` for sign-in codes. Plain text and a minimal HTML version. The from address and the key come from settings. Keel's send ceilings apply before the post. A recorded success body is the fixture. The code is not logged. A review of `945098b` came back clean and the gate passed. No live mail was sent.
 - **T1.5 The API contract.** Frozen at `1f81cf7` after a second review came back clean. Sign-in uses Keel's empty choice or `switch`. Account deletion streams stage `delete`. Every product flow has a route and an example in `testdata/api/`.
 - **T1.3 The interfaces and their replay twins.** `SystemOne`, `YouCam`, and `Memory`, each with a replay over the recorded envelope. All twenty `testdata/lambo` exchanges replay. A missing recording fails with its key. The two identical erases of `dc-u-probe-a` refuse to choose. No Clef or YouCam recordings yet, so those replays fail the call with the key. A review of `8e94603` came back clean and the gate passed.
 - **T1.4 Settings, budgets and flags.** `internal/config` loads `dresscode.toml.example` through Keel `config`. Keys are references. YouCam is a lifetime budget of 1040 credits, 400 held for judging. Workers AI is one dollar per day in the example, because no dollar ceiling was recorded. A judge session in the example is capped at 5 fresh selfies and 10 renders. The three flags default off. A missing variable fails by name. A review of `ca06ee4` came back clean and the gate passed. The merge kept both the sqlite and the TOML indirect modules.
