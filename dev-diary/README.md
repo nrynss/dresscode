@@ -141,7 +141,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
-| P4 | 3 / 7 | T4.5 done. T4.3 is in review. |
+| P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 4 / 8 | T5.4 is being written. Phone camera and phone install still need you. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T4.3 Deletion.** Account deletion is one Keel erase over blobs, every user-data table, the identity rows, and the Lambo session. A job stopped halfway resumes and finishes empty. A guest gets `not_found`. A review of `7303a37` came back clean and the gate passed. Tests use fakes.
 - **T4.5 Intake.** Resumable uploads go through Keel into mediastore. A photo with GPS comes out without it. A private link is refused. A page with no image asks for a photo instead. A review of `a5fd021` came back clean and the gate passed.
 - **T5.7 Sign-in and deletion.** The account screen signs in by emailed code. An empty choice upgrades the guest. `switch` moves the device onto an existing account and does not copy the guest's looks. Account deletion follows the mock job to the end with no count on screen. The privacy lines are the product's sentences. A review of `c5739c4` came back clean. The shell keeps both the capture route and the account route.
 - **T5.3 Bring the look.** The capture route takes a selfie or a product. A gallery file uploads and a dropped chunk resumes, both against the mock. A review of `63da8fd` came back clean aside from a physical phone camera, which was not used. A product photo is registered with `POST /api/products`. Chaaya's uploader has no upload group.
