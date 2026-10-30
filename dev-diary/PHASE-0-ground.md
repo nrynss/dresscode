@@ -108,7 +108,7 @@ requires:   T0.3
 fixture-ok: no
 size:       M · mid
 owns:       testdata/samples/, testdata/samples/README.md
-status:     claimed:claude-opus-5-5
+status:     in-review
 ```
 Four sample people, generated with AI (user decision): an Indian man and woman (the first pair), then a white woman and an East Asian man (the second pair, about 8 variants each). The user approves every anchor. No photo of a real person is in the samples, the demo or the video, the user included.
 
@@ -121,6 +121,32 @@ Four sample people, generated with AI (user decision): an Indian man and woman (
 - **Spend:** FAL through Chalachithram's own key, never copied into this repository. The brief names a dollar cap; stop and report at it.
 
 **Done when:** the user has approved both anchors; the images are in place; the README holds the expected flags, the model and the prompt per image; every criterion has at least one yes and one no.
+
+Notes:
+
+- Part 1 of 2: the anchors only. `testdata/samples/anchors/` holds three candidates per person, `man-1` to `man-3` and `woman-1` to `woman-3`. Each is a text-only `bytedance/seedream/v5/pro/text-to-image` render through Chalachithram's `txt2img`, 1536 × 2048 JPEG as returned, under 0.5 MB. No variant is made until the user picks one man and one woman.
+- `testdata/samples/README.md` records each candidate's full prompt, the size, the cost, and the shared selfie text. Its "Part 2 plan" is a 20-row shot list, ten per person: three for date, five for family function, four each for interview, festival and funeral. Each row lists the criteria it should pass and fail. Every criterion id in `testdata/occasions/*.json` has at least one yes and one no; a scratch script checked that against the JSON.
+- Each prompt is one person text plus one shared selfie text: front camera, chest up, collar and shoulders in frame, both ears and the neck visible, plain wall, ordinary ceiling light, pores and unevenness kept, no makeup, no jewellery, no text, no logos, a fictional person. The three candidates per person differ in skin tone, face shape, hair and shirt colour, so the choice is a real one. The men's beards were asked to be slightly uneven at the cheeks, so a variant can push them either patchy or even. The women's hair is long and tucked behind the ears, so it can be shown loose over the face or tied back.
+- The candidates were rendered at `portrait_4_3`, which returned 1536 × 2048. That is above 1536 × 1536 in area, so each cost two units, $0.135. Six candidates: $0.81 of the $2 part-1 cap.
+- Surprised that the endpoint takes no seed, so an anchor cannot be reproduced from its prompt; the chosen file is the anchor. Chalachithram still sends a negative prompt the endpoint's schema does not list. The FAL key can read the listed unit price but not the usage, so the cost here is the listed price times the size tier, not a billed figure.
+- Part 2: the user approved `man-1` and `woman-1`. They are now `anchors/man.jpg` and `anchors/woman.jpg`. The other four candidates were deleted, and their prompts are kept in the README under "Candidates not chosen".
+- 21 variants are in `testdata/samples/man/` and `testdata/samples/woman/`, named `V<nn>-<occasion>.png`. Each is a `fal-ai/nano-banana-2/edit` call through Chalachithram's `edit` at 3:4 and 1K, which returned 896 × 1200 PNG under 2 MB. The README records, per variant, the person, the occasion, the criteria it should pass and fail, the reference image, the exact prompt and the cost. The coverage script passes: every criterion has a yes and a no.
+- Every variant was checked by eye for three things: it is the same face, the skin texture and face shape are kept, and the intended misses show. Each prompt starts with a fixed preamble that asks for the same face, kept pores and no smoothing or reshaping. No variant came back smoothed or reshaped. V20, with a wide smile and hard side light, is the furthest from the anchor; I looked at it again and kept it. The ones that failed were all about the miss not showing, and those rows were regenerated.
+- Regenerated: V02 and V08, whose beards stayed even, and V08's side shadow, which was too soft. V09 and V17 left the top button open on a collar meant to read closed. V13 was meant to have a red lip and came back with a bare one. V13 and V17 were fixed on the second try. V09 was fixed on the third, by adding a tie. V08 read as patchy only on the third attempt. V02 still had an even beard after three tries, so its beard is now a yes.
+- Added V21 to keep a date beard miss. It edits V08's third attempt, which has the patchy beard, into a date look. V05 edits V04, so the second-visit pair is the same look with the jhumkas and the red lip added.
+- Scope change: the user added a white woman and an East Asian man. Three text-only candidates of each are in `anchors/candidates/`, made exactly like part 1. They wait on the user's choice; no variant is made for them. The README plans 16 rows for them, eight each. With those rows, every criterion has its yes and its no from at least two different people. The beard rows are on the two men, the earring and lip rows on the two women.
+- Not in this part: the catalog product shots (docs/occasions.md) and the known bad renders. They follow in a later step.
+- Spend so far: $3.94 of the $10 T0.4 cap, at listed prices. That is twelve Seedream candidates at $0.135 and 29 edit calls at $0.08, of which 8 were discarded attempts.
+- Surprised that the edit model holds on to the reference's beard. Asking it to make a full beard patchy was ignored twice; editing an image that already had a thin beard worked. It also leaves a top button open unless a tie closes the collar, and it softens a requested hard shadow. Seedream let the new women's hair fall in front of the ears although the prompt asked for it tucked behind.
+- Part 3: the user approved `woman-white-3` and `man-eastasian-1`. They are now `anchors/woman-white.jpg` and `anchors/man-eastasian.jpg`. The other four candidates and the `candidates/` folder were deleted, and all eight unchosen prompts are kept in the README.
+- 16 variants, P01 to P16, are in `testdata/samples/woman-white/` and `testdata/samples/man-eastasian/`, made like part 2 and checked by eye in the same way. I applied what part 2 taught. A tie closes a collar that must read buttoned on the man (P15, P16); P05 and P07 read buttoned without one. The East Asian man's patchy rows start from his own thin beard, and his even rows ask the model to fill it in. Coloured light goes on the wall, not the face.
+- Regenerated: P04, whose side shadow was soft; the second try has a hard edge across the face. P16's side shadow was soft too, so the row now uses a coloured wash on the wall behind, which reads. P10's side shadow was moderate. One retry with split lighting came out evenly lit, and one with flat frontal light came out bright. I kept the first attempt and noted it as a weak light miss, beside V08.
+- The review asked for two Indian-pair redos. V18's skin had been tinted magenta; the redo keeps the skin natural and puts the coloured light on the wall. V02 was nearly monochrome; the redo is a colour photo with flat, dull frontal light. Each row's yes and no lists are unchanged.
+- Every variant is now JPEG at quality 92 with metadata stripped, at the size returned (896 × 1200). `testdata/samples` went from 35 MB to 11 MB. The JPEGs measure about 42 dB PSNR against the PNGs, and a close crop shows pores intact.
+- The coverage script passes on all 37 rows. Every criterion has a yes and a no, and each side comes from at least two different people.
+- Spend for T0.4 at listed prices: $5.70 of $10. That is 12 Seedream calls at $0.135 ($1.62) and 51 edit calls at $0.08 ($4.08).
+- Follow-up, not in T0.4 as run: the catalog product images (docs/occasions.md) and the known bad renders for the render check.
+- Surprised that a hard one-sided shadow is the miss the edit model resists most. Of ten attempts that asked for a hard side shadow, only V20 and P04's second came back with one. A coloured wash on the wall, a dark room, an orange cast and flat dull light all came through.
 
 ---
 
