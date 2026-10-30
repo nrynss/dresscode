@@ -1,0 +1,18 @@
+{
+  "status": 409,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "incomplete",
+      "message": "The upload is missing chunks.",
+      "detail": {
+        "missing": [
+          1
+        ]
+      }
+    }
+  }
+}

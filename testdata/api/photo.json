@@ -1,0 +1,18 @@
+{
+  "method": "POST",
+  "path": "/api/photos",
+  "status": 201,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "media_id": "5e1f1e00000000000000000000000001",
+    "url": "/media/5e1f1e00000000000000000000000001",
+    "content_type": "image/jpeg",
+    "sha256": "fbaf1ce113c105f0bfaf040a6538a137f39539e0474e73c61e97e8c5bfea7ea7"
+  },
+  "request": {
+    "upload_id": "5e1f1e0000000000000000000000000a"
+  }
+}

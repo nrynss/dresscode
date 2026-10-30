@@ -1,0 +1,22 @@
+{
+  "method": "GET",
+  "path": "/api/uploads/5e1f1e0000000000000000000000000a",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "id": "5e1f1e0000000000000000000000000a",
+    "owner": "a11ce0000000000000000000000000a1",
+    "content_type": "image/jpeg",
+    "visibility": "private",
+    "chunk_size": 65536,
+    "stored_bytes": 65536,
+    "received": [
+      0
+    ],
+    "missing": [],
+    "expires_at": "2026-01-02T04:04:05Z"
+  }
+}

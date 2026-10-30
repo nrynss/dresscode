@@ -1,0 +1,13 @@
+{
+  "status": 422,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "fetch_bad_type",
+      "message": "The link was not a page or an image this app can use."
+    }
+  }
+}

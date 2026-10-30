@@ -1,0 +1,13 @@
+{
+  "status": 409,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "guest_data_conflict",
+      "message": "this device holds guest data the account would leave behind"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "path": "/api/jobs/de1e7e00000000000000000000000001/events",
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream",
+    "cache-control": "no-store",
+    "x-accel-buffering": "no"
+  },
+  "body": "event: progress\nid: 1\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"stage\":\"erase\",\"current\":1,\"total\":3,\"detail\":{\"targets\":[\"files\",\"rows\",\"memory\"],\"confirmed\":[\"files\"]}}\n\nevent: progress\nid: 2\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"stage\":\"erase\",\"current\":3,\"total\":3,\"detail\":{\"targets\":[\"files\",\"rows\",\"memory\"],\"confirmed\":[\"files\",\"rows\",\"memory\"]}}\n\nevent: done\nid: 3\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"status\":\"done\"}\n\n"
+}

@@ -1,0 +1,20 @@
+{
+  "method": "POST",
+  "path": "/api/uploads/5e1f1e0000000000000000000000000a/complete",
+  "status": 201,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "id": "5e1f1e0000000000000000000000000a",
+    "owner": "a11ce0000000000000000000000000a1",
+    "content_type": "image/jpeg",
+    "visibility": "private",
+    "size_bytes": 65536,
+    "sha256": "d924940046edbe3fbbcf957afe1f564576f6dd481b6911e36e44e0135f2585a3"
+  },
+  "request": {
+    "sha256": "d924940046edbe3fbbcf957afe1f564576f6dd481b6911e36e44e0135f2585a3"
+  }
+}

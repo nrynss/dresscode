@@ -1,0 +1,17 @@
+{
+  "status": 409,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "hash_mismatch",
+      "message": "The assembled upload does not match the digest declared for it.",
+      "detail": {
+        "declared": "d924940046edbe3fbbcf957afe1f564576f6dd481b6911e36e44e0135f2585a3",
+        "actual": "fbaf1ce113c105f0bfaf040a6538a137f39539e0474e73c61e97e8c5bfea7ea7"
+      }
+    }
+  }
+}

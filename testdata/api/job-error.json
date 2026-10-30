@@ -1,0 +1,19 @@
+{
+  "method": "GET",
+  "path": "/api/jobs/10b0000000000000000000000000000e",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "job_id": "10b0000000000000000000000000000e",
+    "root_id": "10b0000000000000000000000000000e",
+    "status": "error",
+    "stage": "judge",
+    "error": {
+      "code": "no_face_in_photo",
+      "message": "no face in photo"
+    }
+  }
+}

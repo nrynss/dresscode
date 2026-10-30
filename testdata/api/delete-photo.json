@@ -1,0 +1,12 @@
+{
+  "method": "POST",
+  "path": "/api/photos/5e1f1e00000000000000000000000001/deletion",
+  "status": 202,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "job_id": "de1e7e00000000000000000000000001"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "method": "POST",
+  "path": "/api/products",
+  "status": 201,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "id": "b20d0c70000000000000000000000001",
+    "category": "earrings",
+    "name": "Gold jhumkas",
+    "fidelity": "exact product",
+    "origin": "user",
+    "media_id": "b20d0c70000000000000000000000001",
+    "url": "/media/b20d0c70000000000000000000000001"
+  },
+  "request": {
+    "upload_id": "b20d0c7000000000000000000000000a",
+    "name": "Gold jhumkas",
+    "category": "earrings"
+  }
+}

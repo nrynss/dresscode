@@ -1,0 +1,16 @@
+{
+  "method": "PUT",
+  "path": "/api/history",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "enabled": true,
+    "notice": "Style history is on. Dresscode remembers, in words only, the occasion, the fixes you keep or dismiss, and the products. No photo is kept for this. It stays until you delete it."
+  },
+  "request": {
+    "enabled": true
+  }
+}

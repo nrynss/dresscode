@@ -1,0 +1,9 @@
+{
+  "where": "job state error, and the stream envelope",
+  "body": {
+    "error": {
+      "code": "job_failed",
+      "message": "The look could not be finished."
+    }
+  }
+}

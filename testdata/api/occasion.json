@@ -1,0 +1,94 @@
+{
+  "method": "GET",
+  "path": "/api/occasions/family-function",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "id": "family-function",
+    "name": "Family function",
+    "criteria": [
+      {
+        "id": "family-earring-festive",
+        "kind": "grooming",
+        "suggestion": "The ear reads plain; try gold jhumkas."
+      },
+      {
+        "id": "family-lip-colour",
+        "kind": "grooming",
+        "suggestion": "The lip reads bare; try a red lip."
+      },
+      {
+        "id": "family-garment-festive",
+        "kind": "clothing",
+        "suggestion": "The garment reads like an office shirt; try a festive top."
+      },
+      {
+        "id": "family-hair-finished",
+        "kind": "grooming",
+        "suggestion": "The hair is unfinished; try it tied back."
+      },
+      {
+        "id": "family-beard-even",
+        "kind": "grooming",
+        "suggestion": "The beard outline is patchy; try a short even shape."
+      },
+      {
+        "id": "family-expression-present",
+        "kind": "expression",
+        "suggestion": "The expression reads flat; try a closed-mouth smile."
+      },
+      {
+        "id": "family-light-even",
+        "kind": "lighting",
+        "suggestion": "The face is lit unevenly; turn toward the light. No fix here can relight the photo."
+      }
+    ],
+    "fixes": [
+      {
+        "id": "family-gold-jhumkas",
+        "changes": "Adds gold jhumkas.",
+        "criteria": [
+          "family-earring-festive"
+        ]
+      },
+      {
+        "id": "family-red-lip",
+        "changes": "Paints the lip red.",
+        "criteria": [
+          "family-lip-colour"
+        ]
+      },
+      {
+        "id": "family-festive-top",
+        "changes": "Replaces the garment with a festive top and a mandarin collar.",
+        "criteria": [
+          "family-garment-festive"
+        ]
+      },
+      {
+        "id": "family-tie-hair",
+        "changes": "Renders the hair tied back.",
+        "criteria": [
+          "family-hair-finished"
+        ]
+      },
+      {
+        "id": "family-short-beard",
+        "changes": "Renders a short even beard.",
+        "criteria": [
+          "family-beard-even"
+        ]
+      },
+      {
+        "id": "family-closed-smile",
+        "changes": "Renders a closed-mouth smile.",
+        "criteria": [
+          "family-expression-present"
+        ]
+      }
+    ]
+  }
+}

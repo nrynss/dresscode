@@ -1,0 +1,13 @@
+{
+  "status": 422,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "output_cannot_fit",
+      "message": "The photo could not be stored small enough."
+    }
+  }
+}

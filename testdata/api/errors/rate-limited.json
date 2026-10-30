@@ -1,0 +1,17 @@
+{
+  "status": 429,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store",
+    "retry-after": "1"
+  },
+  "body": {
+    "error": {
+      "code": "rate_limited",
+      "message": "the route rate limit was reached",
+      "detail": {
+        "retry_after_seconds": 1
+      }
+    }
+  }
+}

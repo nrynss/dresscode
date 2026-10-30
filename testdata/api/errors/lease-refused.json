@@ -1,0 +1,16 @@
+{
+  "status": 409,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "lease_refused",
+      "message": "This session cannot start another fresh look.",
+      "detail": {
+        "cap": "fresh_selfies"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "method": "GET",
+  "path": "/api/looks?occasion=family-function",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "looks": [
+      {
+        "id": "100c0000000000000000000000000001",
+        "occasion": "family-function",
+        "verdict": "",
+        "ready": true,
+        "fix": "family-gold-jhumkas",
+        "words": "gold jhumkas"
+      }
+    ]
+  }
+}

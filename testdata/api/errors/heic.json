@@ -1,0 +1,13 @@
+{
+  "status": 422,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "heic",
+      "message": "This photo is HEIC, which this app does not convert."
+    }
+  }
+}
