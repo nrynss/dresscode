@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T2.1 landed (`16cbd91`) — the pipeline's judge interface exists. T5.9 in review; when it lands, **P5 is complete**. T0.5 (YouCam probe) claimed elsewhere; T2.2 dispatches when it closes. `nryn.dev` verification still open.
+**Current status:** **P5 is complete** (`6914cca`) — the app is finished on mock data, gated end to end. Everything left is the pipeline and the ship: T0.5 (YouCam probe) is the only in-flight task, claimed elsewhere; then T2.2 → P3 → T4.4 → P6. `nryn.dev` verification and the phone checks remain with the user.
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P2 | 6 / 9 | T2.1 landed. Only T2.2 (and its live sibling) remain, waiting on the T0.5 probe. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
-| P5 | 8 / 9 | Only T5.9 (control boundaries to 3:1, user-decided) remains, in flight. Phone camera and phone install still need you. |
+| P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
 ### Units and spend
@@ -158,6 +158,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.9 Control boundaries meet 3:1 — and with it, P5 is complete.** The user's T5.8 decision landed: `--line` is `#827c70` light and `#706659` dark, the nearest channel-scaled step clearing 3:1 with a cushion (3.11–4.08 across every drawn adjacency, old values 1.21–2.02); `--line-soft` stays soft by name, excused in the new drawn-boundary guard. The suite gained the boundary list at 3:1 through Chaaya's per-call minimum (two calls: text 4.5, boundaries 3), with `--sunken` added because the swipe frame draws it and it is light's binding pair. Break-proven: reverting the old light hex fails six named pairs in one error. The review reproduced every ratio independently to 1e-9, re-did the break, and left two advisory items taken as disclosure: a side-specific border shorthand would slip the sweep's property filter (none exists; widen in a later pass if one appears) and the line-soft binding-pair figure corrected in the notes. Landed as `6914cca`, gate green in the worktree and the main checkout, 30 a11y tests. Note for the next theme change: every drawn border role must join a measured pair or be excused by name.
 
 - **T2.1 The System One client.** `WorkersAI` and `OpenRouter` in `internal/systemone/`, both behind `SystemOne`. One Ask is one metered call — reserve the estimate, retry the POST through Keel `throttle` (429 three attempts, 5xx/timeout two, Retry-After honoured, never a 4xx), settle the measured `input_tokens` at the model's neuron rate (constants sourced in-code from docs/clef.md's T0.6 measurements). Oversize/unreadable images die typed before any request and before any reserve; 16 MP comes from header-only dimension reads. All 45 clef/cost recordings replay through the real client over HTTP, content-keyed; the T1.3 replay twin needed no change. No OpenRouter recording exists — the decisions shape is pinned by a labelled inline fixture, and the comparison task must record the real exchange and re-check Jev pricing. The first review found two LOWs and two INFOs (a Retry-After test that couldn't catch its own regression; unscrubbed envelope notes; a dead prefix check; missing zero-charge pins); the remediation fixed all four — the new 3s ceiling derived from keel's own `hintWait` spread — and the second review verified it against the keel source. Landed as `d764228`+`16cbd91`, gate green in the worktree and the main checkout, `go test -race -count=1` clean. P3's judge interface now exists.
 
