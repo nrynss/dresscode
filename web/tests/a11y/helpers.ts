@@ -1,0 +1,130 @@
+import { theme } from "@nrynss/chaaya/theme";
+import { a11yGate } from "@nrynss/chaaya/testing";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { mount, unmount } from "svelte";
+import { expect, vi } from "vitest";
+import App from "../../src/app/app.svelte";
+import { installMock, resetMockChoices } from "../../src/lib/api/mock";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+
+/** The stylesheet the contrast gate reads and the mounted screens wear. */
+export const themeCss = readFileSync(path.resolve(here, "../../src/app/theme.css"), "utf8");
+
+/** The width the gates run at: a small phone. */
+export const phoneWidth = 375;
+
+/** Which forced theme the document wears. */
+export type Mode = "light" | "dark";
+
+let mockInstalled = false;
+
+/** Serve the recorded API for the whole file, with fresh pins each test. */
+export function useMock(): void {
+  if (!mockInstalled) {
+    installMock();
+    mockInstalled = true;
+  }
+  resetMockChoices();
+}
+
+let style: HTMLStyleElement | undefined;
+
+/** Mount the whole app on the page body: shell, theme control, and the route
+ * the hash names, in the forced theme, at the phone width. The returned
+ * function unmounts it again. */
+export async function mountApp(mode: Mode, hash: string): Promise<() => Promise<void>> {
+  window.location.hash = hash;
+  document.body.innerHTML = "";
+  style?.remove();
+  style = document.createElement("style");
+  style.textContent = themeCss;
+  document.head.append(style);
+  theme.set(mode);
+  expect(document.documentElement.dataset.theme, `the ${mode} theme is forced`).toBe(mode);
+  window.innerWidth = phoneWidth;
+  window.innerHeight = 667;
+  const app = mount(App, { target: document.body });
+  return async () => {
+    await unmount(app);
+    document.body.innerHTML = "";
+  };
+}
+
+/** The first element whose trimmed text is exactly the sentence. */
+export function withText<E extends Element = Element>(selector: string, text: string): E | null {
+  for (const element of document.querySelectorAll(selector)) {
+    if (element.textContent?.trim() === text) return element as E;
+  }
+  return null;
+}
+
+/** Wait until the marker element is on the page, so a screen is judged in the
+ * state a reader would see, not its empty opening frame. */
+export async function waitUntil(marker: () => Element | null, label: string): Promise<void> {
+  await vi.waitFor(
+    () => {
+      expect(marker(), label).not.toBeNull();
+    },
+    { timeout: 10000, interval: 25 },
+  );
+}
+
+function firstInputOf(label: string): HTMLInputElement {
+  const holder = withText("label", label);
+  expect(holder, `the ${label} control`).not.toBeNull();
+  const input = holder?.querySelector("input");
+  expect(input, `the ${label} input`).not.toBeNull();
+  return input as HTMLInputElement;
+}
+
+/** Run Chaaya's accessibility gate over the whole rendered page. */
+export async function gate(mode: Mode): Promise<void> {
+  expect(document.querySelector(".shell"), "the shell is mounted").not.toBeNull();
+  expect(document.documentElement.dataset.theme, `the ${mode} theme is forced`).toBe(mode);
+  expect(window.innerWidth, "the gates run at the phone width").toBe(phoneWidth);
+  await a11yGate(document.body);
+}
+
+/** Open the occasion screen's fix menu for the recorded occasion. */
+export async function openFixMenu(): Promise<void> {
+  const occasion = firstInputOf("Family function");
+  occasion.click();
+  await waitUntil(() => withText("legend", "Fixes you are open to"), "the fix menu");
+}
+
+/** Open the shop-the-look bottom sheet. */
+export async function openShopSheet(): Promise<void> {
+  const trigger = withText("button", "Shop the look");
+  expect(trigger, "the shop trigger").not.toBeNull();
+  (trigger as HTMLElement).click();
+  await waitUntil(() => withText("h3", "Gold jhumkas"), "the product in the sheet");
+}
+
+/** Turn the style history switch on and wait for the second visit. */
+export async function openSecondVisit(): Promise<void> {
+  const historySwitch = firstInputOf("Style history");
+  historySwitch.click();
+  await waitUntil(
+    () => withText("p", "Last family function you kept the gold jhumkas and dismissed the red lip."),
+    "the recall sentence",
+  );
+}
+
+/** Open a confirm dialog on the account screen. */
+export async function openDeleteDialog(title: string): Promise<void> {
+  const trigger = withText("button", title);
+  expect(trigger, `the ${title} trigger`).not.toBeNull();
+  (trigger as HTMLElement).click();
+  await waitUntil(() => document.querySelector('[role="dialog"]'), `the ${title} dialog`);
+}
+
+/** Open the home screen's about dialog. */
+export async function openAboutDialog(): Promise<void> {
+  const trigger = withText("button", "About");
+  expect(trigger, "the about trigger").not.toBeNull();
+  (trigger as HTMLElement).click();
+  await waitUntil(() => document.querySelector('[role="dialog"]'), "the about dialog");
+}

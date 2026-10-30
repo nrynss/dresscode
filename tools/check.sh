@@ -26,4 +26,5 @@ fi
   pnpm exec eslint .
   pnpm exec svelte-check --tsconfig ./tsconfig.json
   pnpm exec vitest run
+  pnpm exec vitest run --config tests/a11y/vitest.config.ts
 )
