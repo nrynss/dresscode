@@ -86,7 +86,7 @@ requires:   T2.3
 fixture-ok: no
 size:       XS · light
 owns:       internal/memory/live_test.go
-status:     in-review
+status:     done
 ```
 Remember, recall and erase one look in a scratch session on the Dresscode server. **Done when:** the transcript is in the report.
 

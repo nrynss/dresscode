@@ -150,7 +150,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | Service | Budget | Spent |
 |---|---|---|
 | YouCam | 1040 credits, they do not expire; 400 held back for judging | 0 |
-| Workers AI | Free plan until T6.6; then Workers Paid | 5 embeddings (the access check, plus four in the T0.7 probe) |
+| Workers AI | Free plan until T6.6; then Workers Paid | 7 embeddings (the access check, four in the T0.7 probe, two in the T2.3b live check) |
 
 ---
 
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T2.3b Lambo live.** One remember, recall, and erase on `127.0.0.1:7720`, session `dc-u-live-t23b`. Recall returned the two lines that were stored. Erase removed them. The test reads `LAMBO_URL` and `LAMBO_DRESSCODE_TOKEN` from the environment and does not open `.env`. A second review of `61d4cd9` came back clean. The gate does not run the live test.
 - **T5.1 Shell, theme and API client.** The shell, Chaaya theme roles, the manifest, and the typed API client are in. Mock mode serves `testdata/api`. Every recorded error code has a human message. A review of `9c45b71` came back clean aside from installing the app on a phone, which was not done. The gate passed.
 - **T2.3 The Lambo client.** `internal/memory.Client` speaks MCP streamable HTTP. A remember is confirmed through its receipt before the caller is told it was remembered. A repeat erase reports gone. `Target` is a Keel erase target named `memory`. Tests replay `testdata/lambo` and do not dial. A review of `beba7c7` came back clean and the gate passed.
 - **T4.1 Guests and sessions.** A first visit mints a guest. The cookie carries only the signed session id. A revoked session does not resolve, and the next request is a new guest. `POST /api/looks` is behind Keel `gate`. A review of `f6fb783` came back clean and the gate passed. `dresscode serve` still does not listen.
