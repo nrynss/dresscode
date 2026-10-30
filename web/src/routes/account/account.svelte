@@ -427,7 +427,7 @@
           else if (dialog === "account") dialog = null;
         }}
       >
-        <Dialog.Trigger class="primary" disabled={pending || !freshCodeReady}>Delete the account</Dialog.Trigger>
+        <Dialog.Trigger class="danger" disabled={pending || !freshCodeReady}>Delete the account</Dialog.Trigger>
         <Dialog.Portal>
           <Dialog.Overlay class="dresscode-overlay" />
           <Dialog.Content class="dresscode-panel">
