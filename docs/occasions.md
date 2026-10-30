@@ -14,7 +14,7 @@ The product checks one selfie against one occasion. A criterion is a yes/no ques
 
 An occasion has `criteria`, `biggest_issue`, `fixes`, and `basket`. A criterion has `id`, `kind` (`clothing`, `grooming`, `lighting`, or `expression`), `clef` (the question), and `suggestion` (what the user reads). The biggest-issue question is one choice. Its options are that occasion's criteria, then `none`, then `can't tell`.
 
-A fix has what it changes, a YouCam task, the analysis it needs (or none), the criteria it addresses, and the vocabulary values it sets. `youcam.path_verified` is true only where a Perfect Corp page prints that task path. `youcam.set` is the qualifying set: Skin, Beauty, Fashion, Jewelry & Watch, or Hair & Beard.
+A fix has what it changes, a YouCam task (and, for hair and beard, a template), the analysis it needs (or none), the criteria it addresses, and the vocabulary values it sets. `youcam.path_verified` is true only where a Perfect Corp page prints that task path. `youcam.set` is the qualifying set: Skin, Beauty, Fashion, Jewelry & Watch, or Hair & Beard.
 
 A Clef question is reused only when two occasions share the rule, and then the id, the question, and the suggestion are the same. Interview and funeral share `lip-quiet`: bare or a quiet nude, not a bright colour. Every other question is its own rule.
 
@@ -50,13 +50,22 @@ Only tasks from the qualifying sets, and only ones whose path is on a Perfect Co
 | AI Earring Virtual Try-On | Jewelry & Watch | `POST /s2s/v2.0/task/2d-vto/earring` | Jhumkas |
 | AI Necklace Virtual Try-On | Jewelry & Watch | `POST /s2s/v2.0/task/2d-vto/necklace` | Gold chain |
 | AI Makeup Virtual Try-On | Beauty | `POST /s2s/v2.0/task/makeup-vto` | Lip colour, category `lip_color` |
-| AI Hairstyle Generator | Hair & Beard | `POST /s2s/v2.1/task/hair-transfer` | Tied-back or short hair |
-| AI Beard Style Generator | Hair & Beard | `POST /s2s/v2.0/task/beard-style` | A short beard |
+| AI Hairstyle Generator | Hair & Beard | `POST /s2s/v2.1/task/hair-transfer` | Tied-back or short hair, from a template |
+| AI Beard Style Generator | Hair & Beard | `POST /s2s/v2.0/task/beard-style` | A short or full beard, from a template |
 | AI Smile | Skin | `POST /s2s/v2.0/task/ai-smile` | A closed-mouth smile |
 
 AI Smile is grouped with face and skin tools on the YouCam MCP page, not with Creators. If the hackathon catalog files it under Beauty instead, it is still a qualifying set.
 
-Hair and beard template ids are not in this data. T0.5 lists them and picks one whose title matches the vocabulary change. The beard feature page names styles such as Shaved; those names are not ids.
+A hair-transfer or beard-style fix carries `template`, the YouCam template id it renders with. Every id is in T0.5's recorded listings (`testdata/youcam/http-templates-*`). The loader refuses a hair or beard fix without one, and a template on any other task. The vocabulary change is what Clef reads on the render, which is not always the words of the criterion: a bun is tied-back hair, and a goatee is a short beard.
+
+| Template | Title | Fixes | Reads as | Who chose |
+|---|---|---|---|---|
+| `female_casual_updo` | Casual Updo | every `*-tie-hair` | hair bun | The user. No title says tied back; of the two T0.5 rendered, the updo keeps all the hair off the eyes and High Pony Tail does not. |
+| `all_circle` | Circle | every `*-short-beard` | beard goatee | The user. No beard is short and even across the cheeks; Circle (moustache joined to a chin beard, cheeks clear) is the shortest even shape. |
+| `all_garibaldi` | Garibaldi | `festival-full-beard` | beard full | Picked by the agent, awaiting the user. Of the full beards (Garibaldi, Bandholz, Long Bandholz, Ducktail), Garibaldi is wide and rounded with an even edge; the Bandholz pair are long and Ducktail is pointed. Not rendered yet. |
+| `female_crewcut` | Crewcut | `interview-short-hair` | hair short | Picked by the agent, awaiting the user. Crewcut is the title closest to short and neat. Of the two Crewcut templates, this one keeps the user's hair colour (`keep_users_color`); `all_crewcut` does not. Not rendered yet. |
+
+The `female_` and `all_` prefixes are YouCam's listing categories. They are not a gender choice, and nothing infers one.
 
 Makeup must not set lip `morphology` fullness, must not pick a lip shape that redraws the mouth, and must send `skin_smooth` at 0 (left out, it defaults to 50 and smooths the skin; T0.5). A render that smooths skin or reshapes the face is discarded.
 
@@ -68,13 +77,13 @@ No fix runs a shade match, so Facial Color Tones (`skin-tone-analysis`) is not o
 
 An easy collar, a relaxed shirt, hair off the eyes, facial hair absent or short and even, a lip that is bare or one even colour, an engaged expression, and light that shows both eyes.
 
-| Fix | Changes | Task | Analysis | Criteria | Vocabulary |
-|---|---|---|---|---|---|
-| `date-open-collar` | Open-collar shirt | `cloth-v4` | none | collar, garment | collar open, garment relaxed-shirt |
-| `date-tie-hair` | Hair tied back | `hair-transfer` | face shape | hair | hair tied-back |
-| `date-short-beard` | Short even beard | `beard-style` | none | facial hair | beard short |
-| `date-nude-lip` | One even nude | `makeup-vto` | none | lip | lip colour nude |
-| `date-closed-smile` | Closed-mouth smile | `ai-smile` | none | expression | expression closed-mouth-smile |
+| Fix | Changes | Task | Template | Analysis | Criteria | Vocabulary |
+|---|---|---|---|---|---|---|
+| `date-open-collar` | Open-collar shirt | `cloth-v4` | none | none | collar, garment | collar open, garment relaxed-shirt |
+| `date-tie-hair` | Hair tied back | `hair-transfer` | `female_casual_updo` | face shape | hair | hair bun |
+| `date-short-beard` | Short even beard | `beard-style` | `all_circle` | none | facial hair | beard goatee |
+| `date-nude-lip` | One even nude | `makeup-vto` | none | none | lip | lip colour nude |
+| `date-closed-smile` | Closed-mouth smile | `ai-smile` | none | none | expression | expression closed-mouth-smile |
 
 The light criterion has no fix. Basket: garments (`shirt-open-collar`), lip colour (`lip-nude`). Hair, beard, and the smile are templates, labelled visual simulation, with nothing to photograph.
 
@@ -84,14 +93,14 @@ This is the occasion the demo tells. The first visit can miss the earring and th
 
 The dress code: gold jhumkas rather than a bare ear or a plain stud, a lip with a clear colour rather than bare, a festive top rather than an office shirt, hair tied and off the eyes, facial hair absent or one neat shape, a present calm expression, and even light on both eyes.
 
-| Fix | Changes | Task | Analysis | Criteria | Vocabulary |
-|---|---|---|---|---|---|
-| `family-gold-jhumkas` | Gold jhumkas | `2d-vto/earring` | none | earring | jewellery jhumkas, colour gold |
-| `family-red-lip` | Red lip | `makeup-vto` | none | lip | lip colour red |
-| `family-festive-top` | Festive top | `cloth-v4` | none | garment | garment festive-top, collar mandarin |
-| `family-tie-hair` | Hair tied back | `hair-transfer` | face shape | hair | hair tied-back |
-| `family-short-beard` | Short even beard | `beard-style` | none | facial hair | beard short |
-| `family-closed-smile` | Closed-mouth smile | `ai-smile` | none | expression | expression closed-mouth-smile |
+| Fix | Changes | Task | Template | Analysis | Criteria | Vocabulary |
+|---|---|---|---|---|---|---|
+| `family-gold-jhumkas` | Gold jhumkas | `2d-vto/earring` | none | none | earring | jewellery jhumkas, colour gold |
+| `family-red-lip` | Red lip | `makeup-vto` | none | none | lip | lip colour red |
+| `family-festive-top` | Festive top | `cloth-v4` | none | none | garment | garment festive-top, collar mandarin |
+| `family-tie-hair` | Hair tied back | `hair-transfer` | `female_casual_updo` | face shape | hair | hair bun |
+| `family-short-beard` | Short even beard | `beard-style` | `all_circle` | none | facial hair | beard goatee |
+| `family-closed-smile` | Closed-mouth smile | `ai-smile` | none | none | expression | expression closed-mouth-smile |
 
 The lip question asks for a clear colour. The only fix that meets it is the red lip, so a dismissal is specifically that red. Light has no fix. Basket: earrings (`gold-jhumkas`), lip colour (`lip-red`), garments (`top-festive`).
 
@@ -101,14 +110,14 @@ The earring reference is one jhumka, front view, no logo and no ear. A front sel
 
 A buttoned collar, a plain shirt, hair off the face and close, facial hair absent or short and off the collar, a lip that is bare or a quiet nude, a calm expression, and plain even light.
 
-| Fix | Changes | Task | Analysis | Criteria | Vocabulary |
-|---|---|---|---|---|---|
-| `interview-buttoned-shirt` | Plain buttoned shirt | `cloth-v4` | none | collar, garment | collar buttoned, garment plain-shirt |
-| `interview-tie-hair` | Hair tied back | `hair-transfer` | face shape | hair | hair tied-back |
-| `interview-short-hair` | Hair short | `hair-transfer` | face shape | hair | hair short |
-| `interview-short-beard` | Short even beard | `beard-style` | none | facial hair | beard short |
-| `interview-nude-lip` | Quiet nude | `makeup-vto` | none | lip | lip colour nude |
-| `interview-closed-smile` | Closed-mouth smile | `ai-smile` | none | expression | expression closed-mouth-smile |
+| Fix | Changes | Task | Template | Analysis | Criteria | Vocabulary |
+|---|---|---|---|---|---|---|
+| `interview-buttoned-shirt` | Plain buttoned shirt | `cloth-v4` | none | none | collar, garment | collar buttoned, garment plain-shirt |
+| `interview-tie-hair` | Hair tied back | `hair-transfer` | `female_casual_updo` | face shape | hair | hair bun |
+| `interview-short-hair` | Hair short | `hair-transfer` | `female_crewcut` (agent pick) | face shape | hair | hair short |
+| `interview-short-beard` | Short even beard | `beard-style` | `all_circle` | none | facial hair | beard goatee |
+| `interview-nude-lip` | Quiet nude | `makeup-vto` | none | none | lip | lip colour nude |
+| `interview-closed-smile` | Closed-mouth smile | `ai-smile` | none | none | expression | expression closed-mouth-smile |
 
 Tie-back and short are separate fixes so memory can tell them apart. Light has no fix. Basket: garments (`shirt-buttoned`), lip colour (`lip-nude`).
 
@@ -116,15 +125,15 @@ Tie-back and short are separate fixes so memory can tell them apart. Light has n
 
 A festive garment, a festive earring, a necklace, a red or berry lip, finished hair off the eyes, facial hair absent or a full shape with a clean edge, an open expression, and warm even light.
 
-| Fix | Changes | Task | Analysis | Criteria | Vocabulary |
-|---|---|---|---|---|---|
-| `festival-festive-top` | Festive top | `cloth-v4` | none | garment | garment festive-top, collar mandarin |
-| `festival-gold-jhumkas` | Gold jhumkas | `2d-vto/earring` | none | earring | jewellery jhumkas, colour gold |
-| `festival-gold-chain` | Gold chain | `2d-vto/necklace` | none | necklace | necklace chain, colour gold |
-| `festival-red-lip` | Red lip | `makeup-vto` | none | lip | lip colour red |
-| `festival-tie-hair` | Hair tied back | `hair-transfer` | face shape | hair | hair tied-back |
-| `festival-full-beard` | Full even beard | `beard-style` | none | facial hair | beard full |
-| `festival-closed-smile` | Closed-mouth smile | `ai-smile` | none | expression | expression closed-mouth-smile |
+| Fix | Changes | Task | Template | Analysis | Criteria | Vocabulary |
+|---|---|---|---|---|---|---|
+| `festival-festive-top` | Festive top | `cloth-v4` | none | none | garment | garment festive-top, collar mandarin |
+| `festival-gold-jhumkas` | Gold jhumkas | `2d-vto/earring` | none | none | earring | jewellery jhumkas, colour gold |
+| `festival-gold-chain` | Gold chain | `2d-vto/necklace` | none | none | necklace | necklace chain, colour gold |
+| `festival-red-lip` | Red lip | `makeup-vto` | none | none | lip | lip colour red |
+| `festival-tie-hair` | Hair tied back | `hair-transfer` | `female_casual_updo` | face shape | hair | hair bun |
+| `festival-full-beard` | Full even beard | `beard-style` | `all_garibaldi` (agent pick) | none | facial hair | beard full |
+| `festival-closed-smile` | Closed-mouth smile | `ai-smile` | none | none | expression | expression closed-mouth-smile |
 
 The documented toothy smile is not used. Light has no fix. Basket: garments (`top-festive`), earrings (`gold-jhumkas`), necklaces (`gold-chain`), lip colour (`lip-red`).
 
@@ -134,12 +143,12 @@ The necklace page asks for a worn necklace as the reference, neck unobstructed i
 
 A dark plain garment, a closed plain collar, jewellery absent or one small stud, a lip that is bare or a quiet nude, hair off the face, facial hair absent or short and close, a still closed mouth, and plain even light.
 
-| Fix | Changes | Task | Analysis | Criteria | Vocabulary |
-|---|---|---|---|---|---|
-| `funeral-dark-shirt` | Dark plain shirt, collar buttoned | `cloth-v4` | none | garment, collar | garment dark-plain, collar buttoned |
-| `funeral-nude-lip` | Quiet nude | `makeup-vto` | none | lip | lip colour nude |
-| `funeral-tie-hair` | Hair tied back | `hair-transfer` | face shape | hair | hair tied-back |
-| `funeral-short-beard` | Short close beard | `beard-style` | none | facial hair | beard short |
+| Fix | Changes | Task | Template | Analysis | Criteria | Vocabulary |
+|---|---|---|---|---|---|---|
+| `funeral-dark-shirt` | Dark plain shirt, collar buttoned | `cloth-v4` | none | none | garment, collar | garment dark-plain, collar buttoned |
+| `funeral-nude-lip` | Quiet nude | `makeup-vto` | none | none | lip | lip colour nude |
+| `funeral-tie-hair` | Hair tied back | `hair-transfer` | `female_casual_updo` | face shape | hair | hair bun |
+| `funeral-short-beard` | Short close beard | `beard-style` | `all_circle` | none | facial hair | beard goatee |
 
 Three criteria have no fix, and the suggestion says so. Festive jewellery cannot be removed. A wide smile cannot be removed. Light cannot be relit. The nude covers a bright lip; it does not restore a bare one. Basket: garments (`shirt-dark-plain`), lip colour (`lip-nude`).
 

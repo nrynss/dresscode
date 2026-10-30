@@ -89,6 +89,36 @@ func TestLoadOccasions(t *testing.T) {
 		t.Fatal("festival red lip shares the family fix id")
 	}
 
+	for _, occ := range loaded.Occasions {
+		for _, f := range occ.Fixes {
+			switch f.YouCam.Task {
+			case "hair-transfer", "beard-style":
+				if f.Template == "" {
+					t.Fatalf("%s fix %s has no template", occ.ID, f.ID)
+				}
+			default:
+				if f.Template != "" {
+					t.Fatalf("%s fix %s has template %q on %s", occ.ID, f.ID, f.Template, f.YouCam.Task)
+				}
+			}
+		}
+	}
+	for _, tc := range []struct {
+		occasion, fix, template string
+		change                  VocabularyChange
+	}{
+		{"date", "date-tie-hair", "female_casual_updo", VocabularyChange{Attribute: "hair", To: "bun"}},
+		{"funeral", "funeral-short-beard", "all_circle", VocabularyChange{Attribute: "beard", To: "goatee"}},
+	} {
+		f := fix(t, loaded, tc.occasion, tc.fix)
+		if f.Template != tc.template {
+			t.Fatalf("%s template %q, want %q", tc.fix, f.Template, tc.template)
+		}
+		if !reflect.DeepEqual(f.Vocabulary, []VocabularyChange{tc.change}) {
+			t.Fatalf("%s vocabulary %#v", tc.fix, f.Vocabulary)
+		}
+	}
+
 	hair := fix(t, loaded, "date", "date-tie-hair")
 	if len(hair.Analysis) != 1 || hair.Analysis[0].Task != "face-attr-analysis" {
 		t.Fatalf("hair analysis %#v", hair.Analysis)
@@ -323,6 +353,42 @@ func TestBrokenFile(t *testing.T) {
 			fixPtr(t, o, "funeral-short-beard").Vocabulary = nil
 		})
 		assertFileError(t, dir, "funeral.json", "no vocabulary change")
+	})
+
+	t.Run("hair fix without a template", func(t *testing.T) {
+		t.Parallel()
+		dir := copyOccasions(t)
+		editOccasion(t, dir, "date.json", func(o *Occasion) {
+			fixPtr(t, o, "date-tie-hair").Template = ""
+		})
+		assertFileError(t, dir, "date.json", `fix "date-tie-hair" YouCam task "hair-transfer" has no template`)
+	})
+
+	t.Run("beard fix without a template", func(t *testing.T) {
+		t.Parallel()
+		dir := copyOccasions(t)
+		editOccasion(t, dir, "funeral.json", func(o *Occasion) {
+			fixPtr(t, o, "funeral-short-beard").Template = ""
+		})
+		assertFileError(t, dir, "funeral.json", `fix "funeral-short-beard" YouCam task "beard-style" has no template`)
+	})
+
+	t.Run("blank template", func(t *testing.T) {
+		t.Parallel()
+		dir := copyOccasions(t)
+		editOccasion(t, dir, "interview.json", func(o *Occasion) {
+			fixPtr(t, o, "interview-short-hair").Template = "  "
+		})
+		assertFileError(t, dir, "interview.json", `fix "interview-short-hair" YouCam task "hair-transfer" has no template`)
+	})
+
+	t.Run("template on a task that takes none", func(t *testing.T) {
+		t.Parallel()
+		dir := copyOccasions(t)
+		editOccasion(t, dir, "date.json", func(o *Occasion) {
+			fixPtr(t, o, "date-open-collar").Template = "all_circle"
+		})
+		assertFileError(t, dir, "date.json", `fix "date-open-collar" YouCam task "cloth-v4" takes no template`)
 	})
 }
 

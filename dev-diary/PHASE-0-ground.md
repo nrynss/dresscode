@@ -108,7 +108,7 @@ requires:   T0.3, T0.5
 fixture-ok: yes
 size:       S · mid
 owns:       testdata/occasions/*.json (fix entries only), docs/occasions.md (fix tables and template notes), internal/domain/model.go, internal/domain/load.go, internal/domain/*_test.go
-status:     claimed:claude-opus-5-5
+status:     in-review
 ```
 Split from T0.3, from T0.5's findings. **User decisions:** `tied-back` hair renders with the hair-transfer template Casual Updo (`female_casual_updo`), and a short beard renders with the beard-style template Circle (`all_circle`). Clef will read those renders as a bun and a goatee, so the fixes' vocabulary changes say so, and memory describes what the render shows.
 
@@ -118,6 +118,13 @@ Split from T0.3, from T0.5's findings. **User decisions:** `tied-back` hair rend
 - User-facing wording (`changes`, criterion suggestions) stays: a bun is tied-back hair, a goatee is a short beard, and `testdata/api/occasion.json` is frozen.
 
 **Done when:** every hair and beard fix carries a template id that appears in T0.5's recorded listings; the loader refuses a missing or misplaced template with the file and the reason; the vocabulary changes match the renders; the gate passes.
+
+Notes:
+
+- Built: `Fix.Template` (`template`, omitted when empty) in `internal/domain`. The loader checks it with the YouCam task: a hair-transfer or beard-style fix with no template, or a blank one, fails with `fix "<id>" YouCam task "<task>" has no template`; a template on any other task fails with `takes no template`. Both name the file, like the other fix errors. Four new cases in `TestBrokenFile`, and `TestLoadOccasions` checks that every hair and beard fix has a template and no other fix does.
+- Data: every `*-tie-hair` fix renders `female_casual_updo` and sets `hair` to `bun`; every short-beard fix renders `all_circle` and sets `beard` to `goatee` (the user's decisions). `changes`, criteria and suggestions are unchanged. The notes that said a template id would come later now say which one and why.
+- Picked by the agent, awaiting the user: `festival-full-beard` renders `all_garibaldi` (Garibaldi), vocabulary stays `full`. Of the full beards listed, Garibaldi is wide and rounded with an even edge; Bandholz and Long Bandholz are long, Ducktail is pointed. `interview-short-hair` renders `female_crewcut` (Crewcut), vocabulary stays `short`. Crewcut is the closest title to short and neat. Two templates share that title; `female_crewcut` has `keep_users_color` true and `all_crewcut` does not, and hair colour is never rendered. Neither pick has been rendered, so "reads as" is a judgement from the title, not a Clef read.
+- Surprised that the template ids carry `female_`, `male_` and `all_` prefixes that do not match `category_name` (`all_crewcut` is listed as Male). The prefix is YouCam's listing category, not a choice about the user; docs/occasions.md says so.
 
 ---
 

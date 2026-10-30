@@ -139,6 +139,7 @@
         "public_name": "AI Hairstyle Generator",
         "doc": "https://docs.perfectcorp.com/reference/ai_hairstyle.md"
       },
+      "template": "female_casual_updo",
       "analysis": [
         {
           "task": "face-attr-analysis",
@@ -153,10 +154,10 @@
       ],
       "criteria": ["family-hair-finished"],
       "vocabulary": [
-        {"attribute": "hair", "to": "tied-back"}
+        {"attribute": "hair", "to": "bun"}
       ],
       "products": [],
-      "note": "Template id comes from the hair-transfer template list. No id is invented here."
+      "note": "Template female_casual_updo (Casual Updo), the user's decision. No listed title says tied back. Of the two T0.5 rendered, Casual Updo keeps all the hair off the eyes; High Pony Tail lets strands fall down the front. Clef reads the render as a bun, so the vocabulary says bun."
     },
     {
       "id": "family-short-beard",
@@ -171,13 +172,14 @@
         "public_name": "AI Beard Style Generator",
         "doc": "https://docs.perfectcorp.com/reference/description/ai_beard_style.md"
       },
+      "template": "all_circle",
       "analysis": [],
       "criteria": ["family-beard-even"],
       "vocabulary": [
-        {"attribute": "beard", "to": "short"}
+        {"attribute": "beard", "to": "goatee"}
       ],
       "products": [],
-      "note": "Template id comes from the beard-style template list. Offered only if the user ticks it. Nothing infers who should see it."
+      "note": "Template all_circle (Circle), the user's decision. No listed beard is short and even across the cheeks. Circle, a moustache joined to a chin beard with the cheeks clear, is the shortest even shape. Clef reads the render as a goatee, so the vocabulary says goatee. Offered only if the user ticks it. Nothing infers who should see it."
     },
     {
       "id": "family-closed-smile",

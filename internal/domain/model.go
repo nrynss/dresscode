@@ -67,11 +67,15 @@ type VocabularyChange struct {
 
 // Fix is one opt-in menu entry: what it changes, which YouCam task renders
 // it, which analysis it needs, and which criteria it addresses.
+//
+// Template is the YouCam template id. A hair-transfer or beard-style fix
+// must name one; any other task takes none.
 type Fix struct {
 	ID         string             `json:"id"`
 	OptIn      bool               `json:"opt_in"`
 	Changes    string             `json:"changes"`
 	YouCam     YouCam             `json:"youcam"`
+	Template   string             `json:"template,omitempty"`
 	Analysis   []Analysis         `json:"analysis"`
 	Criteria   []string           `json:"criteria"`
 	Vocabulary []VocabularyChange `json:"vocabulary"`

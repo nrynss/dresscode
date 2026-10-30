@@ -393,6 +393,22 @@ func validateYouCam(file string, fix Fix) error {
 	if !strings.HasSuffix(fix.YouCam.Path, "/"+fix.YouCam.Task) {
 		return fail(file, "fix %q YouCam path %q does not end with task %q", fix.ID, fix.YouCam.Path, fix.YouCam.Task)
 	}
+	return validateTemplate(file, fix)
+}
+
+// templateTasks are the YouCam tasks that render from a template id.
+var templateTasks = []string{"hair-transfer", "beard-style"}
+
+func validateTemplate(file string, fix Fix) error {
+	if contains(templateTasks, fix.YouCam.Task) {
+		if blank(fix.Template) {
+			return fail(file, "fix %q YouCam task %q has no template", fix.ID, fix.YouCam.Task)
+		}
+		return nil
+	}
+	if fix.Template != "" {
+		return fail(file, "fix %q YouCam task %q takes no template, got %q", fix.ID, fix.YouCam.Task, fix.Template)
+	}
 	return nil
 }
 

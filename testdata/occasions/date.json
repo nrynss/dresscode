@@ -96,6 +96,7 @@
         "public_name": "AI Hairstyle Generator",
         "doc": "https://docs.perfectcorp.com/reference/ai_hairstyle.md"
       },
+      "template": "female_casual_updo",
       "analysis": [
         {
           "task": "face-attr-analysis",
@@ -110,10 +111,10 @@
       ],
       "criteria": ["date-hair-clear"],
       "vocabulary": [
-        {"attribute": "hair", "to": "tied-back"}
+        {"attribute": "hair", "to": "bun"}
       ],
       "products": [],
-      "note": "Template id comes from GET /s2s/v2.1/task/template/hair-transfer when T0.5 lists templates. No id is invented here. hair-type-detection needs three views, so it is not used on the one selfie."
+      "note": "Template female_casual_updo (Casual Updo), the user's decision. No listed title says tied back. Of the two T0.5 rendered, Casual Updo keeps all the hair off the eyes; High Pony Tail lets strands fall down the front. Clef reads the render as a bun, so the vocabulary says bun. hair-type-detection needs three views, so it is not used on the one selfie."
     },
     {
       "id": "date-short-beard",
@@ -128,13 +129,14 @@
         "public_name": "AI Beard Style Generator",
         "doc": "https://docs.perfectcorp.com/reference/description/ai_beard_style.md"
       },
+      "template": "all_circle",
       "analysis": [],
       "criteria": ["date-beard-even"],
       "vocabulary": [
-        {"attribute": "beard", "to": "short"}
+        {"attribute": "beard", "to": "goatee"}
       ],
       "products": [],
-      "note": "Template id comes from GET /s2s/v2.0/task/template/beard-style. The public feature page names styles such as Shaved; those names are not template ids."
+      "note": "Template all_circle (Circle), the user's decision. No listed beard is short and even across the cheeks. Circle, a moustache joined to a chin beard with the cheeks clear, is the shortest even shape. Clef reads the render as a goatee, so the vocabulary says goatee."
     },
     {
       "id": "date-nude-lip",
