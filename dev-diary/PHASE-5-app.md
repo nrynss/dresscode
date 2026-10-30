@@ -213,7 +213,7 @@ requires:   T5.8
 fixture-ok: yes
 size:       S · light
 owns:       web/src/app/theme.css, web/tests/a11y/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 The user accepted the 1.4.11 recommendation: control boundaries must be visible. `--line` reaches at least 3:1 against both `--ground` and `--surface`, in light and dark, with the smallest visual change that gets there. The contrast gate gains the non-text pairs (line vs ground, line vs surface, both modes) at 3:1, so the boundary cannot quietly fade again.
 
