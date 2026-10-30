@@ -369,6 +369,7 @@ test("a body that cannot be read is refused", () => {
     dismissed: [],
   });
   expect(() => recallFromResponse({ enabled: false, line: "Last family function." }, "family-function")).toThrow();
+  expect(() => recallFromResponse({ enabled: false, occasion: "family-function" }, "family-function")).toThrow();
   expect(() => recallFromResponse({}, "family-function")).toThrow();
   expect(() => recallFromResponse({ enabled: "yes" }, "family-function")).toThrow();
   // Another occasion's memory is not this answer.

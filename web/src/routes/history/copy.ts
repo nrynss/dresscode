@@ -105,7 +105,7 @@ export function recallFromResponse(body: unknown, occasion: string): Recall {
   const record = asRecord(body);
   if (record === undefined || typeof record.enabled !== "boolean") throw new Error(recallError);
   if (!record.enabled) {
-    for (const member of ["line", "kept", "dismissed"] as const) {
+    for (const member of ["occasion", "line", "kept", "dismissed"] as const) {
       if (record[member] !== undefined) throw new Error(recallError);
     }
     return { enabled: false, occasion, line: "", kept: [], dismissed: [] };
