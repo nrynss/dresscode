@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.4 landed (`8b9ba84`); T5.5 is the next app task and is ready. T0.4 is claimed elsewhere. P2's T2.4b is the only other ready task and waits on the user's recipient address.
+**Current status:** T5.4 landed (`8b9ba84`); T5.5 is in flight. T0.4 is claimed elsewhere (four sample people now). T2.4b's one live send was refused (Resend `403`, no error name) — the test is parked on its branch until the Resend console sorts the from-domain or key, then one send completes it.
 
 ---
 
@@ -157,6 +157,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T2.4b Resend live — refused at the first send; parked on the console.** The live test is committed (`1f53fce`, behind the `live` tag, reads `RESEND_API_KEY`/`RESEND_FROM`/`RESEND_TO`, skips without them, one send, no retry; the message id is captured through a `slog.Handler` so the landed sender is unchanged). The one run, at 2026-10-30T13:38:42Z, was refused with `403` and no error name; no mail, no code in any log, nothing to confirm. Done-when unmet, recorded, not glossed. A 403 with no name reads as account or domain gating — the from-domain's verification or the key's send permission in the Resend console — and only the user can look there. The branch stays parked at `in-review`; review runs together with the confirmation send once the console is fixed. See `feedback.md` under Resend.
 
 - **Decision: four sample people, not two.** The user added a white woman and an East Asian man beside the Indian pair (anchors man-1 and woman-1, approved), so no criterion's evaluation rests on one face. The second-visit story stays with the Indian woman. T0.4's $10 FAL cap is unchanged and now covers the second pair too. Changed: AGENTS.md, product.md (Sample people), T0.4.
 
