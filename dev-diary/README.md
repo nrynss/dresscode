@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.6 landed (`87989ec`) — P5 is one task from done (T5.8, in flight). The critical path runs through the probes: T0.6 and T0.4a in flight, T0.5 (YouCam) waits on T0.4a. Resend delivery proven by the quick path; `nryn.dev` verification still open.
+**Current status:** T5.8 landed (`7f6581c`) — the app's accessibility and contrast gates now run inside `./tools/check.sh` (22 screen-state runs, 11 text pairs × four theme blocks). T5.9 (control boundaries to 3:1) is P5's last task, in flight. T2.1 is in remediation-review. T0.5 (YouCam probe) is claimed elsewhere; `nryn.dev` verification still open.
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P2 | 5 / 9 | T2.3, T2.3b, T2.4, T2.4b and T2.5 done. T2.1 is ready (T0.6 landed). T2.2 waits on the YouCam probe. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
-| P5 | 7 / 8 | Only T5.8 (accessibility gates) is left, and it is in flight. Phone camera and phone install still need you. |
+| P5 | 8 / 9 | Only T5.9 (control boundaries to 3:1, user-decided) remains, in flight. Phone camera and phone install still need you. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
 ### Units and spend
@@ -158,6 +158,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.8 Accessibility and contrast.** Chaaya's own `a11yGate` and `contrastGate` run on every screen inside `./tools/check.sh`: 11 screen states (dialogs and the shop sheet included, portals measured) × forced light and dark at a 375 px viewport, plus all eleven text pairs the screens draw at 4.5 across all four theme blocks, plus honesty guards (every colour outside the theme blocks must be a role; every drawn pair must be measured) and a 375 px width scan. jsdom entered as a dev dependency with the user's approval — the DOM host Chaaya's a11y gate needs. No genuine failure on any landed screen; the routed WCAG 1.4.11 finding (control boundaries under 3:1) became the user's decision and then T5.9. The first review verified the matrix; the remediation exposed that the colour-declaration parser had wrong capture groups — **both colour guards had passed vacuously** — and made them live (73 declarations now parsed; the old parser collected zero), extending them to svg paints, semicolon-less final declarations, and a whole-screen width sweep, each with a /tmp break-proof; the second review reproduced all three breaks and confirmed the old parser collected nothing. Two residual documentation LOWs (a stale line citation, two theoretical blind spots) were fixed by the orchestrator under the docs exception and recorded in the task's notes. Landed as `9d0d934`+`6f7d40a`+`7f6581c`, gate green in the worktree and the main checkout. Lesson recorded with it: a guard that has never failed is not yet a guard.
 
 - **Two decisions on T5.8's findings (user, 2026-10-30).** The jsdom dev dependency was confirmed by the user directly ("You asked me and I said yes") — the record in T5.8's task notes stands. And on the WCAG 1.4.11 finding (control boundaries `--line` at 1.39–1.95 against ground/surface, guideline 3:1), the user accepted the recommendation to strengthen the line colour and gate it. That work is T5.9, dispatched once T5.8 lands (their branches would both touch web/tests/a11y/).
 
