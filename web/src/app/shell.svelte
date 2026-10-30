@@ -1,9 +1,26 @@
 <script lang="ts">
   import { theme } from "@nrynss/chaaya/theme";
   import type { Snippet } from "svelte";
+  import Account from "../routes/account/account.svelte";
   import ThemeControl from "./theme-control.svelte";
 
   let { children }: { children: Snippet } = $props();
+
+  function readHash(): string {
+    if (typeof location === "undefined") return "";
+    return location.hash;
+  }
+
+  let route = $state(readHash());
+
+  $effect(() => {
+    if (typeof window === "undefined") return;
+    const onHash = () => {
+      route = location.hash;
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  });
 
   $effect(() => {
     const resolved = theme.resolved;
@@ -23,9 +40,23 @@
       <h1>Dresscode</h1>
       <p class="tag">See the dress code before they do.</p>
     </div>
+    <a class="account-link" href="#account">Account</a>
     <ThemeControl />
   </header>
   <main>
-    {@render children()}
+    {#if route === "#account"}
+      <Account />
+    {:else}
+      {@render children()}
+    {/if}
   </main>
 </div>
+
+<style>
+  .account-link {
+    color: var(--text);
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
+  }
+</style>
