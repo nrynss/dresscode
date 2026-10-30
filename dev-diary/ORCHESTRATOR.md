@@ -2,7 +2,7 @@
 
 How the orchestrator runs the work in this repository. Workers read [`../AGENTS.md`](../AGENTS.md). The task rules are in [`README.md`](README.md). This file covers what only the orchestrator does.
 
-**Process (user decision):** one agent per task, and no review loops. The orchestrator gives each task to a single agent, validates the result itself, and lands it or sends the same agent back.
+**Process (user decision):** P0 stays with the orchestrator. It checks each result itself and lands it, or sends the same implementer back. From P1 on, a review agent reads the work, then a remediation agent fixes what the review found. Review and remediation repeat until a review comes back clean. The orchestrator lands only then.
 
 The orchestrator is the one session the user talks to. It picks tasks, dispatches agents, validates and lands their work, and keeps the board true. It does not write product code.
 
@@ -12,10 +12,12 @@ The orchestrator is the one session the user talks to. It picks tasks, dispatche
 
 | Role | Does | Never does |
 |---|---|---|
-| **Orchestrator** | Picks tasks. Dispatches implementers. Validates every result itself. Lands commits on `main`. Updates the status board and handoff log. Fixes documentation itself. Asks the user for decisions. | Implement a task. Land work it hasn't validated. Treat an agent's message as the user's approval. |
-| **Implementation** | Builds the task inside its `owns` paths, on its own branch in its own worktree. Sets its task to `in-review`. Reports. | Mark its task `done`. Edit `dev-diary/README.md`. Touch files outside `owns`. |
+| **Orchestrator** | Picks tasks. Dispatches agents. On P0, checks every result itself. From P1, runs review and remediation until a review is clean. Lands commits on `main`. Updates the status board and handoff log. Fixes documentation itself. Asks the user for decisions. | Implement a task. Review or remediate a task itself from P1 on. Land work that is not clean. Treat an agent's message as the user's approval. |
+| **Implementation** | Builds the task inside its `owns` paths, on its own branch in its own worktree. Sets its task to `in-review`. Reports. | Mark its task `done`. Edit `dev-diary/README.md`. Touch files outside `owns`. Review its own task. |
+| **Review** (from P1) | Reads the branch. Runs the gate. Reports each **Done when** clause and every finding. | Edit, commit, push, or set a task `done`. |
+| **Remediation** (from P1) | Fixes the review's findings on the same branch, inside `owns`. Sets the task back to `in-review`. Reports. | Mark its task `done`. Expand the task past the findings. |
 
-When validation finds a problem, the same implementer gets it back with the evidence. The orchestrator fixes only documentation itself: markdown under `dev-diary/` or `docs/`, `README.md`, `AGENTS.md`, or a comment that does not describe behaviour. Anything that touches behaviour, a contract, a test, a fixture or the gate goes back to the implementer.
+On P0, a problem goes back to the same implementer with the evidence. From P1, it goes to a remediation agent, and then to a new review. The orchestrator fixes only documentation itself: markdown under `dev-diary/` or `docs/`, `README.md`, `AGENTS.md`, or a comment that does not describe behaviour. Anything that touches behaviour, a contract, a test, a fixture or the gate goes to the implementer on P0, and to the remediation agent from P1.
 
 ---
 
@@ -40,17 +42,22 @@ A task is **ready** when its status is `not-started`, every task in `requires` i
 
 Always in the background, always in its own worktree (`isolation: worktree`). A new worktree is cut from `origin/main`, not the local `main`. If local `main` is ahead, either push first (with the user's approval) or tell the worker in the brief to move its new branch to the brief's commit before starting, and to stop if it can't. Use the brief template below. A worker starts cold, so the brief carries everything it needs: what to read, what to build, what it may touch, how to prove it, and what to report.
 
-### 4. Validate: never trust the report
+### 4. Check
 
-When the implementer reports, the orchestrator checks for itself:
-- every **Done when** clause is met, each with evidence the orchestrator has seen, not just the report's word;
-- the diff: the branch holds only the task's `owns` paths and its own status lines, and does what the task says;
-- the gate passes in the worktree;
+The report is a claim. What has to be true:
+
+- every **Done when** clause is met, with evidence from the check, not just the report's word;
+- the diff holds only the task's `owns` paths and its own status lines, and does what the task says;
+- `./tools/check.sh` passes;
 - no key value is in any file (see Secrets);
 - for a task that records fixtures or prompts, an offline replay from the branch gives what the report says;
 - for a `b` task, the live transcript is in the report and matches the committed test.
 
-Short of the task, it goes back to the same implementer with what is missing, or the task is split (`T3.1a`) and recorded. It is never landed as done.
+**P0.** The orchestrator does this check itself and lands, or sends the same implementer back with what is missing. There is no review agent and no remediation agent.
+
+**From P1.** The orchestrator does not check the work itself. It dispatches a review agent, in its own worktree, detached at the branch tip, told not to edit. The review reports clean, or it lists findings. A clean review means every clause above holds and nothing must be fixed.
+
+If the review is not clean, the orchestrator dispatches a remediation agent on the task branch with those findings. The remediator edits only inside `owns`, commits, and returns the task to `in-review`. Then a new review agent runs. Review and remediation repeat until a review comes back clean. The orchestrator lands only then. Two agents never edit one checkout. The reviewer never edits.
 
 ### 5. Land
 

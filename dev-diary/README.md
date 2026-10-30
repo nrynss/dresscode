@@ -95,7 +95,7 @@ A `b` task (T2.2b) is the live sibling of its parent. It owns only its live test
 
 ## Developer Guidelines
 
-1. **Claim before starting.** The orchestrator sets `status: claimed:<agent>` in the phase document on `main`.
+1. **Claim before starting.** The orchestrator sets `status: claimed:<agent>` in the phase document on `main`. On P0 the orchestrator checks the result and lands it. From P1 a review agent reads the work, then a remediation agent fixes what that review found, and the two repeat until a review is clean.
 2. **Stay inside `owns`.** A change outside it is a new task or a handoff note.
 3. **Contracts freeze at the end of P1.** A change to a domain type, an interface or the API contract updates its fixtures in `testdata/` in the same commit, and is the orchestrator's call.
 4. **Who sees what is enforced in code.** The judge and the check never receive YouCam analysis. The fix picker never receives the photo. Only allowlisted attributes cross. A test pins each boundary.
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **Review and remediation from P1.** On P0 the orchestrator checks a result and lands it. From P1 a review agent reads the branch and runs the gate, then a remediation agent fixes what the review found. Those two repeat until a review comes back clean, and only then does the work land.
 - **T0.1 Repository on git footing.** Module `github.com/nrynss/dresscode`, Go 1.27.1, Keel v0.9.0, no toolchain line. `version` prints `dresscode 0.0.0`; `serve` exits without listening, dialing, or reading a key. The app is a Vite and Svelte 5 static page on `@nrynss/chaaya@0.5.0` and `bits-ui@^2`, with eslint, svelte-check, and Vitest. `./tools/check.sh` is the gate, and CI runs it on push to `main` and on pull requests. `.env.example` is a comment until T0.2 names the variables. Surprised: the Chaaya root export is only `packageName`; `@sveltejs/kit` is an optional peer and was not added; pnpm's minimum release age rejects the exact `@nrynss/chaaya@0.5.0` pin, so `web/pnpm-workspace.yaml` excludes that version; `go mod tidy` added no indirect modules because `keel/id` uses only the standard library.
 - **Fix selection is Clef.** Jev on OpenRouter stays available so the two can be compared on the same pick requests. That comparison is still required. Clef remains the picker until it is done.
 - **Repository started.** Product, architecture, agent rules and this diary. Decided before the first task: guests plus emailed-code sign-in, no Google; style memory is text only, with Clef describing each render in a fixed vocabulary; Keel v0.9.0, Chaaya 0.5.0, Lambo v0.8.0. Checked: the YouCam key authenticates on the India server (an upload slot, no units), and a Workers AI token lists Clef, Clef-flash and bge-m3 and ran one bge-m3 call.

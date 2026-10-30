@@ -5,7 +5,7 @@ Rules for any agent working in this repository. The product is in [`product.md`]
 ## Task rules
 
 - Work only on a task from a phase file in `dev-diary/`, claimed for you by the orchestrator.
-- One agent per task. The orchestrator validates your work itself and lands it, or sends it back to you with what is missing. There are no review rounds.
+- One implementer edits a task at a time. On P0 the orchestrator checks the result and lands it, or sends it back. From P1 a review agent reads the work, then a remediation agent fixes what the review found, and that repeats until a review is clean. You do not review your own task, and you do not mark it done.
 - Meet every **Done when** clause, with evidence in your report. A clause you could not meet is reported as unmet, never glossed.
 - A decision the task names as the user's goes back to the orchestrator. Don't make it yourself.
 - Never schedule. No dates, day windows, target days or timelines in any document, commit or report. Work is ordered by `requires` only.
