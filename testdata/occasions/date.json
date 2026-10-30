@@ -1,0 +1,187 @@
+{
+  "kind": "occasion",
+  "id": "date",
+  "name": "Date",
+  "criteria": [
+    {
+      "id": "date-collar-open",
+      "kind": "clothing",
+      "clef": "Is the collar open, rather than buttoned to the neck?",
+      "suggestion": "The collar reads formal; try it open."
+    },
+    {
+      "id": "date-garment-easy",
+      "kind": "clothing",
+      "clef": "Is the garment a relaxed shirt, rather than a stiff suit or a loud pattern?",
+      "suggestion": "The garment reads stiff or loud; try a plain relaxed shirt."
+    },
+    {
+      "id": "date-hair-clear",
+      "kind": "grooming",
+      "clef": "Is the hair off the eyes?",
+      "suggestion": "The hair crosses the eyes; try it tied back."
+    },
+    {
+      "id": "date-beard-even",
+      "kind": "grooming",
+      "clef": "Is facial hair either absent or a short even shape, not a patchy outline?",
+      "suggestion": "The beard outline is patchy; try a short even shape."
+    },
+    {
+      "id": "date-lip-clear",
+      "kind": "grooming",
+      "clef": "Is the lip either bare or one even colour, not a smeared edge?",
+      "suggestion": "The lip colour is smeared; try one even nude."
+    },
+    {
+      "id": "date-expression-engaged",
+      "kind": "expression",
+      "clef": "Is the expression engaged, with the mouth relaxed, rather than a flat stare?",
+      "suggestion": "The expression reads flat; try a closed-mouth smile."
+    },
+    {
+      "id": "date-light-see",
+      "kind": "lighting",
+      "clef": "Are both eyes visible in even light, rather than a flat grey wash or a hard shadow on one side?",
+      "suggestion": "The face is lit flat; move toward a window. No fix here can relight the photo."
+    }
+  ],
+  "biggest_issue": {
+    "question": "Which missed part of this dress code is the biggest issue?",
+    "options": [
+      {"id": "date-collar-open", "label": "the collar"},
+      {"id": "date-garment-easy", "label": "the garment"},
+      {"id": "date-hair-clear", "label": "the hair"},
+      {"id": "date-beard-even", "label": "the facial hair"},
+      {"id": "date-lip-clear", "label": "the lip"},
+      {"id": "date-expression-engaged", "label": "the expression"},
+      {"id": "date-light-see", "label": "the light"},
+      {"id": "none", "label": "none"},
+      {"id": "cant-tell", "label": "can't tell"}
+    ]
+  },
+  "fixes": [
+    {
+      "id": "date-open-collar",
+      "opt_in": true,
+      "changes": "Replaces the garment with an open-collar shirt.",
+      "youcam": {
+        "set": "Fashion",
+        "task": "cloth-v4",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/cloth-v4",
+        "path_verified": true,
+        "public_name": "AI Clothes Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/ai_clothes.md"
+      },
+      "analysis": [],
+      "criteria": ["date-collar-open", "date-garment-easy"],
+      "vocabulary": [
+        {"attribute": "collar", "to": "open"},
+        {"attribute": "garment", "to": "relaxed-shirt"}
+      ],
+      "products": ["shirt-open-collar"],
+      "note": "The only garment_category value in the public request example is full_body. The file spec also talks about upper-body and lower-body regions, and invalid_parameter covers a bad category, but the enum is not listed. Do not send a guessed category."
+    },
+    {
+      "id": "date-tie-hair",
+      "opt_in": true,
+      "changes": "Renders the hair tied back.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "hair-transfer",
+        "method": "POST",
+        "path": "/s2s/v2.1/task/hair-transfer",
+        "path_verified": true,
+        "public_name": "AI Hairstyle Generator",
+        "doc": "https://docs.perfectcorp.com/reference/ai_hairstyle.md"
+      },
+      "analysis": [
+        {
+          "task": "face-attr-analysis",
+          "method": "POST",
+          "path": "/s2s/v2.0/task/face-attr-analysis",
+          "path_verified": true,
+          "public_name": "AI Face Attributes and Ratio Analyzer",
+          "doc": "https://docs.perfectcorp.com/reference/description/ai_face_analyzer.md",
+          "use_fields": ["faceShape"],
+          "never_use": ["age", "gender", "ratios"]
+        }
+      ],
+      "criteria": ["date-hair-clear"],
+      "vocabulary": [
+        {"attribute": "hair", "to": "tied-back"}
+      ],
+      "products": [],
+      "note": "Template id comes from GET /s2s/v2.1/task/template/hair-transfer when T0.5 lists templates. No id is invented here. hair-type-detection needs three views, so it is not used on the one selfie."
+    },
+    {
+      "id": "date-short-beard",
+      "opt_in": true,
+      "changes": "Renders a short even beard.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "beard-style",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/beard-style",
+        "path_verified": true,
+        "public_name": "AI Beard Style Generator",
+        "doc": "https://docs.perfectcorp.com/reference/description/ai_beard_style.md"
+      },
+      "analysis": [],
+      "criteria": ["date-beard-even"],
+      "vocabulary": [
+        {"attribute": "beard", "to": "short"}
+      ],
+      "products": [],
+      "note": "Template id comes from GET /s2s/v2.0/task/template/beard-style. The public feature page names styles such as Shaved; those names are not template ids."
+    },
+    {
+      "id": "date-nude-lip",
+      "opt_in": true,
+      "changes": "Paints the lip one even nude.",
+      "youcam": {
+        "set": "Beauty",
+        "task": "makeup-vto",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/makeup-vto",
+        "path_verified": true,
+        "public_name": "AI Makeup Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/makeup_vto.md"
+      },
+      "analysis": [],
+      "criteria": ["date-lip-clear"],
+      "vocabulary": [
+        {"attribute": "lip_colour", "to": "nude"}
+      ],
+      "products": ["lip-nude"],
+      "note": "Use category lip_color and one palette. Do not set morphology fullness or any lip shape that changes the lip outline. Do not use skin_smooth."
+    },
+    {
+      "id": "date-closed-smile",
+      "opt_in": true,
+      "changes": "Renders a closed-mouth smile.",
+      "youcam": {
+        "set": "Skin",
+        "task": "ai-smile",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/ai-smile",
+        "path_verified": true,
+        "public_name": "AI Smile",
+        "doc": "https://docs.perfectcorp.com/reference/ai_smile.md"
+      },
+      "analysis": [],
+      "criteria": ["date-expression-engaged"],
+      "vocabulary": [
+        {"attribute": "expression", "to": "closed-mouth-smile"}
+      ],
+      "products": [],
+      "note": "The documented style name is closed_mouth_smile. The overview does not print the JSON field that carries it. Grouped with face and skin tools on the MCP page, not with Creators."
+    }
+  ],
+  "basket": {
+    "categories": ["garments", "lip-colour"],
+    "products": ["shirt-open-collar", "lip-nude"],
+    "template_only": ["hair", "beard", "expression"]
+  }
+}

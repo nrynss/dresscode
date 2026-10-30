@@ -1,0 +1,173 @@
+{
+  "kind": "occasion",
+  "id": "funeral",
+  "name": "Funeral",
+  "criteria": [
+    {
+      "id": "funeral-garment-dark",
+      "kind": "clothing",
+      "clef": "Is the garment dark and plain, rather than bright, patterned, or festive?",
+      "suggestion": "The garment reads bright; try a dark plain shirt."
+    },
+    {
+      "id": "funeral-collar-plain",
+      "kind": "clothing",
+      "clef": "Is the collar plain and closed, rather than open and bright?",
+      "suggestion": "The collar reads open; try it closed and plain."
+    },
+    {
+      "id": "funeral-jewellery-quiet",
+      "kind": "grooming",
+      "clef": "Is jewellery either absent or one small plain stud, not a festive earring or a large necklace?",
+      "suggestion": "The jewellery reads festive; leave the festive pieces off. No fix here can take jewellery off."
+    },
+    {
+      "id": "lip-quiet",
+      "kind": "grooming",
+      "clef": "Is the lip either bare or a quiet nude, not a bright colour?",
+      "suggestion": "The lip reads bright; try a nude."
+    },
+    {
+      "id": "funeral-hair-plain",
+      "kind": "grooming",
+      "clef": "Is the hair plain and off the face, rather than across the eyes?",
+      "suggestion": "The hair crosses the face; try it tied back."
+    },
+    {
+      "id": "funeral-beard-close",
+      "kind": "grooming",
+      "clef": "Is facial hair either absent or a short close shape, not a long or patchy outline?",
+      "suggestion": "The beard reads long; try a short close shape."
+    },
+    {
+      "id": "funeral-expression-still",
+      "kind": "expression",
+      "clef": "Is the expression still, with the mouth closed, rather than a wide smile?",
+      "suggestion": "The expression reads like a wide smile; let it rest. No fix here removes a smile."
+    },
+    {
+      "id": "funeral-light-plain",
+      "kind": "lighting",
+      "clef": "Is the light plain and even, without a dramatic side shadow or a bright coloured wash?",
+      "suggestion": "The light reads dramatic; face a plain window. No fix here can relight the photo."
+    }
+  ],
+  "biggest_issue": {
+    "question": "Which missed part of this dress code is the biggest issue?",
+    "options": [
+      {"id": "funeral-garment-dark", "label": "the garment"},
+      {"id": "funeral-collar-plain", "label": "the collar"},
+      {"id": "funeral-jewellery-quiet", "label": "the jewellery"},
+      {"id": "lip-quiet", "label": "the lip"},
+      {"id": "funeral-hair-plain", "label": "the hair"},
+      {"id": "funeral-beard-close", "label": "the facial hair"},
+      {"id": "funeral-expression-still", "label": "the expression"},
+      {"id": "funeral-light-plain", "label": "the light"},
+      {"id": "none", "label": "none"},
+      {"id": "cant-tell", "label": "can't tell"}
+    ]
+  },
+  "fixes": [
+    {
+      "id": "funeral-dark-shirt",
+      "opt_in": true,
+      "changes": "Replaces the garment with a dark plain shirt, collar buttoned.",
+      "youcam": {
+        "set": "Fashion",
+        "task": "cloth-v4",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/cloth-v4",
+        "path_verified": true,
+        "public_name": "AI Clothes Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/ai_clothes.md"
+      },
+      "analysis": [],
+      "criteria": ["funeral-garment-dark", "funeral-collar-plain"],
+      "vocabulary": [
+        {"attribute": "garment", "to": "dark-plain"},
+        {"attribute": "collar", "to": "buttoned"}
+      ],
+      "products": ["shirt-dark-plain"],
+      "note": "The only garment_category value in the public request example is full_body. Do not send a guessed category."
+    },
+    {
+      "id": "funeral-nude-lip",
+      "opt_in": true,
+      "changes": "Paints the lip a quiet nude.",
+      "youcam": {
+        "set": "Beauty",
+        "task": "makeup-vto",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/makeup-vto",
+        "path_verified": true,
+        "public_name": "AI Makeup Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/makeup_vto.md"
+      },
+      "analysis": [],
+      "criteria": ["lip-quiet"],
+      "vocabulary": [
+        {"attribute": "lip_colour", "to": "nude"}
+      ],
+      "products": ["lip-nude"],
+      "note": "Use category lip_color and one palette. This covers a bright lip; it cannot restore a bare lip. Do not change the lip outline."
+    },
+    {
+      "id": "funeral-tie-hair",
+      "opt_in": true,
+      "changes": "Renders the hair tied back.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "hair-transfer",
+        "method": "POST",
+        "path": "/s2s/v2.1/task/hair-transfer",
+        "path_verified": true,
+        "public_name": "AI Hairstyle Generator",
+        "doc": "https://docs.perfectcorp.com/reference/ai_hairstyle.md"
+      },
+      "analysis": [
+        {
+          "task": "face-attr-analysis",
+          "method": "POST",
+          "path": "/s2s/v2.0/task/face-attr-analysis",
+          "path_verified": true,
+          "public_name": "AI Face Attributes and Ratio Analyzer",
+          "doc": "https://docs.perfectcorp.com/reference/description/ai_face_analyzer.md",
+          "use_fields": ["faceShape"],
+          "never_use": ["age", "gender", "ratios"]
+        }
+      ],
+      "criteria": ["funeral-hair-plain"],
+      "vocabulary": [
+        {"attribute": "hair", "to": "tied-back"}
+      ],
+      "products": [],
+      "note": "Does not change hair colour. A single target colour would be a guess, and the hair-colour overview does not print a task path."
+    },
+    {
+      "id": "funeral-short-beard",
+      "opt_in": true,
+      "changes": "Renders a short close beard.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "beard-style",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/beard-style",
+        "path_verified": true,
+        "public_name": "AI Beard Style Generator",
+        "doc": "https://docs.perfectcorp.com/reference/description/ai_beard_style.md"
+      },
+      "analysis": [],
+      "criteria": ["funeral-beard-close"],
+      "vocabulary": [
+        {"attribute": "beard", "to": "short"}
+      ],
+      "products": [],
+      "note": "Template id comes from the beard-style template list. Nothing infers who should see this fix."
+    }
+  ],
+  "basket": {
+    "categories": ["garments", "lip-colour"],
+    "products": ["shirt-dark-plain", "lip-nude"],
+    "template_only": ["hair", "beard"]
+  }
+}
