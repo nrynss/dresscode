@@ -6,6 +6,22 @@ Pick an occasion, bring one selfie. Dresscode checks the look against the occasi
 
 > **Status:** entry for the YouCam API Skin AI & eCommerce VTO Hackathon, in development. Nothing below is implemented yet; see [`product.md`](product.md) and the [development diary](dev-diary/README.md).
 
+## Run
+
+Print the version:
+
+```sh
+go run ./cmd/dresscode version
+```
+
+`serve` exits without listening. Check the web app (svelte-check) with:
+
+```sh
+pnpm --dir web check
+```
+
+The full gate is `./tools/check.sh`: gofmt, go vet, `go test -race ./...`, then the web app's lint, svelte-check, and Vitest.
+
 ## Licence
 
 Apache-2.0. See [`LICENSE`](LICENSE).
