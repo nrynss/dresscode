@@ -22,11 +22,23 @@ requires:   T2.1
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/pipeline/judge.go
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 One Clef request: the normalised photo, the occasion, its criteria as `noul` questions, the biggest-issue `choice`. Turn probabilities into flags with thresholds from settings (placeholders until T3.9 sets them). Output: the flagged criteria with the user-facing wording, and the biggest issue.
 
 **Done when:** on the recordings, each sample's flags come out; a test proves no YouCam analysis is in the request.
+
+Notes:
+
+- Built `internal/pipeline/judge.go`: `Judge(ctx, client, photo, occ, thresholds) (Judgement, error)` — one `systemone.Request` to Clef with the photo as the only image, a two-field state, one `noul` per criterion in the data's wording, and the `biggest_issue` choice. The replay answers all 37 judge recordings through the existing key machinery; no live call.
+- The no-YouCam proof is structural. The state is `judgeState{Occasion, Name}` — a two-field struct, so an analysis has no field to travel in — and the questions are copied verbatim from `domain.Criterion.Clef` and `BiggestIssue`, never composed. The package imports the System One seam and the domain, not the YouCam client, so an analysis cannot even be named in it. The test pins it twice: typed assertions on the captured request (one image equal to the photo given, state decodes strictly as the two fields, question set exactly criteria plus the choice with the data's wording and options), and canonical equality of judge's whole request with the recorded probe request on every one of the 37 samples — the probe docs/clef.md records as sending no YouCam analysis.
+- Thresholds: `Thresholds{Met, PerCriterion}` is an argument, not a package constant. A criterion flags when its yes-probability is under its line; the line is `PerCriterion[id]` when one is set, else `Met`. Values must sit in [0, 1] (NaN refused) and an override for an id off the occasion is an error, so a stale setting fails loudly instead of quietly stopping to apply. Config owns no threshold yet, so the placeholders are proposed, not taken (report holds the exact diff): a `[judge]` section in `Settings` (`met`, `per_criterion`), whose values T3.9 measures; run.go maps it onto `pipeline.Thresholds`.
+- Output: `Judgement{Flags []domain.Criterion, Issue}`. Flags are the flagged criteria carried whole, in the occasion's criteria order, so the app renders the data's own suggestion (`testdata/api/look.json` renders id, kind, suggestion) and pick (T3.2) reads the same criteria. `Issue` is the chosen option's id and the occasion's label for it (`none` and `cant-tell` pass through). No probability in the output: they steer this decision and die here.
+- The flags test table pins all 37 samples at a 0.5 reading — the reading docs/clef.md counts agreement at — with expected flags and issues read off its tables. Twelve cells read on the other side of 0.5 from the README's ground truth (V02 light; V21, P09, P13, P16 beards; V06, P12 expressions; V08 light and beard; P11 garment; V09, V12 collars); the table pins the read, and T3.9 owns moving the lines.
+- The judge refuses an empty photo before any call: docs/clef.md measured that Clef answers an imageless judge request confidently, and that answer must not be trusted.
+- For T3.2 (pick): you inherit `Judgement` (flags carry the criteria whole; `Issue.ID` is a criterion id, `none`, or `cant-tell` — it can name a criterion the flags do not hold, as V21 and P15 do) and `Thresholds` as the shape settings fill. The pick request is text only; the seam's `Request` takes zero images, so the boundary there is the same argument-shaped one.
+- Surprised that the replay's resolved recording (with images read inline) is retrievable by exchange id, so the test compares judge's request against the recorded probe request byte for byte without re-resolving file references. Surprised that `filepath.Glob` on `judge-*.json` counts exactly 37 — the stability and cost sets live in their own folders, so the top-level count is the judge set.
+- Also surprised, while reading T0.6's notes again: rewording one question moved the other answers on the same photo. That is why the questions are copied from the data and never composed here — a wording change belongs to `testdata/occasions/` and T0.3's owner, with a re-recording, not to a pipeline string.
 
 ---
 
