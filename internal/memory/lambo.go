@@ -49,6 +49,15 @@ var ErrUnauthorized = errors.New("memory: lambo refused the token")
 // sent again: Lambo does not de-duplicate it.
 var ErrUnconfirmed = errors.New("memory: remember was not confirmed")
 
+// ErrSessionExpired is a call on an Mcp-Session-Id the serve no longer
+// knows. Lambo expires idle sessions in minutes, and the reply is an
+// HTTP 404 with plain text, not a JSON-RPC error. The client initialized
+// the session again and replayed the call once; the replay was refused
+// too. The call is not attempted a third time. It stays this error out
+// of Remember as well: a derive refused twice was never sent, which is
+// not a lost confirmation.
+var ErrSessionExpired = errors.New("memory: lambo session expired")
+
 // Config is how the client reaches one Lambo serve.
 type Config struct {
 	// BaseURL is the serve, the LAMBO_URL host, with no path and no
@@ -77,7 +86,9 @@ type Config struct {
 // Client talks to one Lambo serve over MCP streamable HTTP. It keeps one
 // MCP session per Dresscode session. The calls are the ones in
 // docs/lambo.md. Safe for concurrent use. Each session's calls run one
-// at a time. Tests point BaseURL at a replay and do not dial a serve.
+// at a time. A session the serve expired between calls is initialized
+// again and the call replayed once. Tests point BaseURL at a replay and
+// do not dial a serve.
 type Client struct {
 	base    url.URL
 	token   string
@@ -161,7 +172,8 @@ func defaultHTTP(wait time.Duration) *http.Client {
 // Remember sends one lambo_derive for the concepts. The write is not
 // retried. The result is returned only after lambo_stats reports that
 // receipt applied. ErrUnconfirmed means the write was sent and not
-// confirmed.
+// confirmed. A session the serve expired is initialized again and the
+// current step replayed once; a second refusal is ErrSessionExpired.
 func (c *Client) Remember(ctx context.Context, session string, concepts []Concept) (Remembered, error) {
 	if err := ctx.Err(); err != nil {
 		return Remembered{}, err
@@ -191,7 +203,8 @@ func (c *Client) Remember(ctx context.Context, session string, concepts []Concep
 // Recall asks the session for the occasion text. The serve returns the
 // nearest concepts in that session. It does not filter to the occasion.
 // An erased session is ErrErased, not an empty hit list, and the call is
-// not retried.
+// not retried. A session the serve expired is initialized again and the
+// recall replayed once; a second refusal is ErrSessionExpired.
 func (c *Client) Recall(ctx context.Context, session, occasion string) (Recall, error) {
 	if err := ctx.Err(); err != nil {
 		return Recall{}, err
@@ -345,7 +358,7 @@ func (c *Client) derive(ctx context.Context, g *sessionGate, session string, con
 		Concepts: concepts,
 	})
 	if err != nil {
-		if errors.Is(err, ErrErased) || errors.Is(err, ErrUnauthorized) {
+		if errors.Is(err, ErrErased) || errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrSessionExpired) {
 			return Remembered{}, err
 		}
 		return Remembered{}, unconfirmed(err)
@@ -380,7 +393,7 @@ func (c *Client) confirm(ctx context.Context, g *sessionGate, session string, pe
 		WaitMS:  c.waitMS,
 	})
 	if err != nil {
-		if errors.Is(err, ErrErased) || errors.Is(err, ErrUnauthorized) {
+		if errors.Is(err, ErrErased) || errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrSessionExpired) {
 			return Remembered{}, err
 		}
 		return Remembered{}, unconfirmed(err)
@@ -451,16 +464,34 @@ func (c *Client) erase(ctx context.Context, session string) (EraseResult, error)
 	return result, nil
 }
 
+// tool sends one tools/call on the session. A 404 on the session id is
+// an idle session the serve expired: it drops the dead id, initializes
+// the session again — the same open a first call runs — and replays the
+// call once. A second 404 comes back as ErrSessionExpired; there is no
+// third attempt. The caller holds the gate for the whole call, so only
+// one re-initialize per session is ever in flight.
 func (c *Client) tool(ctx context.Context, g *sessionGate, session, name string, args any) (json.RawMessage, error) {
+	msg, err := c.callTool(ctx, g, session, name, args)
+	if errors.Is(err, ErrSessionExpired) {
+		g.drop()
+		if err := c.open(ctx, g, session); err != nil {
+			return nil, err
+		}
+		msg, err = c.callTool(ctx, g, session, name, args)
+	}
+	if errors.Is(err, ErrErased) {
+		g.drop()
+	}
+	return msg, err
+}
+
+func (c *Client) callTool(ctx context.Context, g *sessionGate, session, name string, args any) (json.RawMessage, error) {
 	msg, _, err := c.post(ctx, mcpPath(session), rpcCall{
 		JSONRPC: "2.0",
 		ID:      c.allocID(),
 		Method:  "tools/call",
 		Params:  toolParams{Name: name, Arguments: args},
 	}, g.mcpID)
-	if errors.Is(err, ErrErased) {
-		g.drop()
-	}
 	return msg, err
 }
 
@@ -485,6 +516,15 @@ func (c *Client) post(ctx context.Context, path string, call rpcCall, mcp string
 	if resp.StatusCode == http.StatusUnauthorized {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxResponse))
 		return nil, "", ErrUnauthorized
+	}
+	if resp.StatusCode == http.StatusNotFound && mcp != "" {
+		// The serve does not know this Mcp-Session-Id: an idle session
+		// it expired. The body is plain text, not a JSON-RPC reply, so
+		// it is read only to drain it. The tool call re-initializes
+		// and replays once; a call that never carried a session is a
+		// routing failure and stays a status error.
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxResponse))
+		return nil, "", ErrSessionExpired
 	}
 	if call.ID == 0 {
 		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, maxResponse))

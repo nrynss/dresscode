@@ -1,0 +1,32 @@
+{
+  "exchange": "21-call-on-expired-session",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-a",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "a2d650e6-9b6a-4270-a33e-961ac3fc7679"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 21,
+      "method": "tools/call",
+      "params": {
+        "name": "lambo_recall",
+        "arguments": {
+          "agent_id": "dresscode-probe",
+          "query": "family function",
+          "top_k": 10,
+          "max_tokens": 2000
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 404,
+    "headers": {},
+    "body_text": "Not Found: Session not found"
+  }
+}

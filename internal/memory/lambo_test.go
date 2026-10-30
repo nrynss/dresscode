@@ -379,6 +379,130 @@ func TestUnauthorizedRecordingHidesTheToken(t *testing.T) {
 	}
 }
 
+// TestRecallSurvivesSessionExpiry drives the expiry the feedback log
+// records: Lambo expires idle sessions in minutes, and a call on the
+// dead Mcp-Session-Id is an HTTP 404 plain text, not a JSON-RPC error.
+// The client initializes the session again — one re-initialize, the same
+// open a first call runs — and the replayed recall succeeds.
+func TestRecallSurvivesSessionExpiry(t *testing.T) {
+	t.Parallel()
+	rep := newReplay(t, replayConfig{script: []string{
+		"02-initialize-a",
+		"03-initialized-a",
+		"21-call-on-expired-session",
+		"02-initialize-a",
+		"03-initialized-a",
+		"11-recall-a-family-function",
+	}})
+	client := openClient(t, rep.url, "dresscode-probe")
+	got, err := client.Recall(context.Background(), "dc-u-probe-a", "family function")
+	if err != nil {
+		failErr(t, err)
+	}
+	assertLook(t, got, "gold jhumkas", "red lip", "silver studs", "braid")
+
+	calls := rep.calls()
+	want := []string{
+		"02-initialize-a",
+		"03-initialized-a",
+		"21-call-on-expired-session",
+		"02-initialize-a",
+		"03-initialized-a",
+		"11-recall-a-family-function",
+	}
+	if len(calls) != len(want) {
+		t.Fatalf("%d calls", len(calls))
+	}
+	for i, call := range calls {
+		if call.Exchange != want[i] {
+			t.Fatalf("call %d is %s, want %s", i, call.Exchange, want[i])
+		}
+	}
+	first := calls[0].ResponseMCP
+	if first == "" {
+		t.Fatal("no session from the first initialize")
+	}
+	if calls[2].RequestMCP != first {
+		t.Fatalf("the expired call carried %q", calls[2].RequestMCP)
+	}
+	if calls[2].RPC != "tools/call" || calls[2].Tool != "lambo_recall" {
+		t.Fatalf("%s %s", calls[2].RPC, calls[2].Tool)
+	}
+	if calls[3].RequestMCP != "" {
+		t.Fatal("the re-initialize reused the expired session")
+	}
+	second := calls[3].ResponseMCP
+	if second == "" {
+		t.Fatal("no session from the re-initialize")
+	}
+	if calls[4].RequestMCP != second || calls[5].RequestMCP != second {
+		t.Fatalf("the replayed leg carried %q and %q", calls[4].RequestMCP, calls[5].RequestMCP)
+	}
+}
+
+// TestSecondConsecutiveExpiryFailsTyped replays the 404 to the replayed
+// call too. The recall fails ErrSessionExpired, and no third attempt is
+// sent.
+func TestSecondConsecutiveExpiryFailsTyped(t *testing.T) {
+	t.Parallel()
+	rep := newReplay(t, replayConfig{script: []string{
+		"02-initialize-a",
+		"03-initialized-a",
+		"21-call-on-expired-session",
+		"02-initialize-a",
+		"03-initialized-a",
+		"21-call-on-expired-session",
+	}})
+	client := openClient(t, rep.url, "dresscode-probe")
+	_, err := client.Recall(context.Background(), "dc-u-probe-a", "family function")
+	if !errors.Is(err, ErrSessionExpired) || strings.Contains(err.Error(), testToken) {
+		failErr(t, err)
+	}
+	calls := rep.calls()
+	if len(calls) != 6 {
+		t.Fatalf("%d calls, want no third attempt", len(calls))
+	}
+	if calls[2].Exchange != "21-call-on-expired-session" || calls[5].Exchange != "21-call-on-expired-session" {
+		t.Fatalf("the 404s are %s and %s", calls[2].Exchange, calls[5].Exchange)
+	}
+	if calls[3].RequestMCP != "" {
+		t.Fatal("the re-initialize reused the expired session")
+	}
+	if calls[5].RequestMCP != calls[3].ResponseMCP {
+		t.Fatalf("the replayed call carried %q", calls[5].RequestMCP)
+	}
+}
+
+// TestRememberReportsAnExpiredSessionTyped pins the error identity of a
+// remember whose derive is refused twice: ErrSessionExpired, not
+// ErrUnconfirmed. A derive refused at the session was never sent, which
+// is not a lost confirmation. The recorded 404 reply is plain text with
+// no JSON-RPC in it, so the one recording carries it for every tool
+// call; only its response is replayed here.
+func TestRememberReportsAnExpiredSessionTyped(t *testing.T) {
+	t.Parallel()
+	rep := newReplay(t, replayConfig{script: []string{
+		"02-initialize-a",
+		"03-initialized-a",
+		"21-call-on-expired-session",
+		"02-initialize-a",
+		"03-initialized-a",
+		"21-call-on-expired-session",
+	}})
+	client := openClient(t, rep.url, "dresscode-probe")
+	kept := []Concept{
+		{Content: "Family function kept the gold jhumkas.", ConceptType: ConceptObservation},
+		{Content: "Family function dismissed the red lip.", ConceptType: ConceptObservation},
+	}
+	_, err := client.Remember(context.Background(), "dc-u-probe-a", kept)
+	if !errors.Is(err, ErrSessionExpired) || errors.Is(err, ErrUnconfirmed) {
+		failErr(t, err)
+	}
+	if calls := rep.calls(); len(calls) != 6 {
+		t.Fatalf("%d calls, want no third attempt", len(calls))
+	}
+}
+
 func TestClientRejectsBeforeDialing(t *testing.T) {
 	t.Parallel()
 	var dialed bool
@@ -512,6 +636,10 @@ func exchangeAt(calls []replayCall, i int) string {
 type replayConfig struct {
 	refuse    bool
 	failStats bool
+	// script names the exchange served for each request, in order. It
+	// is set for the session-expiry tests, whose sequence re-uses one
+	// initialize recording and answers a call with the recorded 404.
+	script []string
 }
 
 type replay struct {
@@ -519,6 +647,8 @@ type replay struct {
 	token     string
 	refuse    bool
 	failStats bool
+	script    []string
+	step      int
 	mu        sync.Mutex
 	recs      []*recording
 	log       []replayCall
@@ -576,6 +706,7 @@ func newReplay(t *testing.T, cfg replayConfig) *replay {
 		token:     testToken,
 		refuse:    cfg.refuse,
 		failStats: cfg.failStats,
+		script:    cfg.script,
 		recs:      loadRecordings(t, lamboDir(t)),
 	}
 	srv := httptest.NewServer(rep)
@@ -610,6 +741,20 @@ func (s *replay) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		rec := s.findExchange("01-initialize-no-token")
 		s.note(r, body, rec)
 		writeRecording(w, rec, nil)
+		return
+	}
+	if len(s.script) > 0 {
+		s.mu.Lock()
+		i := s.step
+		s.step++
+		s.mu.Unlock()
+		if i >= len(s.script) {
+			http.Error(w, "script is exhausted", http.StatusConflict)
+			return
+		}
+		rec := s.findExchange(s.script[i])
+		s.note(r, body, rec)
+		writeRecording(w, rec, parseCall(body).id)
 		return
 	}
 	parsed := parseCall(body)
@@ -853,7 +998,7 @@ func loadRecordings(t *testing.T, dir string) []*recording {
 		}
 	}
 	sort.Strings(names)
-	if len(names) != 20 {
+	if len(names) != 21 {
 		t.Fatalf("%d recordings", len(names))
 	}
 	out := make([]*recording, 0, len(names))

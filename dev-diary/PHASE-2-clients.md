@@ -134,10 +134,18 @@ requires:   T2.3
 fixture-ok: yes
 size:       S · light
 owns:       internal/memory/, testdata/lambo/ (one recorded 404 exchange)
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 Lambo expires idle sessions in minutes: a call on a dead `Mcp-Session-Id` gets HTTP `404` with the plain text `Not Found: Session not found`, not a JSON-RPC error. A real user's second visit idles longer than that, so the client must treat that 404 as "initialize the session again, then replay the original call once". A second consecutive 404 is a typed error, never a loop.
 
 **Done when:** a replay test over a recorded 404 exchange shows one re-initialize and the replayed call succeeding; a repeat 404 fails typed; the gate stays offline.
 
 *(Found by the orchestrator on 2026-10-30: `internal/memory/lambo.go` has no 404 handling; two orchestrator sessions expired mid-idle. See feedback.md under Lambo.)*
+
+Notes:
+
+- `Client` now reads a 404 on a call that carried an `Mcp-Session-Id` as an expired session: it drops the dead id, runs the same initialize and notifications/initialized open a first call runs, and replays the tool call once. A second 404 is `ErrSessionExpired` and there is no third attempt. The gate lock is held for the whole call, so one re-initialize per session is the most that can ever be in flight.
+- `ErrSessionExpired` stays itself out of `Remember`, beside `ErrErased` and `ErrUnauthorized`: a derive refused at the session was never sent, which is not a lost confirmation, and `errors.Is` tells the caller. `Recall` returns it bare. Erase is the admin path and carries no session id, and initialize goes out without one, so a 404 on either stays a status error — only a call that named a session can mean expiry.
+- Recorded `21-call-on-expired-session` in the T0.7 envelope: POST on the probe-a path with the probe-a session header, status 404, `"headers": {}` because the serve sent no content type, and the exact body `Not Found: Session not found` with no newline. The replay twin serves it raw. Twenty-one recordings now; the fake's unique-request count is 19, since the two erase-a exchanges still share one.
+- The expiry tests replay a script: the replay twin gains a mode that serves named exchanges in order, so the re-initialize leg reuses `02`/`03` and the replayed leg reuses the recorded success `11`. Three tests: a recall survives expiry (one re-initialize, the replay succeeds on the fresh id); a second 404 fails typed with no third attempt; and a remember whose derive is refused twice reports `ErrSessionExpired`, not `ErrUnconfirmed` — the one recorded 404 reply carries for every tool call, because plain text has no call shape in it.
+- Surprised: the fake's `Recall` on probe-a and "family function" is now a three-way `Ambiguous` (11, 16, 21) where it was a two-way; its test names only 11 and 16 and still passes, and the fake stays right to refuse choosing.

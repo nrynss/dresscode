@@ -28,8 +28,8 @@ func TestReplayServesEveryLamboRecording(t *testing.T) {
 			names = append(names, entry.Name())
 		}
 	}
-	if len(names) != 20 {
-		t.Fatalf("%d recordings, want 20", len(names))
+	if len(names) != 21 {
+		t.Fatalf("%d recordings, want 21", len(names))
 	}
 
 	byContent := map[string][]string{}
@@ -113,8 +113,8 @@ func TestReplayServesEveryLamboRecording(t *testing.T) {
 			t.Fatalf("ambiguous serve returned a response")
 		}
 	}
-	if served != 18 {
-		t.Fatalf("served %d unique requests, want 18", served)
+	if served != 19 {
+		t.Fatalf("served %d unique requests, want 19", served)
 	}
 }
 
