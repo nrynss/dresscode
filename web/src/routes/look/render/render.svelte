@@ -1,0 +1,168 @@
+<script lang="ts">
+  import ErrorNotice from "../../../app/error-notice.svelte";
+  import type { ShownError } from "../../../lib/api/types";
+  import {
+    lookVerdicts,
+    openingSentence,
+    pendingSentence,
+    savedSentences,
+    suggestionSentence,
+    verdictWords,
+    type LookVerdict,
+    type RenderCopy,
+  } from "./copy";
+  import { loadLook, sendVerdict, shownFailure, storyLookId } from "./load";
+  import ShopSheet from "./sheet.svelte";
+  import Swipe from "./swipe.svelte";
+
+  let look = $state<RenderCopy | null | undefined>(undefined);
+  let problem = $state<ShownError | undefined>(undefined);
+  let saving = $state(false);
+  let saved = $state<LookVerdict | undefined>(undefined);
+
+  $effect(() => {
+    const control = new AbortController();
+    const lookId = storyLookId;
+    void loadLook(lookId, control.signal).then(
+      (value) => {
+        if (control.signal.aborted) return;
+        look = value;
+      },
+      (error: unknown) => {
+        if (control.signal.aborted) return;
+        problem = shownFailure(error);
+      },
+    );
+    return () => control.abort();
+  });
+
+  async function onVerdict(verdict: LookVerdict): Promise<void> {
+    const current = look;
+    if (saving || !current) return;
+    saving = true;
+    problem = undefined;
+    try {
+      saved = await sendVerdict(current.lookId, verdict);
+    } catch (error: unknown) {
+      problem = shownFailure(error);
+    } finally {
+      saving = false;
+    }
+  }
+</script>
+
+<section class="render" aria-labelledby="render-heading">
+  <a class="back" href="#/">Back</a>
+  <h2 id="render-heading">The render</h2>
+
+  {#if problem}
+    <ErrorNotice error={problem} />
+  {:else if look === undefined}
+    <p class="hint" role="status">{openingSentence}</p>
+  {:else if look === null}
+    <p class="hint" role="status">{pendingSentence}</p>
+  {/if}
+
+  {#if look}
+    {#if look.render}
+      <Swipe before={look.selfieUrl} after={look.render.url} />
+    {:else}
+      <p class="hint">{suggestionSentence}</p>
+      <img class="original" src={look.selfieUrl} alt="Your original." />
+    {/if}
+
+    {#if look.reasons.length > 0}
+      <h3>What the dress code still asks for</h3>
+      <ul>
+        {#each look.reasons as reason, index (index)}
+          <li>{reason}</li>
+        {/each}
+      </ul>
+    {/if}
+
+    <h3>A fix</h3>
+    <p>{look.fix}</p>
+    <h3>Why</h3>
+    <p>{look.why}</p>
+
+    <div class="verdict">
+      {#each lookVerdicts as choice (choice)}
+        <button type="button" disabled={saving} onclick={() => void onVerdict(choice)}>
+          {verdictWords[choice]}
+        </button>
+      {/each}
+    </div>
+
+    {#if saved}
+      <p class="hint" role="status">{savedSentences[saved]}</p>
+    {/if}
+
+    <div class="shop">
+      <ShopSheet lookId={look.lookId} />
+    </div>
+  {/if}
+</section>
+
+<style>
+  .render {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    max-width: 100%;
+    min-inline-size: 0;
+  }
+
+  .back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: var(--accent);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    margin: 0.75rem 0 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+  }
+
+  p,
+  li {
+    margin: 0;
+    max-width: 36rem;
+    overflow-wrap: break-word;
+  }
+
+  .hint {
+    color: var(--dim);
+  }
+
+  .original {
+    width: 100%;
+    height: auto;
+    max-width: 100%;
+    min-inline-size: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-panel);
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.1rem;
+  }
+
+  .verdict,
+  .shop {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+</style>

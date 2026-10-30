@@ -1,6 +1,8 @@
 <script lang="ts">
   import Occasion from "../routes/occasion/occasion.svelte";
+  import Render from "../routes/look/render/render.svelte";
   import Verdict from "../routes/look/verdict/verdict.svelte";
+  import { isRenderHash, renderHash } from "../routes/look/render/route";
   import { isVerdictHash, verdictHash } from "../routes/look/verdict/route";
   import Home from "./home.svelte";
   import Shell from "./shell.svelte";
@@ -12,6 +14,7 @@
     const hash = window.location.hash.replace(/^#/, "");
     if (hash === "/occasion" || hash === "occasion") return "/occasion";
     if (isVerdictHash(hash)) return "/look/verdict";
+    if (isRenderHash(hash)) return "/look/render";
     return "/";
   }
 
@@ -29,6 +32,12 @@
     route = "/look/verdict";
   }
 
+  function openRender(): void {
+    if (typeof window === "undefined") return;
+    window.location.hash = renderHash;
+    route = "/look/render";
+  }
+
   $effect(() => {
     if (typeof window === "undefined") return;
     const onChange = () => {
@@ -44,6 +53,8 @@
     <Occasion />
   {:else if route === "/look/verdict"}
     <Verdict />
+  {:else if route === "/look/render"}
+    <Render />
   {:else}
     <Home />
     <div class="actions">
@@ -51,6 +62,9 @@
     </div>
     <div class="actions">
       <button type="button" onclick={openVerdict}>See the verdict</button>
+    </div>
+    <div class="actions">
+      <button type="button" onclick={openRender}>See the render</button>
     </div>
   {/if}
 </Shell>

@@ -1,0 +1,22 @@
+{
+  "method": "GET",
+  "path": "/api/looks/100c0000000000000000000000000002/shop",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "products": [
+      {
+        "id": "gold-jhumkas",
+        "category": "earrings",
+        "name": "Gold jhumkas",
+        "fidelity": "exact product",
+        "origin": "catalog",
+        "media_id": "c0a10600000000000000000000000001",
+        "url": "/media/c0a10600000000000000000000000001"
+      }
+    ]
+  }
+}
