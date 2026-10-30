@@ -8,11 +8,11 @@ blocks:   everything
 parallel: partly (the user's tasks run beside T0.1)
 ```
 
-**Goal:** Put the repository on git footing, settle every key and account, write the occasions down, take the sample photos, and record what YouCam, Clef and Lambo actually return for them. Every later track then builds offline.
+**Goal:** Put the repository on git footing, settle every key and account, write the occasions down, make the sample people, and record what YouCam, Clef and Lambo actually return for them. Every later track then builds offline.
 
 **Why this phase comes first:** YouCam units are scarce, so every reply is recorded once and replayed after. Without the occasions there is nothing to ask Clef. Without the sample set there is nothing to record, test or demo.
 
-Three tasks are the user's: T0.2, T0.3 (sign-off), T0.4. Agents prepare everything around them and stop where an account, a key, a photo or a decision is needed.
+Two tasks are the user's: T0.2 and T0.3 (sign-off). T0.4 needs the user's approval of the two sample people. Agents prepare everything around them and stop where an account, a key or a decision is needed.
 
 Read first: [`../product.md`](../product.md), [`../docs/architecture.md`](../docs/architecture.md), [`README.md`](README.md).
 
@@ -106,17 +106,21 @@ Notes:
 ```yaml
 requires:   T0.3
 fixture-ok: no
-size:       S · user
-owns:       testdata/samples/ (the user adds the photos), testdata/samples/README.md
+size:       M · mid
+owns:       testdata/samples/, testdata/samples/README.md
 status:     not-started
 ```
-The user takes the photos; an agent writes the README and the shot list from T0.3.
+Two sample people, a man and a woman, generated with AI (user decision). No photo of a real person is in the samples, the demo or the video, the user included.
 
-- **Selfies:** the user's own, taken for this purpose: about 20, across the five occasions, with deliberate misses (formal collar on a date, flat light, untidy beard) so each criterion has a yes and a no. The README records which criteria each photo should fail; that is the evaluation's ground truth (T3.9).
-- **Products:** photographs the user took, or images we may use. No brand logos visible.
+- **The people:** one anchor still each, an original text-to-image design made with Chalachithram's character lock (`bytedance/seedream/v5/pro`). Never generated from a real person's photo or prompted to look like anyone. **The user approves both anchors** before any variant is made.
+- **Selfies:** about 20 variants composed from the anchors (`fal-ai/nano-banana-2/edit`), across the five occasions. Chest up with the collar and shoulders in frame, ears and neck clear (docs/occasions.md). Deliberate misses (formal collar on a date, flat light, patchy beard, hair over the eyes, smeared lip) so each criterion has a yes and a no. The man covers the beard criteria, the woman the jewellery and lip criteria, both the rest. The woman also carries the second-visit story: a family-function look that misses the earring and lip criteria.
+- **Phone-selfie realism:** ordinary light, skin texture kept, no retouched look. A variant that smooths skin or reshapes the face is regenerated: the render check rejects exactly that, so a polished sample would skew the evaluation.
+- **The README** records, per image: the person, the occasion, the criteria it should pass and fail (the evaluation's ground truth, T3.9), the model and the prompt.
+- **Products:** generated or photographed product shots of the catalog (docs/occasions.md): no logo, no text, no person.
 - **Known bad renders** for the render check: produced later by T0.5 and by hand edits (reshaped face, smoothed skin, change missing).
+- **Spend:** FAL through Chalachithram's own key, never copied into this repository. The brief names a dollar cap; stop and report at it.
 
-**Done when:** the photos are in place, the README holds the expected flags per photo, and the user confirms consent for the demo and the public video.
+**Done when:** the user has approved both anchors; the images are in place; the README holds the expected flags, the model and the prompt per image; every criterion has at least one yes and one no.
 
 ---
 

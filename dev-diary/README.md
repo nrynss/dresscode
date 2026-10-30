@@ -129,7 +129,7 @@ keys and settings (T0.2) + occasions, menus, vocabulary (T0.3) + sample set (T0.
   -> deploy (T6.1) -> README (T6.2) -> video (T6.4) -> submit (T6.5)
 ```
 
-The demo is built around one story, **the second visit** (product.md). First visit: a family function, the look misses two criteria, the jhumkas render is kept and the red lip dismissed. Second visit, same occasion: Dresscode recalls both, offers the jhumkas first, never the red lip, and the render lands on the user's own photo with every product labelled. Protect everything that moment depends on before anything else.
+The demo is built around one story, **the second visit** (product.md). First visit: a family function, the look misses two criteria, the jhumkas render is kept and the red lip dismissed. Second visit, same occasion: Dresscode recalls both, offers the jhumkas first, never the red lip, and the render lands on her own photo with every product labelled. The user in the demo is the AI sample woman (T0.4). Protect everything that moment depends on before anything else.
 
 ---
 
@@ -137,7 +137,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Phase | Tasks complete | Status |
 |---|---|---|
-| P0 | 4 / 7 | T0.4 waits on the user's photos. T0.5 and T0.6 wait on T0.4. |
+| P0 | 4 / 7 | T0.4 makes two AI sample people and needs the user's approval of both. T0.5 and T0.6 wait on T0.4. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
@@ -157,6 +157,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **Decision: the sample people are AI-generated.** The user ruled out their own photos. Fixtures, the demo and the video use two generated people, a man and a woman, made with Chalachithram's character lock (an original seedream anchor per person, variants composed from it). No photo of a real person anywhere, the user included. The woman carries the second-visit story (jhumkas kept, red lip dismissed); the man covers the beard criteria. T0.4 is now `M · mid` with the user approving both anchors. Changed: AGENTS.md (photos and people), product.md (Sample people), docs/occasions.md (necklace reference, catalog source), T0.4, T6.4. Risks for T0.5 and T0.6 to check: YouCam's face detection and Clef's reading on generated faces.
 
 - **Finding against T4.3's landing: main is red.** `postJSON` is declared three times in package `server_test` (`signin_test.go:447`, `delete_test.go:467`, `intake_test.go:394`), so `go vet` fails and the server tests do not compile. The collision came in with the T4.5 and T4.3 merges: each implementer added its own helper, and each branch's gate ran on a base without the other's file. The post-merge gate of land step 4 evidently did not run on either landing. A remediation agent is fixing it on `task-t4.3-postjson-fix`; nothing else lands until main is green. Process note for every future landing: the gate runs in the main checkout after the merge, not only on the branch.
 - **T4.3 Deletion.** Account deletion is one Keel erase over blobs, every user-data table, the identity rows, and the Lambo session. A job stopped halfway resumes and finishes empty. A guest gets `not_found`. A review of `7303a37` came back clean and the gate passed. Tests use fakes.

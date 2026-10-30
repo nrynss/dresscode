@@ -50,6 +50,13 @@ Never sent to any model: face ratios, Skin Analysis scores, any age or attractiv
 
 Not built: recall by visual similarity. It needs image embeddings no host serves, and a local GPU service to keep up through judging.
 
+## Sample people (user decision)
+
+- The demo, the video and the samples judges open use **two AI-generated people, a man and a woman**. No photo of a real person is used anywhere, the author included.
+- Each is an original design, never generated from a real photo or to look like anyone.
+- The video and the README say the people are generated.
+- The second-visit story is the woman's. The man covers the beard criteria.
+
 ## Shape
 
 | Layer | Built on |

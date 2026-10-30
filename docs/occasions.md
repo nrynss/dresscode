@@ -128,7 +128,7 @@ A festive garment, a festive earring, a necklace, a red or berry lip, finished h
 
 The documented toothy smile is not used. Light has no fix. Basket: garments (`top-festive`), earrings (`gold-jhumkas`), necklaces (`gold-chain`), lip colour (`lip-red`).
 
-The necklace page asks for a worn necklace as the reference, neck unobstructed in the selfie. If a flat product shot is rejected, the reference is the user's own neck. Not another person.
+The necklace page asks for a worn necklace as the reference, neck unobstructed in the selfie. If a flat product shot is rejected, the reference is a sample person's own neck (T0.4). Never a real person.
 
 ## Funeral
 
@@ -145,12 +145,12 @@ Three criteria have no fix, and the suggestion says so. Festive jewellery cannot
 
 ## Catalog
 
-T0.4 photographs these, or licenses an image we may use. No brand logos, no text, no third-party pattern, no photo of anyone but the user.
+T0.4 generates or photographs these, or licenses an image we may use. No brand logos, no text, no third-party pattern, no real person.
 
 | Id | Category | Fidelity | What to shoot |
 |---|---|---|---|
 | `gold-jhumkas` | earrings | exact | One jhumka, clear front, plain background, no ear |
-| `gold-chain` | necklaces | exact | Plain gold chain; worn only if the task rejects a product shot, and then only the user's own neck |
+| `gold-chain` | necklaces | exact | Plain gold chain; worn only if the task rejects a product shot, and then only a sample person's neck |
 | `lip-red` | lip-colour | approximate | Unbranded red, bullet or smear on a card, no mouth |
 | `lip-nude` | lip-colour | approximate | Unbranded nude, same rules |
 | `shirt-open-collar` | garments | exact | One plain shirt, collar open, front product shot |

@@ -66,7 +66,7 @@ size:       M · user
 owns:       none
 status:     not-started
 ```
-The user records on a phone and uploads publicly to YouTube.
+The user records on a phone and uploads publicly to YouTube. The faces in the app are the AI sample people (T0.4), and the video says they are generated.
 
 **Done when:** the video is public and under three minutes.
 
