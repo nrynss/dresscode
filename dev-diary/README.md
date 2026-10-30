@@ -137,8 +137,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Phase | Tasks complete | Status |
 |---|---|---|
-| P0 | 3 / 7 | T0.7 done. T0.3 is in review. T0.4 waits on photos. |
-| P1 | 0 / 5 | Waits for T0.3. |
+| P0 | 4 / 7 | T0.4 waits on the user's photos. T0.5 and T0.6 wait on T0.4. |
+| P1 | 0 / 5 | T1.1 claimed. |
 | P2 | 0 / 4 | Waits for P1. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 0 / 7 | Accounts (T4.1–T4.3) start after P1. |
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T0.3 Occasions, fix menus and the look vocabulary.** Five occasions in `testdata/occasions/`, prose in `docs/occasions.md`. Each has criteria, an opt-in menu, and a basket. Fixes use printed YouCam paths from Skin, Beauty, Fashion, Jewelry and Watch, and Hair and Beard. The family-function story is gold jhumkas kept and the red lip dismissed. Light, watches, rings, and hair colour have no render. No units spent. Landed without a separate sign-off because the user said not to wait.
 - **T0.7 Lambo probe.** `docs/lambo.md` lists the calls Dresscode needs: initialize, notifications/initialized, `lambo_derive`, `lambo_stats` with the receipt, `lambo_recall`, and `POST /admin/s/<session>/erase`. Recorded in `testdata/lambo/` against Lambo 0.8.0 at `127.0.0.1:7720`. Two scratch sessions each stored a different family-function look. Recall in one did not return the other's. The query "family function" returned the kept fix and the dismissed fix. Erasing a session made the next recall and initialize return JSON-RPC `-32003` with nothing read, and a second erase reported `already_absent` true. The other session was unchanged, then erased. Four `bge-m3` embeddings. Surprised: recall returns this session's nearest concepts even for a query that names the other look, and an erased session answers HTTP 200 `application/json` rather than an empty hit list. Erased ids `dc-u-probe-a` and `dc-u-probe-b` must not be reused.
 - **T0.2 Keys, accounts and settings.** `docs/keys.md` names every key and where it lives. YouCam console balance is 1040 credits and they do not expire. Fix selection is Clef. Dresscode's Lambo is its own process on `127.0.0.1:7720` with its own sqlite file, embedder Workers AI `bge-m3`. The dogfood server is untouched.
 - **Review and remediation from P1.** On P0 the orchestrator checks a result and lands it. From P1 a review agent reads the branch and runs the gate, then a remediation agent fixes what the review found. Those two repeat until a review comes back clean, and only then does the work land.

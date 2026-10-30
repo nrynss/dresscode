@@ -20,7 +20,7 @@ requires:   T0.3
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/domain/
-status:     not-started
+status:     claimed:grok-4.7
 ```
 `Occasion`, `Criterion`, `Fix`, `LookAttribute`, `Look`, `Render`, `Product` and the fidelity label (architecture.md, "The domain model"). Load the occasions, menus and vocabulary from `testdata/occasions/` and validate them: every fix names a YouCam task and the criteria it addresses; every vocabulary question has a closed list with "none" and "can't tell"; no criterion is shared by two occasions under different wording.
 
