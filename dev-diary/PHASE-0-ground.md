@@ -102,6 +102,25 @@ Notes:
 
 ---
 
+### T0.3a: YouCam templates for the hair and beard fixes
+```yaml
+requires:   T0.3, T0.5
+fixture-ok: yes
+size:       S · mid
+owns:       testdata/occasions/*.json (fix entries only), docs/occasions.md (fix tables and template notes), internal/domain/model.go, internal/domain/load.go, internal/domain/*_test.go
+status:     claimed:claude-opus-5-5
+```
+Split from T0.3, from T0.5's findings. **User decisions:** `tied-back` hair renders with the hair-transfer template Casual Updo (`female_casual_updo`), and a short beard renders with the beard-style template Circle (`all_circle`). Clef will read those renders as a bun and a goatee, so the fixes' vocabulary changes say so, and memory describes what the render shows.
+
+- Add a `template` field to a fix (the YouCam template id), loaded and validated: required for hair-transfer and beard-style fixes, refused on any other task. A contract change, the orchestrator's call.
+- Every `*-tie-hair` fix: template `female_casual_updo`, vocabulary `hair` to `bun`. Every short-beard fix (date, family function, interview, funeral): template `all_circle`, vocabulary `beard` to `goatee`.
+- `festival-full-beard` and `interview-short-hair` have no decided template: pick the closest by title from T0.5's recorded listings (`testdata/youcam/http-templates-*`), and flag both for the user.
+- User-facing wording (`changes`, criterion suggestions) stays: a bun is tied-back hair, a goatee is a short beard, and `testdata/api/occasion.json` is frozen.
+
+**Done when:** every hair and beard fix carries a template id that appears in T0.5's recorded listings; the loader refuses a missing or misplaced template with the file and the reason; the vocabulary changes match the renders; the gate passes.
+
+---
+
 ### T0.4: The sample set ★
 ```yaml
 requires:   T0.3
