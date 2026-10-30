@@ -113,7 +113,7 @@ requires:   T5.4
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/look/render/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Before and after as a swipe, the original one tap away; shop the look as a bottom sheet with every product's label shown plainly; keep, dismiss, bought. When no render passed the check, the suggestion and products stand without one, and say so.
 
