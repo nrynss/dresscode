@@ -145,7 +145,7 @@ Three criteria have no fix, and the suggestion says so. Festive jewellery cannot
 
 ## Catalog
 
-T0.4 generates or photographs these, or licenses an image we may use. No brand logos, no text, no third-party pattern, no real person.
+T0.4a takes real product photos from web image search for the exact products (user decision: fair use) and makes colour swatches for the lip colours. No generated image stands for an exact product. No brand logos, watermarks or text, no third-party pattern, no real person.
 
 | Id | Category | Fidelity | What to shoot |
 |---|---|---|---|

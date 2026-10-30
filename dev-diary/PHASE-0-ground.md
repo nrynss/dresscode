@@ -158,9 +158,13 @@ size:       S · mid
 owns:       testdata/samples/products/
 status:     not-started
 ```
-Split from T0.4, which made the people. One reference image per catalog entry in docs/occasions.md (Catalog): gold jhumkas, gold chain, the red and nude lip colours, and the four shirts and tops. Generated with Chalachithram (FAL, its own key) or photographed, as the YouCam task for each fix needs it: a single jhumka front view with no ear; the chain flat, or worn on a sample person's neck only if YouCam rejects a flat shot; garments as product shots with no person; a lip colour as a swatch. No logo, no text, no third-party pattern. `testdata/samples/products/README.md` records each image's source, model and prompt or photo note, and cost. **FAL cap: $3.**
+Split from T0.4, which made the people. One reference image per catalog entry in docs/occasions.md (Catalog), as the YouCam task for each fix needs it.
 
-**Done when:** every catalog entry has its reference image, meeting its YouCam file spec as docs/occasions.md states it; the README holds the source and cost for each.
+- **The six exact products** (gold jhumkas, gold chain, the four shirts and tops): real product photos found through web image search (user decision: fair use). A single jhumka front view with no ear; the chain flat, or worn on a sample person's neck only if YouCam rejects a flat shot; garments as product shots with no person. No visible logo, watermark, text or third-party pattern. No generated image here: an exact-product label must stand for a real item.
+- **The two lip colours** (approximate match): a plain colour swatch, made locally. No FAL spend.
+- `testdata/samples/products/README.md` records each image's source page URL and what it shows.
+
+**Done when:** every catalog entry has its reference image, meeting its YouCam file spec as docs/occasions.md states it; the README holds the source for each; none shows a logo, a watermark or a person.
 
 ---
 

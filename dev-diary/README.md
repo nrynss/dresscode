@@ -150,7 +150,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | Service | Budget | Spent |
 |---|---|---|
 | YouCam | 1040 credits, they do not expire; 400 held back for judging | 0 |
-| FAL (sample images, Chalachithram's key) | $10 for T0.4, $3 for T0.4a, listed prices | $5.70 (T0.4: 12 Seedream at $0.135, 51 nano-banana-2/edit at $0.08) |
+| FAL (sample images, Chalachithram's key) | $10 for T0.4, listed prices | $5.70 (T0.4: 12 Seedream at $0.135, 51 nano-banana-2/edit at $0.08) |
 | Workers AI | Free plan until T6.6; then Workers Paid | 7 embeddings (the access check, four in the T0.7 probe, two in the T2.3b live check) |
 
 ---
@@ -158,6 +158,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **Decision: product images come from web image search** (user decision: fair use). T0.4a takes real product photos for the six exact products, never generated ones, because an exact-product label must stand for a real item; the lip colours are swatches. Each image's source URL is recorded; none may show a logo, a watermark or a person. Changed: T0.4a, docs/occasions.md (Catalog).
 
 - **T0.4 The sample set** (`40e9cd4`). Four AI-generated sample people, each an original Seedream v5 pro design the user approved: an Indian man and woman, a white woman (red hair) and an East Asian man. 37 nano-banana-2/edit variants as JPEG in `testdata/samples/<person>/`; `testdata/samples/README.md` holds each variant's expected flags (the T3.9 ground truth), prompt and cost. Every criterion has a yes and a no, each from at least two people. The second-visit pair is V04 (bare ears and lip) and V05. The orchestrator's review had V02 (read as a monochrome filter) and V18 (magenta-dyed skin) redone, and the PNGs converted to JPEG q92 (35 MB to 11 MB); the branch was squashed so the PNGs and unchosen candidates never enter `main`'s history. Weakest calls: the light misses in V08 and P10 are moderate shadows, flagged in the README. FAL: $5.70 of $10. **Split:** the catalog product images became T0.4a; T0.5 now requires it. **Next agent should know:** Seedream v5 pro takes no seed, so the anchor files are the anchors. The edit model keeps the reference's beard (start a patchy beard from a thin one), leaves a man's top button open unless asked for a tie, resists a hard one-sided shadow, and dyes the skin when coloured light is asked for on the face (put it on the wall). Set `CHALACHITHRAM_ENV` to Chalachithram's own `.env`, or its search finds Dresscode's first.
 
