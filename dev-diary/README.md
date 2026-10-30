@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.10 landed (`580b01e`) — product.md speaks human, mock mode serves real photographs, and the second-visit sentence renders in dev when history is on. T5.11 (brand mark, slim shell, button system, Account/History overhaul) dispatches next. T0.5 (YouCam probe) still in flight elsewhere; T2.2 queued behind it.
+**Current status:** T5.11 landed (`5075c93`) — the arched mirror mark, the slim editorial shell, the four-tier button system, and the Account/History overhaul are in. T5.12 (front door with occasion cards and judge samples) dispatches next. T0.5 (YouCam probe) still in flight elsewhere; T2.2 queued behind it.
 
 ---
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 1 / 5 | T5.10 landed — human copy at the source, real sample media in mock, recall follows the switch. T5.11 next (serial chain). |
+| P5B | 2 / 5 | T5.11 landed — brand mark, slim shell, button system, Account/History overhaul. T5.12 (front door) next. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.11 Brand mark, editorial shell, button system and Account/History overhaul.** The arched vanity-mirror SVG mark sits beside the wordmark and in all four regenerated app icons (`rsvg-convert`, machine tooling, no dependency; the manifest's SVGs rewritten too so installed apps don't ship the old mark). The header is one slim row — mark, wordmark, three quiet links; `Appearance` lives in Account as a segmented pill defaulting to `system`, its fieldset/legend/radios byte-identical for keyboard and Chaaya. theme.css carries the four button tiers (primary/secondary/ghost/danger) with micro-press and transitions only under `prefers-reduced-motion: no-preference`; seven contrast pairs were computed before being added and all pass in both themes. History's notice is a neutral `.info-card` and its switch is a real sliding toggle behind the untouched label structure. Account: the four canonical copy swaps, one shared `sessionLine` with no dead branch, 6-cell OTP frames behind the exact original inputs, `Who sees what` in an open disclosure, and destructive triggers in danger — including "Delete the account", whose class swap the orchestrator ruled at remediation after the implementer correctly proposed rather than took it (the phase had named only three triggers). The h1 became a wordmark span; every screen still leads with a heading. Review came back CLEAN, reproduced all seven ratios, re-did the break-proof, and confirmed the icon and manifest handling. Landed as `366be74`+`e0c4dc2`+`5075c93`, gate green in the worktree and the main checkout, 30 a11y tests. Two cosmetic notes recorded in the task: maskable icon's bar end can overshoot the safe zone by ~2.5px, and the `.appearance` legend's clearance is visual only.
 
 - **T5.10 UX writing, occasion fixtures and real mock media.** The overhaul's first task: product.md's four jargon sentences rewritten with privacy.ts's readers moved atomically (account.test.ts renders product.md's own sentences and stays green); fifteen `Renders …` fix descriptions replaced across the occasion fixtures (clef questions byte-untouched — the 37 recordings depend on them); three error sentences polished including the user's final `lease_refused`. Mock mode now serves the real sample photographs (V04, V05, the gold jhumkas) behind the recorded media ids — base64 through a virtual module, dynamically imported so the photos never enter the production bundle — and the recall story answers `recall.json` once the history switch is on, so dev shows the second-visit sentence. Two out-of-owns edits (one `preferFixture` line in history.test.ts, two ambient type lines) were taken mid-task, disclosed, verified minimal by review, and ratified at landing with the approval record corrected — the note had said "approved by the orchestrator mid-task", which was not accurate. Review came back CLEAN. Landed as `1dadce7`+`580b01e`, gate green in the worktree and the main checkout. `docs/occasions.md` needed no change — its fix column was already human.
 
