@@ -67,11 +67,19 @@ requires:   T4.1, T2.3
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/delete.go, internal/privacy/
-status:     claimed:grok-4.7
+status:     in-review
 ```
 Delete a photo, a look, the style history, or the account. Account deletion needs a code entered in the last 10 minutes and runs as one Keel `erase` job over every target: mediastore blobs, every user-data table T1.2 listed, the identity rows, and the account's Lambo session. Safe to repeat; resumes after a restart; reports when every target confirmed.
 
 **Done when:** a test deletes an account mid-way, restarts, and finishes with nothing left in any target; the T1.2 table list and the erase targets are checked against each other.
+
+Notes:
+
+- `internal/privacy` is the deletion engine. `Source` is the Keel erase source and the identity target source. The inner erasure registers `files`, `rows`, and `memory`. `files` removes mediastore blobs owned by the user. `memory` erases that account's one Lambo session (`dc-u-` plus the user id) and treats already-absent as confirmed. `rows` deletes every table `store.UserTables` names, then the sign-in codes, sessions, identities, and the user row, in that order. `RowTables` is `UserTables`. Identity table names are not in that list. Keel deletes the identity rows again after the inner erasure confirms, which is when `rows_done` becomes true. A second pass deletes nothing.
+- Photo, look, and history deletion are Dresscode jobs of kind `deletion`, stage `erase`, with `current`, `total`, and `detail.targets` / `detail.confirmed`. The record also keeps the user, the operation, and the blob and look ids so a restart can finish. Photo deletion removes that blob and the looks that used it, including their render blobs and the analysis cache when no look still uses the hash. Look deletion removes that look and its render blobs and leaves the selfie. History deletion erases the session and deletes the switch row. Looks stay. A repeat, or a resource this user does not hold, is `ErrAbsent`.
+- `Server.MountDeletion` mounts `POST /api/account/deletion` as Keel's `DeleteHandler`, plus the three Dresscode routes and `GET /api/jobs/{id}` and its event stream. The signing key has to be the one `Open` used. The code's ten minutes are Keel's. A caller who does not hold the address, including a guest, gets `not_found` from that handler. The response clears the session cookie. The deletion job id is the capability for that job's state and stream. The inner erase job is not readable. `Open` does not call `MountDeletion`: `server.go` is T4.1's, and its test expects these paths to miss until something mounts them. `cmd/dresscode` still does not listen.
+- Tests use fakes for the blob store and for the Lambo target. Nothing dials.
+- Surprised: Keel's account-deletion watch measures its minute on the injected clock and sleeps on the wall clock. A frozen clock does not trip it. The live subscriber to a job stream is not closed by the terminal frame. The handler stays up until the client leaves. A late subscriber still gets a retained terminal.
 
 ---
 
