@@ -90,7 +90,7 @@ requires:   T5.3
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/look/verdict/
-status:     in-review
+status:     done
 ```
 Chaaya's job stream through the stages (checking → choosing a fix → rendering → checking the render), paused while the tab is hidden and resumed on return. The verdict: the criteria the look misses as reasons, the suggested fix, and why.
 
@@ -103,6 +103,7 @@ Notes:
 - Chaaya pauses that stream while the document is hidden and resumes it when the document is visible again. The keel options do not include `pauseWhenHidden`. Leaving it unset keeps the core default, which is on.
 - The verdict is the ready look. Each missed criterion is its suggestion. The fix is its changes. Why is the fix's why. The check booleans, the ids, the counters, and the shop list are not written out. A failure is shown from its code's sentence, not from the wire phrase.
 - The test holds the recorded event stream open after the render frame, hides the document, and shows it again. The stream stays paused and does not reconnect while it is hidden. The same job and the same look resume. The verdict lines have no digit.
+- Landed after a second review came back clean. A terminal status the screen cannot narrate (a bare `cancelled` or `interrupted`, or an `error` with no error envelope) ends the wait through Chaaya's `isTerminalStatus` and shows the `job_failed` sentence — "This look could not be finished." — instead of leaving the last stage word up. Fixtures for both bare endings are in `testdata/api/` in the recorded shape. The second review accepted the bare-`error` coverage as the same hang class, not scope creep.
 
 ---
 

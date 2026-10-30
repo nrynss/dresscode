@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** Gate green after the T4.3 landing fix (`41922c1`). T5.4 is in remediation from its review. The sample set is now two AI-generated people, which unblocks T0.4 and the probes.
+**Current status:** T5.4 landed (`8b9ba84`); T5.5 is the next app task and is ready. T0.4 is claimed elsewhere. P2's T2.4b is the only other ready task and waits on the user's recipient address.
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
-| P5 | 4 / 8 | T5.4 is in remediation from its review; T5.5 and T5.6 wait on it. Phone camera and phone install still need you. |
+| P5 | 5 / 8 | T5.5 is ready now that T5.4 landed; T5.6 and T5.8 follow it. Phone camera and phone install still need you. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
 ### Units and spend
@@ -157,6 +157,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.4 Progress and the verdict.** The verdict screen follows Chaaya's keel `JobStream` through the four stage words, pauses hidden and resumes visible, and shows the missed criteria, the fix and its why with no digit anywhere. A terminal ending the screen cannot narrate ends the wait with the `job_failed` sentence. Fixtures for bare `cancelled` and `interrupted` are in `testdata/api/` in the recorded shape. A review of `ff3eba2` found one minor hang-class gap; `54be3f4` fixed it and a second review came back clean, accepting the bare-`error` coverage. Landed as `8b9ba84` with the gate green in the worktree and in the main checkout. Chaaya pauses hidden by core default; the mock ignores `Last-Event-ID` and correctness rests on Chaaya's follower refusing replayed ids — T4.4's real stream must keep working with that client.
 
 - **Decision: the sample people are AI-generated.** The user ruled out their own photos. Fixtures, the demo and the video use two generated people, a man and a woman, made with Chalachithram's character lock (an original seedream anchor per person, variants composed from it). No photo of a real person anywhere, the user included. The woman carries the second-visit story (jhumkas kept, red lip dismissed); the man covers the beard criteria. T0.4 is now `M · mid` with the user approving both anchors. Changed: AGENTS.md (photos and people), product.md (Sample people), docs/occasions.md (necklace reference, catalog source), T0.4, T6.4. Risks for T0.5 and T0.6 to check: YouCam's face detection and Clef's reading on generated faces.
 
