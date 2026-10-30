@@ -1,0 +1,83 @@
+# Dresscode settings. Copy to dresscode.toml.
+# A key is a reference. This file holds no key value.
+# Names are the variables in docs/keys.md.
+# The list order is the fallback order. Environment, then the keyring
+# where that file records one. Nothing falls back past the list.
+
+[budgets.youcam]
+# Lifetime credit ceiling. The credits do not expire.
+# judging_units is spent only by the judging owner.
+units = 1040
+judging_units = 400
+
+[budgets.workers_ai]
+# Dollar ceiling for one UTC day.
+# No dollar ceiling was recorded. One dollar is the guard.
+# Change it here when Workers Paid is on.
+dollars_per_day = 1
+
+[lease.judge]
+# Caps for one judge session. A cached sample does not count.
+# Five fresh selfies is one per occasion.
+# Ten renders is a render and a runner-up for each.
+fresh_selfies = 5
+renders = 10
+
+[flags]
+# True is the restriction. False is the open position.
+# A running server flips the stored value without a restart.
+fresh_uploads_off = false
+renders_off = false
+samples_only = false
+
+[[secrets.youcam_api_key]]
+source = "env"
+var = "YOUCAM_API_KEY"
+
+[[secrets.youcam_api_key]]
+source = "keyring"
+var = "YOUCAM_API_KEY"
+
+[[secrets.youcam_api_secret]]
+source = "env"
+var = "YOUCAM_API_SECRET"
+
+[[secrets.youcam_api_secret]]
+source = "keyring"
+var = "YOUCAM_API_SECRET"
+
+[[secrets.workers_ai_api_token]]
+source = "env"
+var = "WORKERS_AI_API_TOKEN"
+
+[[secrets.workers_ai_api_token]]
+source = "keyring"
+var = "WORKERS_AI_API_TOKEN"
+
+[secrets.cloudflare_account_id]
+source = "env"
+var = "CLOUDFLARE_ACCOUNT_ID"
+
+[secrets.resend_api_key]
+source = "env"
+var = "RESEND_API_KEY"
+
+[secrets.resend_from]
+source = "env"
+var = "RESEND_FROM"
+
+[secrets.openrouter_api_key]
+source = "env"
+var = "OPENROUTER_API_KEY"
+
+[secrets.openrouter_base_url]
+source = "env"
+var = "OPENROUTER_BASE_URL"
+
+[secrets.lambo_url]
+source = "env"
+var = "LAMBO_URL"
+
+[secrets.lambo_dresscode_token]
+source = "env"
+var = "LAMBO_DRESSCODE_TOKEN"

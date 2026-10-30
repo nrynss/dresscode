@@ -87,11 +87,22 @@ requires:   T1.1
 fixture-ok: yes
 size:       S · mid
 owns:       internal/config/, dresscode.toml.example
-status:     claimed:grok-4.7
+status:     in-review
 ```
 One TOML file through Keel `config`, keys resolved from the environment or the keyring, never written into it. Budgets: YouCam units as a `cost` credit budget with a share held for judging; Workers AI dollars per day; the judge lease (fresh selfies and renders per session). Flags: fresh uploads off, renders off, samples only.
 
 **Done when:** the example file loads; a missing key fails naming the variable, never its value.
+
+Notes:
+
+- Added `internal/config` and `dresscode.toml.example`. The file loads through Keel `config`. Each key is a reference. The environment is tried first. YouCam's key, YouCam's secret, and the Workers AI token then fall back to the keyring: the three names `docs/keys.md` places there, looked up by service and kind. The other names are environment only. The example quotes only those names, `env`, and `keyring`.
+- YouCam is a `cost` credit budget, denomination `youcam.credit`, period none, because the credits do not expire. The ceiling is 1040. Owner `judging` can spend 400. Owner `development` can spend 640. The pool has no third owner, so nothing else can spend the judging share. A test reserves 640 and 400 on one pool and refuses one more unit to either owner.
+- Workers AI is a dollar budget with period daily. No dollar ceiling was recorded. The example sets one dollar a day. The number lives in the file. The in-memory budget has no window; the period is what a durable store opens with.
+- The judge lease caps one session at 5 fresh selfies and 10 renders. Five is one fresh selfie for each occasion. Ten is a render and a runner-up for each. A cached sample counts against neither. The caps are counts. They are not a `lease.Quota` of open sessions.
+- The flags are `fresh_uploads_off`, `renders_off`, and `samples_only`. True is the restriction. The example leaves all three false, so the open position is the default and a flip is what turns a restriction on.
+- A missing variable fails with Keel's resolve error and the variable name. The tests inject stand-ins and check that the error, the plan, and the formatted settings do not contain them. A literal where a reference belongs is refused the same way.
+- Keel treats a missing settings file as empty, which would fail a required key without naming its variable. Load refuses a missing path first.
+- `go mod tidy` recorded the sums for the TOML parser Keel `config` imports.
 
 ---
 
