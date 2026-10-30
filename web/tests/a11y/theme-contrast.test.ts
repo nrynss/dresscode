@@ -41,6 +41,25 @@ const textPairs: readonly ContrastPair[] = [
   ["ok", "ground"],
 ];
 
+/** Every boundary pair the screens draw, at the WCAG 1.4.11 non-text minimum.
+ * The gate measures each pair in every theme block the stylesheet defines.
+ * --line bounds the controls against the page, against the fills the controls
+ * sit on, and against the sunken frame of the render swipe; --stop bounds the
+ * notice against its own soft fill and the page. */
+const boundaryPairs: readonly ContrastPair[] = [
+  ["line", "ground"],
+  ["line", "surface"],
+  ["line", "sunken"],
+  ["stop", "stop-soft"],
+  ["stop", "ground"],
+];
+
+/** Border roles that draw no control boundary: the soft edges around cards
+ * and chips whose own measured text identifies them. A new border role must
+ * join the measured pairs or be named here with the reason, so a boundary
+ * the app draws cannot skip the non-text gate. */
+const softEdges = ["line-soft"] as const;
+
 interface CssRule {
   selector: string;
   body: string;
@@ -187,6 +206,15 @@ test("every drawn text pair reaches the AA minimum in all four theme blocks", ()
   contrastGate(themeCss, textPairs);
 });
 
+test("every drawn boundary pair reaches the non-text minimum in all four theme blocks", () => {
+  for (const pair of boundaryPairs) {
+    for (const role of pair) {
+      expect(colourRoles as readonly string[]).toContain(role);
+    }
+  }
+  contrastGate(themeCss, boundaryPairs, 3);
+});
+
 test("the screens draw no colour the theme does not define", () => {
   const raw: string[] = [];
   for (const { value } of drawnColours()) {
@@ -215,4 +243,19 @@ test("every colour drawn as text or background sits in a measured pair", () => {
   }
   expect([...missingForeground], "foreground roles with no measured pair").toEqual([]);
   expect([...missingBackground], "background roles with no measured pair").toEqual([]);
+});
+
+test("every colour drawn as a boundary sits in a measured pair", () => {
+  const measured = new Set([...textPairs, ...boundaryPairs].flat());
+  const excused = new Set<string>(softEdges);
+  const unmeasured = new Set<string>();
+  for (const { prop, value } of drawnColours()) {
+    if (!/^(border|border-color|border-[a-z-]+-color)$/.test(prop)) continue;
+    for (const match of value.matchAll(/var\(--([a-z0-9-]+)\)/g)) {
+      const role = match[1];
+      if (!(colourRoles as readonly string[]).includes(role)) continue;
+      if (!measured.has(role) && !excused.has(role)) unmeasured.add(role);
+    }
+  }
+  expect([...unmeasured], "boundary roles with no measured pair").toEqual([]);
 });
