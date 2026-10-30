@@ -139,9 +139,9 @@ The demo is built around one story, **the second visit** (product.md). First vis
 |---|---|---|
 | P0 | 4 / 7 | T0.4 waits on the user's photos. T0.5 and T0.6 wait on T0.4. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
-| P2 | 1 / 4 | T2.4 done. T2.3 is in review. T2.1 and T2.2 wait on the photo probes. |
+| P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
-| P4 | 1 / 7 | T4.1 done. T4.2 and T4.5 are claimed. |
+| P4 | 1 / 7 | T4.1 done. T4.2, T4.3 and T4.5 are claimed. |
 | P5 | 0 / 8 | T5.1 is claimed. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T2.3 The Lambo client.** `internal/memory.Client` speaks MCP streamable HTTP. A remember is confirmed through its receipt before the caller is told it was remembered. A repeat erase reports gone. `Target` is a Keel erase target named `memory`. Tests replay `testdata/lambo` and do not dial. A review of `beba7c7` came back clean and the gate passed.
 - **T4.1 Guests and sessions.** A first visit mints a guest. The cookie carries only the signed session id. A revoked session does not resolve, and the next request is a new guest. `POST /api/looks` is behind Keel `gate`. A review of `f6fb783` came back clean and the gate passed. `dresscode serve` still does not listen.
 - **T2.4 The Resend sender.** `internal/mail.Client` implements Keel `identity.Sender` for sign-in codes. Plain text and a minimal HTML version. The from address and the key come from settings. Keel's send ceilings apply before the post. A recorded success body is the fixture. The code is not logged. A review of `945098b` came back clean and the gate passed. No live mail was sent.
 - **T1.5 The API contract.** Frozen at `1f81cf7` after a second review came back clean. Sign-in uses Keel's empty choice or `switch`. Account deletion streams stage `delete`. Every product flow has a route and an example in `testdata/api/`.

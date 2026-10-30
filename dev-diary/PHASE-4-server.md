@@ -58,7 +58,7 @@ requires:   T4.1, T2.3
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/delete.go, internal/privacy/
-status:     not-started
+status:     claimed:grok-4.7
 ```
 Delete a photo, a look, the style history, or the account. Account deletion needs a code entered in the last 10 minutes and runs as one Keel `erase` job over every target: mediastore blobs, every user-data table T1.2 listed, the identity rows, and the account's Lambo session. Safe to repeat; resumes after a restart; reports when every target confirmed.
 

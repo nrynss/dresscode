@@ -66,7 +66,7 @@ requires:   T1.3, T0.7
 fixture-ok: yes
 size:       M · mid
 owns:       internal/memory/lambo.go
-status:     in-review
+status:     done
 ```
 MCP over streamable HTTP to the Dresscode Lambo server: one session per account, remember a look as text (the occasion, flagged criteria, fixes kept and dismissed, products, the look-in-words line), recall for an occasion, erase a session. Lambo's writes are applied in the background: a remember is confirmed through its receipt before the look reports "remembered". `record_action` does not de-duplicate, so a write is sent once (Keel `outbox` if it must survive a restart).
 
@@ -86,7 +86,7 @@ requires:   T2.3
 fixture-ok: no
 size:       XS · light
 owns:       internal/memory/live_test.go
-status:     not-started
+status:     claimed:grok-4.7
 ```
 Remember, recall and erase one look in a scratch session on the Dresscode server. **Done when:** the transcript is in the report.
 
