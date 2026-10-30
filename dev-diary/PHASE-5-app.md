@@ -65,11 +65,22 @@ requires:   T5.1
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/capture/
-status:     claimed:grok-4.7
+status:     in-review
 ```
 One selfie through Chaaya `capture` (front camera, frame grab, resize before upload), with `<input type="file" accept="image/*" capture="user">` as the fallback; products by photo, camera or link; Chaaya resumable upload with progress. Clear refusals: no face, too small, uploads paused.
 
 **Done when:** a selfie from a phone's camera and one from the gallery both upload; a dropped connection resumes.
+
+Notes:
+
+- The screen is `web/src/routes/capture/`. The shell link "Bring the look" uses the hash `#/capture`, and the shell renders that route. A static page has no server path for it.
+- A selfie opens Chaaya `CameraSession` on the front camera, grabs a frame through `sessionBackend`, and runs `prepareImage` before upload. The long side is 4096, Keel's default, and the byte ceiling is 4 MiB, Clef's image cap. The gallery input is Chaaya `fileBackend`. The fallback input is `accept="image/*"` and `capture="user"`.
+- A product is a gallery file, the rear camera, or `POST /api/products/link`. A photo sends `name` and `category` to `POST /api/products`.
+- The upload is Chaaya `ChunkUploader` on `/api/uploads`, private, one 65536-byte chunk size, owner `ignored`. The bar copies stored bytes against the bytes handed over. No count is written on screen. A later visit calls `resume` and can finish what a drop left in the store.
+- `no_face_in_photo`, `too_small`, and `uploads_paused` go through `ErrorNotice`, which uses `humanMessage`. A link that answers `upload_a_photo` uses the same path.
+- Tests against the mock: a gallery file of one chunk completes begin, the chunk, complete, and `POST /api/photos`. A chunk write that throws as a dropped connection fails that uploader; `resume` then sends the missing chunk and complete succeeds. The phone's physical camera was not used. That clause is unmet.
+- Chaaya 0.5.0 `beginBody` has no `group`. Omitted means selfie, so a product photo opens as a selfie and `uploads_paused` refuses it. Not worked around. The issue text is in the handoff.
+- The recorded complete fixture is one 65536-byte chunk, and the gallery test matches it. The mock has no second chunk, so a larger file in mock mode does not complete. A live server returns the real size.
 
 ---
 
