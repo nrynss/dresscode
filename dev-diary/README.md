@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** **P5 is complete** (`6914cca`) — the app is finished on mock data, gated end to end. Everything left is the pipeline and the ship: T0.5 (YouCam probe) is the only in-flight task, claimed elsewhere; then T2.2 → P3 → T4.4 → P6. `nryn.dev` verification and the phone checks remain with the user.
+**Current status:** **P5 is complete** (`6914cca`), and **P5B (UX, Component System & Writing Overhaul, `T5.10`–`T5.14`) is planned and ready** (`T5.10` is ready immediately). In parallel: T0.5 (YouCam probe) is in flight elsewhere; then T2.2 → P3 → T4.4 → P6. `nryn.dev` verification and the phone checks remain with the user.
 
 ---
 
@@ -36,14 +36,15 @@ Do not wait for a whole phase to finish. If a task requires only `T1.1`, start i
 | **P1** Contracts | [PHASE-1-contracts.md](PHASE-1-contracts.md) | T0.1, T0.3 | P0 probes | P2–P6 |
 | **P2** Clients | [PHASE-2-clients.md](PHASE-2-clients.md) | P1 | P4 accounts | P3 |
 | **P3** Pipeline | [PHASE-3-pipeline.md](PHASE-3-pipeline.md) | P2 | P4, P5 | P4 routes, P6 |
-| **P4** Server | [PHASE-4-server.md](PHASE-4-server.md) | P1; P3 for the look routes | P3, P5 | P5 wiring, P6 |
-| **P5** App | [PHASE-5-app.md](PHASE-5-app.md) | T1.5 (the API contract) | P3, P4 | P6 |
-| **P6** Ship | [PHASE-6-ship.md](PHASE-6-ship.md) | P3, P4, P5 | none | submission |
+| **P4** Server | [PHASE-4-server.md](PHASE-4-server.md) | P1; P3 for the look routes | P3, P5, P5B | P5 wiring, P6 |
+| **P5** App | [PHASE-5-app.md](PHASE-5-app.md) | T1.5 (the API contract) | P3, P4 | P5B, P6 |
+| **P5B** UX Overhaul | [PHASE-5B-ux.md](PHASE-5B-ux.md) | P5 | P2, P3, P4 | P6 |
+| **P6** Ship | [PHASE-6-ship.md](PHASE-6-ship.md) | P3, P4, P5, P5B | none | submission |
 
 ```text
-  P0 ──▶ P1 ──┬──▶ P2 clients ──▶ P3 pipeline ──┐
-              ├──▶ P4 server (accounts first) ──┼──▶ P6 ship
-              └──▶ P5 app (against the contract)┘
+  P0 ──▶ P1 ──┬──▶ P2 clients ──▶ P3 pipeline ─────────────┐
+              ├──▶ P4 server (accounts first) ─────────────┼──▶ P6 ship
+              └──▶ P5 app ──▶ P5B UX & writing overhaul ───┘
 ```
 
 P0 and P1 are the serial bottleneck. Once the API contract (T1.5) freezes, the app is built against recorded responses while the pipeline and server fill in behind it.
@@ -126,6 +127,7 @@ keys and settings (T0.2) + occasions, menus, vocabulary (T0.3) + sample set (T0.
   -> shop (T3.7) + remember and recall (T3.8) -> evaluation (T3.9)
   -> look routes (T4.4) + samples for judges (T4.6)
   -> capture (T5.3) -> verdict and render (T5.4, T5.5) -> second visit (T5.6)
+  -> UX writing & mock media (T5.10) -> shell & account UX (T5.11) -> front door (T5.12) -> mirror capture & look UX (T5.13) -> visual verification (T5.14)
   -> deploy (T6.1) -> README (T6.2) -> video (T6.4) -> submit (T6.5)
 ```
 
@@ -143,7 +145,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P6 | 0 / 6 | Waits for P3–P5. |
+| P5B | 0 / 5 | Ready. T5.10 (UX writing, occasion fixtures and real mock media) is ready. |
+| P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
 
@@ -158,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **New phase P5B: UX, Component System & Writing Overhaul (`PHASE-5B-ux.md`, `T5.10`–`T5.14`).** Following the UI exploration and screenshot review (`/tmp/ui-explore/`), the user decided on a radical overhaul before shipping: unify the fragmented screens into a 3-step Mirror journey (Front Door with occasion cards, selectable fix chips, recall banner and one-tap judge samples → Arched Vanity Mirror Capture with button-styled file pickers, collapsible product drawer and `Check the dress code` CTA → Look screen with 4-step live pipeline stepper, arched Before/After comparator with visible split line/handle/chips, Fix hero card, 3-column verdict bar, and interactive fidelity popovers); add an arched vanity-mirror SVG brand mark and slim the header (`Appearance` moves into `Account` as a segmented 3-way pill bar, defaulting to `system`); upgrade `History` with a tactile toggle switch and neutral `.info-card` styling; upgrade `Account` with a 6-cell OTP code input, collapsible `Who sees what`, and `.danger` buttons; serve real sample JPEGs from `testdata/samples/` at `/media/*` in mock mode; and clean up the engineering/pipeline jargon across `product.md`, `testdata/occasions/` (`fixes[].changes` only, leaving `criteria[].clef` untouched), and `web/src/`. Split into `T5.10` → `T5.11` → `T5.12` → `T5.13` → `T5.14`. `T5.10` is ready now.
 
 - **Mail story closed: the sender is the verified domain.** Root cause of T2.4b's refused send: `RESEND_FROM` named `dresscode@nryn.dev` while the account's verified domain is `send.nryn.dev` — Resend refuses with an unnamed 403. The from-address is now `dresscode@send.nryn.dev` in `.env` and docs/keys.md. The production path was proven with one accepted send (401 ms) to an external, non-account-owner mailbox (Proton) — arrival confirmation pending from the user. The `onboarding@resend.dev` quick path is no longer needed anywhere.
 

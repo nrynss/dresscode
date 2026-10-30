@@ -3,7 +3,7 @@
 ```yaml
 id:       P6
 size:     M
-requires: [P3, P4, P5]
+requires: [P3, P4, P5, P5B]
 blocks:   submission
 parallel: none
 ```
@@ -16,7 +16,7 @@ Anything outward is the user's call: making the repository public, publishing th
 
 ### T6.1: Deploy on this machine ★
 ```yaml
-requires:   T4.6, T5.6
+requires:   T4.6, T5.6, T5.14
 fixture-ok: no
 size:       M · mid
 owns:       deploy/
