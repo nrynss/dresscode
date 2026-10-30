@@ -108,7 +108,7 @@ requires:   T0.3
 fixture-ok: no
 size:       M · mid
 owns:       testdata/samples/, testdata/samples/README.md
-status:     not-started
+status:     claimed:claude-opus-5-5
 ```
 Two sample people, a man and a woman, generated with AI (user decision). No photo of a real person is in the samples, the demo or the video, the user included.
 
