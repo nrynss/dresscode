@@ -117,6 +117,10 @@ type Status struct {
 	Status    string `json:"status"`
 	Error     *Error `json:"error,omitempty"`
 	ResultURL string `json:"result_url,omitempty"`
+	// FaceShape is the analysis result, when the task was an analysis one.
+	// It is the only analysis field on the seam: age, gender and ratios
+	// are never decoded into it, even when a reply carries them.
+	FaceShape string `json:"face_shape,omitempty"`
 }
 
 // ResultRef names a result to copy. URL is the provider's link.
