@@ -65,7 +65,7 @@ requires:   T5.1
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/capture/
-status:     in-review
+status:     done
 ```
 One selfie through Chaaya `capture` (front camera, frame grab, resize before upload), with `<input type="file" accept="image/*" capture="user">` as the fallback; products by photo, camera or link; Chaaya resumable upload with progress. Clear refusals: no face, too small, uploads paused.
 
@@ -90,7 +90,7 @@ requires:   T5.3
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/look/verdict/
-status:     not-started
+status:     claimed:grok-4.7
 ```
 Chaaya's job stream through the stages (checking → choosing a fix → rendering → checking the render), paused while the tab is hidden and resumed on return. The verdict: the criteria the look misses as reasons, the suggested fix, and why.
 
