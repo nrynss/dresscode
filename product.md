@@ -11,7 +11,7 @@ People are judged against dress codes all the time: first dates, family function
 The user picks an **occasion** and brings **one selfie**, plus any products they are considering. Then:
 
 1. **Check against the dress code.** Clef reads the photo and the occasion's written criteria, nothing else, and flags the criteria the look misses: "the collar reads formal", "the face is lit flat". The app shows them as reasons, worded as a suggestion. **No score is ever shown.**
-2. **Pick a fix.** A System One model picks one fix from the occasion's menu, limited to the fixes the user ticked as open to.
+2. **Pick a fix.** Clef picks one fix from the occasion's menu, limited to the fixes the user ticked as open to. The call is text only.
 3. **Measure, only for that fix.** YouCam analysis runs only when the fix needs it: colour tones for a shade match, face shape and hair type for a hairstyle. Each result is cached for that photo.
 4. **Render.** YouCam renders the fix on the user's own photo. The original is always one tap away.
 5. **Check the render.** Clef sees the original and the render together and answers: was the change made, is it still the same person, is the criterion met now, and what does the look show (a fixed vocabulary, for memory). A render that fails either of the first two is discarded, never shown; the runner-up fix is tried, and after that the suggestion stands without a render.
@@ -31,7 +31,7 @@ Date, family function, interview, festival, funeral. Each occasion is a dress co
 | Step | Model | Receives | Never receives |
 |---|---|---|---|
 | Judge | Clef | the photo, the occasion, its criteria | YouCam analysis |
-| Pick a fix | System One | flagged criteria, occasion, the opt-in menu, allowlisted attributes (face shape, hair type and length, colour tones), recall if history is on | the photo |
+| Pick a fix | Clef | flagged criteria, occasion, the opt-in menu, allowlisted attributes (face shape, hair type and length, colour tones), recall if history is on | the photo |
 | Check the render | Clef | original, render, the requested change, the look vocabulary | YouCam analysis |
 
 Never sent to any model: face ratios, Skin Analysis scores, any age or attractiveness estimate. Probabilities steer the pipeline and are never shown.
@@ -80,5 +80,4 @@ Architecture in [`docs/architecture.md`](docs/architecture.md).
 
 ## Open decisions
 
-- **Fix selection on Clef, or on Jev** (OpenRouter, text only, cheaper per call)? One System One client either way; T0.2 records the choice.
 - The occasions' criteria, fix menus and the look vocabulary (T0.3).

@@ -43,7 +43,7 @@ One Go binary, `dresscode`, serving the API and the built app. Lambo runs beside
 Each look runs as one Keel job, with progress streamed to the phone.
 
 1. **Judge.** One Clef request: the photo, the occasion's criteria as `noul` questions, and one `choice` question for the biggest issue. Output: flags.
-2. **Pick.** One System One request on text only: flags, occasion, the opt-in menu, allowlisted attributes, recall. Output: fix and runner-up.
+2. **Pick.** One Clef request on text only: flags, occasion, the opt-in menu, allowlisted attributes, recall. Output: fix and runner-up.
 3. **Measure.** Only the analysis the fix names, cached by the normalised photo's hash.
 4. **Render.** A YouCam task through `providertask`, keyed so a restart never pays twice. The result is copied into mediastore at once.
 5. **Check.** One Clef request with both images: change made, same person, criterion met (`noul`), and one `choice` per look attribute. A failed first or second check discards the render; the runner-up runs once; then the suggestion stands alone.
@@ -54,7 +54,7 @@ The thresholds that turn Clef's probabilities into decisions are set from the ev
 
 ## The seams
 
-- **`SystemOne`** (interface). One call: images (optional), state, questions in; per-option probabilities and confidence out. Implementations: Workers AI (Clef, Clef-flash), OpenRouter (Jev) if kept, and a replay client serving recorded replies for tests and the offline demo.
+- **`SystemOne`** (interface). One call: images (optional), state, questions in; per-option probabilities and confidence out. Implementations: Workers AI (Clef, Clef-flash) and a replay client serving recorded replies for tests and the offline demo.
 - **`YouCam`** (interface). Upload a file, create a task, poll it, fetch the result. Implementations: the v2 REST client (Bearer key, `https://yce-api-01.makeupar.com`) and a replay client.
 - **`Memory`** (interface). Remember a look, recall for an occasion, erase a session. Implementations: Lambo over MCP, and an in-memory fake.
 - **`identity.Sender`** (Keel). Resend for real mail; a recorder in tests.
