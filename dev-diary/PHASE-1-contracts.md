@@ -70,7 +70,7 @@ requires:   T1.1
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/systemone/systemone.go, internal/systemone/replay.go, internal/youcam/youcam.go, internal/youcam/replay.go, internal/memory/memory.go, internal/memory/fake.go
-status:     claimed:grok-4.7
+status:     in-review
 ```
 - `SystemOne`: images (optional, embedded bytes), a state object, questions (`choice`, `noul`, `score`) in; per-option probabilities and confidence out. Model by name.
 - `YouCam`: upload, create task, poll, fetch result; typed errors for no face, bad file, expired, out of units.
@@ -78,6 +78,18 @@ status:     claimed:grok-4.7
 - Each has a replay or fake implementation that serves `testdata/` (T0.5–T0.7) by a stable request key, so P3 and P5 run with no network.
 
 **Done when:** the replay twins serve every recorded P0 reply; a missing recording fails loudly with its key, never a silent default.
+
+Notes:
+
+- `SystemOne.Ask` takes a model name, optional embedded images, a JSON state, and `choice`, `noul`, and `score` questions. Choice and score come back with a probability per option and a confidence. Noul comes back as the probability the answer is yes. A missing confidence stays nil. `clef` and `clef-flash` are named; the caller names Jev.
+- `YouCam` is upload, create, poll, and fetch. `ErrNoFace`, `ErrBadFile`, `ErrExpired`, and `ErrOutOfUnits` match on kind, so a provider detail still matches the sentinel. Poll returns a refusal as that error, not as a success status.
+- `Memory` remembers concepts, recalls by the occasion's query text, and erases a session. `Session` builds the one `dc-u-` id for an account. `ErrErased` is JSON-RPC `-32003`: nothing was read, and it is not an empty hit list. The recorded derive stays `pending`; the stats exchange is its own recording.
+- Recordings are the lambo envelope: `exchange`, `request`, `response`. `Reply` uses the exchange id. `Serve` hashes the HTTP method, path, and canonical body. Headers are not in that hash. A missing key is `Missing` and the error quotes the key. Two recordings of one request are `Ambiguous`; the replay does not pick.
+- The twenty Lambo exchanges replay. Eighteen have a unique HTTP body. `15-erase-a` and `18-erase-a-again` are the same request, so `Serve` and `Erase` name both instead of choosing. Recall of "silver studs" in session A returns A's look. The same query in two recordings is ambiguous, not a chosen hit list.
+- `testdata/clef` and `testdata/youcam` are not there. Those replays open empty and fail the call with the key. A recording in the same envelope is served, including a Clef body carried as an HTTP body. No fixtures were added.
+- Tests live next to the six files. The gate runs `go test`, and the done-when needs a recorded hit and a missing key.
+- Did not import Keel `cache` for the digest. That import would add `golang.org/x/sync` to `go.mod`, which this task does not own. The key is still a SHA-256 of canonical JSON.
+- Surprised that the two erase calls are byte-for-byte the same request with different replies, and that a poor recall query still returns only that session's concepts.
 
 ---
 
