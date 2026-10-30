@@ -1,0 +1,71 @@
+{
+  "exchange": "05-derive-a",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-a",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "a2d650e6-9b6a-4270-a33e-961ac3fc7679"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 5,
+      "method": "tools/call",
+      "params": {
+        "name": "lambo_derive",
+        "arguments": {
+          "agent_id": "dresscode-probe",
+          "concepts": [
+            {
+              "content": "Family function kept the gold jhumkas.",
+              "concept_type": "observation"
+            },
+            {
+              "content": "Family function dismissed the red lip.",
+              "concept_type": "observation"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      "x-accel-buffering": "no",
+      "connection": "close",
+      "transfer-encoding": "chunked"
+    },
+    "sse": [
+      {
+        "data": null
+      },
+      {
+        "data": {
+          "jsonrpc": "2.0",
+          "id": 5,
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "accepted 2 concept(s) for background write; validated and ordered, not yet applied\nreceipt lwr1.b46ea9a412cbde22.1a18ad1b725.1: pending \u2014 admitted, not yet applied; ask again\nThe outcome arrives on your next tool response. To wait for it, call lambo_stats with receipt=lwr1.b46ea9a412cbde22.1a18ad1b725.1 (add wait_ms to block).\nRecorded under agent_id \"dresscode-probe\"; send this same id on every call."
+              }
+            ],
+            "structuredContent": {
+              "agent_id": "dresscode-probe",
+              "receipt": "lwr1.b46ea9a412cbde22.1a18ad1b725.1",
+              "receipt_state": "pending",
+              "summary": "accepted 2 concept(s) for background write; validated and ordered, not yet applied",
+              "warnings": []
+            },
+            "isError": false
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,135 @@
+{
+  "exchange": "06-stats-wait-a",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-a",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "a2d650e6-9b6a-4270-a33e-961ac3fc7679"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 6,
+      "method": "tools/call",
+      "params": {
+        "name": "lambo_stats",
+        "arguments": {
+          "agent_id": "dresscode-probe",
+          "receipt": "lwr1.b46ea9a412cbde22.1a18ad1b725.1",
+          "wait_ms": 30000
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      "x-accel-buffering": "no",
+      "connection": "close",
+      "transfer-encoding": "chunked"
+    },
+    "sse": [
+      {
+        "id": "0/2",
+        "retry": 3000,
+        "data": null
+      },
+      {
+        "id": "1/2",
+        "retry": null,
+        "data": {
+          "jsonrpc": "2.0",
+          "id": 6,
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "session 'dc-u-probe-a' (owner agent 'lambo-serve')\nnodes=3 edges=3 concepts=2 canonical=0\nembedded=2/2\nflush_lag=41.59981ms log_depth=0 flush_depth=0 dead_lettered=0 degraded=false\nepoch=7 daemon_cycles=140 canonization_cycles=2 canonization_failures=0\npromotion_policy=Swarm\ngc: last_gc_at=2026-10-30T03:19:22.146046170+00:00 last_gc_epoch=0 last_sweep=none (this process)\nembedding: kind=bge_m3 model=@cf/baai/bge-m3 dim=1024 modalities=text\nreceipt lwr1.b46ea9a412cbde22.1a18ad1b725.1: applied \u2014 derived 2 concept(s): 2 created (2 embedded), 0 matched existing"
+              }
+            ],
+            "structuredContent": {
+              "agent": "lambo-serve",
+              "canonical_count": 0,
+              "canonization_cycles": 2,
+              "canonization_failures": 0,
+              "concept_count": 2,
+              "daemon_cycles": 140,
+              "dead_lettered": 0,
+              "degraded": false,
+              "edge_count": 3,
+              "embedded_concepts": 2,
+              "embedding_contract": {
+                "dim": 1024,
+                "kind": "bge_m3",
+                "model": "@cf/baai/bge-m3"
+              },
+              "embedding_modalities": [
+                "text"
+              ],
+              "epoch": 7,
+              "flush_depth": 0,
+              "flush_lag_ms": 41,
+              "gc": {
+                "last_gc_at": "2026-10-30T03:19:22.146046170+00:00",
+                "last_gc_epoch": 0,
+                "last_sweep": null
+              },
+              "log_depth": 0,
+              "node_count": 3,
+              "promotion_policy": "Swarm",
+              "receipt": {
+                "created": [
+                  "609855c8-b924-406a-ad73-4f1ec22463d9",
+                  "1c8a743b-e85b-41f8-9ed8-78e2769d489a"
+                ],
+                "created_count": 2,
+                "detail": "applied \u2014 derived 2 concept(s): 2 created (2 embedded), 0 matched existing",
+                "embedded": 2,
+                "id": "lwr1.b46ea9a412cbde22.1a18ad1b725.1",
+                "kind": "lambo_derive",
+                "matched": [],
+                "matched_count": 0,
+                "reinforced": 0,
+                "semantic_merged": 0,
+                "state": "applied"
+              },
+              "receipts_retained": 1,
+              "session": "dc-u-probe-a",
+              "summary": "session 'dc-u-probe-a' (owner agent 'lambo-serve')\nnodes=3 edges=3 concepts=2 canonical=0\nembedded=2/2\nflush_lag=41.59981ms log_depth=0 flush_depth=0 dead_lettered=0 degraded=false\nepoch=7 daemon_cycles=140 canonization_cycles=2 canonization_failures=0\npromotion_policy=Swarm\ngc: last_gc_at=2026-10-30T03:19:22.146046170+00:00 last_gc_epoch=0 last_sweep=none (this process)\nembedding: kind=bge_m3 model=@cf/baai/bge-m3 dim=1024 modalities=text\nreceipt lwr1.b46ea9a412cbde22.1a18ad1b725.1: applied \u2014 derived 2 concept(s): 2 created (2 embedded), 0 matched existing",
+              "total_concepts": 2,
+              "warnings": [],
+              "write_queue_abandoned": 0,
+              "write_queue_accepted": 1,
+              "write_queue_applied": 1,
+              "write_queue_apply_ms_max": 377,
+              "write_queue_apply_ms_p50": 377,
+              "write_queue_apply_ms_p90": 377,
+              "write_queue_apply_samples": 1,
+              "write_queue_bound": 1024,
+              "write_queue_bound_source": "probe",
+              "write_queue_deferred": 0,
+              "write_queue_dropped": 0,
+              "write_queue_dropped_closed": 0,
+              "write_queue_failed": 0,
+              "write_queue_items_per_sec": 3.6990859292334672,
+              "write_queue_lane_bound": 64,
+              "write_queue_measured": true,
+              "write_queue_outstanding": 0,
+              "write_queue_probe_optimism": null,
+              "write_queue_probe_serial_items_per_sec": 2.633215886023968,
+              "write_queue_replay_blocked": null,
+              "write_queue_replay_owed": 0,
+              "write_queue_replayed": 0,
+              "write_queue_serial_items_per_sec": 2.633215886023968
+            },
+            "isError": false
+          }
+        }
+      }
+    ]
+  }
+}

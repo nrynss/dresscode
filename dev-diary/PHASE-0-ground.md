@@ -157,7 +157,7 @@ requires:   T0.2
 fixture-ok: no
 size:       S · light
 owns:       testdata/lambo/, docs/lambo.md
-status:     claimed:grok-4.7
+status:     in-review
 ```
 Against the Dresscode Lambo server (T0.2), in scratch sessions:
 
@@ -167,3 +167,12 @@ Against the Dresscode Lambo server (T0.2), in scratch sessions:
 - Record every MCP request and response as JSON (no key).
 
 **Done when:** `docs/lambo.md` lists the calls Dresscode needs with their shapes; isolation, recall and erase were each seen to work, or the gap is written as issue text in the handoff log.
+
+Notes:
+
+- Probed the Lambo that was already running, version 0.8.0, at `127.0.0.1:7720`. Did not start, stop, or reconfigure it, and did not send a request to port 7700 or 7710.
+- Opened `dc-u-probe-a` and `dc-u-probe-b` on that one serve. Each `initialize` created the session. Each session got two `observation` concepts in one `lambo_derive`: a kept fix and a dismissed fix, both worded with "family function", and different words in each session.
+- `lambo_derive` returns a receipt before the write is applied. `lambo_stats` with that receipt and `wait_ms` reported `applied` for both, `2 created (2 embedded)` each. Four embeddings. Recall of "family function" then returned that session's kept fix and dismissed fix, and not the other's. A query that used the other session's words still returned only this session's concepts, at a lower score. Recall ranks the nearest concepts in the session; it does not come back empty, and it does not filter to an occasion.
+- Erase is `POST /admin/s/<session>/erase` with `{"confirm":"<session>"}`, not an MCP tool. The first erase of `dc-u-probe-a` removed 2 concepts and 2 vectors (`already_absent` false). The next recall and a fresh initialize both returned HTTP 200, `application/json`, and JSON-RPC `-32003`, with no concept text: nothing was read, and the id does not come back. A second erase reported `already_absent` true. B still returned its own look, then it was erased too so the scratch text does not stay. Both ids are tombstoned.
+- Recordings are `testdata/lambo/01` through `20`. The bearer token is redacted. `02`, `04` and `05` omit the SSE event id and `retry`; the JSON-RPC message in each is the one returned. `docs/lambo.md` lists the calls and the shapes.
+- Surprised that a poor query still returns this session's nearest concepts, and that an erased session answers `-32003` as JSON rather than an empty hit list or an SSE body.

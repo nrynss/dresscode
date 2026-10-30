@@ -1,0 +1,42 @@
+{
+  "exchange": "17-initialize-a-after-erase",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-a",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "a2d650e6-9b6a-4270-a33e-961ac3fc7679"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 17,
+      "method": "initialize",
+      "params": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {},
+        "clientInfo": {
+          "name": "dresscode-t07",
+          "version": "0.0.0"
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "content-length": "271",
+      "connection": "close"
+    },
+    "body": {
+      "error": {
+        "code": -32003,
+        "message": "lambo: this session's memory was erased by an operator. NOTHING WAS READ OR WRITTEN, and every later call to this session is refused: it does not come back. Do not retry; carry on with the work without memory."
+      },
+      "id": 17,
+      "jsonrpc": "2.0"
+    }
+  }
+}

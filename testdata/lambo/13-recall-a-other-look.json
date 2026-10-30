@@ -1,0 +1,83 @@
+{
+  "exchange": "13-recall-a-other-look",
+  "request": {
+    "method": "POST",
+    "path": "/mcp/s/dc-u-probe-a",
+    "headers": {
+      "accept": "application/json, text/event-stream",
+      "content-type": "application/json",
+      "authorization": "Bearer <redacted>",
+      "mcp-session-id": "a2d650e6-9b6a-4270-a33e-961ac3fc7679"
+    },
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 13,
+      "method": "tools/call",
+      "params": {
+        "name": "lambo_recall",
+        "arguments": {
+          "agent_id": "dresscode-probe",
+          "query": "silver studs",
+          "top_k": 10,
+          "max_tokens": 2000
+        }
+      }
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache",
+      "x-accel-buffering": "no",
+      "connection": "close",
+      "transfer-encoding": "chunked"
+    },
+    "sse": [
+      {
+        "id": "0/4",
+        "retry": 3000,
+        "data": null
+      },
+      {
+        "id": "1/4",
+        "retry": null,
+        "data": {
+          "jsonrpc": "2.0",
+          "id": 13,
+          "result": {
+            "content": [
+              {
+                "type": "text",
+                "text": "Family function kept the gold jhumkas. [Observation] (score 0.59, id 609855c8)\n\nFamily function dismissed the red lip. [Observation] (score 0.58, id 1c8a743b)"
+              }
+            ],
+            "structuredContent": {
+              "context": "Family function kept the gold jhumkas. [Observation] (score 0.59, id 609855c8)\n\nFamily function dismissed the red lip. [Observation] (score 0.58, id 1c8a743b)",
+              "hits": [
+                {
+                  "blast_radius": null,
+                  "concept_type": "Observation",
+                  "content": "Family function kept the gold jhumkas.",
+                  "is_canonical": false,
+                  "node_id": "609855c8-b924-406a-ad73-4f1ec22463d9",
+                  "score": 0.5898357713222504
+                },
+                {
+                  "blast_radius": null,
+                  "concept_type": "Observation",
+                  "content": "Family function dismissed the red lip.",
+                  "is_canonical": false,
+                  "node_id": "1c8a743b-e85b-41f8-9ed8-78e2769d489a",
+                  "score": 0.5836704456806183
+                }
+              ],
+              "warnings": []
+            },
+            "isError": false
+          }
+        }
+      }
+    ]
+  }
+}
