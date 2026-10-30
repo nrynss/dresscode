@@ -138,7 +138,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | Phase | Tasks complete | Status |
 |---|---|---|
 | P0 | 4 / 7 | T0.4 waits on the user's photos. T0.5 and T0.6 wait on T0.4. |
-| P1 | 2 / 5 | T1.1 and T1.2 done. T1.4 is in review. T1.3 is still being written. |
+| P1 | 3 / 5 | T1.4 done. T1.5 is claimed. T1.3 is still being written. |
 | P2 | 0 / 4 | Waits for P1. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 0 / 7 | Accounts (T4.1–T4.3) start after P1. |
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T1.4 Settings, budgets and flags.** `internal/config` loads `dresscode.toml.example` through Keel `config`. Keys are references. YouCam is a lifetime budget of 1040 credits, 400 held for judging. Workers AI is one dollar per day in the example, because no dollar ceiling was recorded. A judge session in the example is capped at 5 fresh selfies and 10 renders. The three flags default off. A missing variable fails by name. A review of `ca06ee4` came back clean and the gate passed. The merge kept both the sqlite and the TOML indirect modules.
 - **T1.2 The store.** `internal/store.Migrate` applies six files through Keel sqlite under the namespace `store`. `UserTables()` is the deletion list. Every owned row carries `user_id`. Identity's tables are not created. The analysis cache key is the normalised photo's hash, scoped to that user, plus the YouCam task. A review of `395aff7` came back clean and the gate passed.
 - **T1.1 The domain model.** `internal/domain` loads `testdata/occasions` and validates it. Fidelity labels are exact product, approximate match, and visual simulation. The catalog tokens `exact` and `approximate` decode as the first two. `Allowlist` is face shape, hair type, hair length, and colour tones, with no photo. A bad file returns `FileError` with the base name and the reason. Interview and funeral share `lip-quiet`. A review of `a0cb3cd` came back clean and the gate passed.
 - **T0.3 Occasions, fix menus and the look vocabulary.** Five occasions in `testdata/occasions/`, prose in `docs/occasions.md`. Each has criteria, an opt-in menu, and a basket. Fixes use printed YouCam paths from Skin, Beauty, Fashion, Jewelry and Watch, and Hair and Beard. The family-function story is gold jhumkas kept and the red lip dismissed. Light, watches, rings, and hair colour have no render. No units spent. Landed without a separate sign-off because the user said not to wait.
