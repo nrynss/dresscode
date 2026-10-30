@@ -20,7 +20,7 @@ requires:   T1.5
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/app/, web/src/lib/api/, web/static/manifest.webmanifest
-status:     in-review
+status:     done
 ```
 The app shell, Dresscode's own look on Chaaya's theme roles (light, dark, system), the installable manifest and icons, and Chaaya's API client with its Keel adapter so every `wire` error arrives typed. A mock mode serving `testdata/api/`.
 
@@ -44,7 +44,7 @@ requires:   T5.1
 fixture-ok: yes
 size:       S · mid
 owns:       web/src/routes/occasion/
-status:     not-started
+status:     claimed:grok-4.7
 ```
 Pick an occasion; tick the fixes you're open to (remembered per occasion). Nothing asks or infers gender.
 
@@ -58,7 +58,7 @@ requires:   T5.1
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/capture/
-status:     not-started
+status:     claimed:grok-4.7
 ```
 One selfie through Chaaya `capture` (front camera, frame grab, resize before upload), with `<input type="file" accept="image/*" capture="user">` as the fallback; products by photo, camera or link; Chaaya resumable upload with progress. Clear refusals: no face, too small, uploads paused.
 
@@ -114,7 +114,7 @@ requires:   T5.1
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/account/
-status:     not-started
+status:     claimed:grok-4.7
 ```
 Sign in by emailed code (looks kept); delete a photo, a look, history, or the account (fresh code, then progress until every part confirms). What YouCam and Cloudflare receive, said plainly.
 

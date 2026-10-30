@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 1 / 7 | T4.1 done. T4.2, T4.3 and T4.5 are claimed. |
-| P5 | 0 / 8 | T5.1 is claimed. |
+| P5 | 1 / 8 | T5.1 done except a phone install. T5.2, T5.3 and T5.7 are claimed. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
 ### Units and spend
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T5.1 Shell, theme and API client.** The shell, Chaaya theme roles, the manifest, and the typed API client are in. Mock mode serves `testdata/api`. Every recorded error code has a human message. A review of `9c45b71` came back clean aside from installing the app on a phone, which was not done. The gate passed.
 - **T2.3 The Lambo client.** `internal/memory.Client` speaks MCP streamable HTTP. A remember is confirmed through its receipt before the caller is told it was remembered. A repeat erase reports gone. `Target` is a Keel erase target named `memory`. Tests replay `testdata/lambo` and do not dial. A review of `beba7c7` came back clean and the gate passed.
 - **T4.1 Guests and sessions.** A first visit mints a guest. The cookie carries only the signed session id. A revoked session does not resolve, and the next request is a new guest. `POST /api/looks` is behind Keel `gate`. A review of `f6fb783` came back clean and the gate passed. `dresscode serve` still does not listen.
 - **T2.4 The Resend sender.** `internal/mail.Client` implements Keel `identity.Sender` for sign-in codes. Plain text and a minimal HTML version. The from address and the key come from settings. Keel's send ceilings apply before the post. A recorded success body is the fixture. The code is not logged. A review of `945098b` came back clean and the gate passed. No live mail was sent.
