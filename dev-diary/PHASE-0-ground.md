@@ -108,7 +108,7 @@ requires:   T0.3, T0.5
 fixture-ok: yes
 size:       S · mid
 owns:       testdata/occasions/*.json (fix entries only), docs/occasions.md (fix tables and template notes), internal/domain/model.go, internal/domain/load.go, internal/domain/*_test.go
-status:     in-review
+status:     done
 ```
 Split from T0.3, from T0.5's findings. **User decisions:** `tied-back` hair renders with the hair-transfer template Casual Updo (`female_casual_updo`), and a short beard renders with the beard-style template Circle (`all_circle`). Clef will read those renders as a bun and a goatee, so the fixes' vocabulary changes say so, and memory describes what the render shows.
 
