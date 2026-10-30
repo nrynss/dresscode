@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.8 landed (`7f6581c`) — the app's accessibility and contrast gates now run inside `./tools/check.sh` (22 screen-state runs, 11 text pairs × four theme blocks). T5.9 (control boundaries to 3:1) is P5's last task, in flight. T2.1 is in remediation-review. T0.5 (YouCam probe) is claimed elsewhere; `nryn.dev` verification still open.
+**Current status:** T2.1 landed (`16cbd91`) — the pipeline's judge interface exists. T5.9 in review; when it lands, **P5 is complete**. T0.5 (YouCam probe) claimed elsewhere; T2.2 dispatches when it closes. `nryn.dev` verification still open.
 
 ---
 
@@ -139,7 +139,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 |---|---|---|
 | P0 | 7 / 8 | T0.4, T0.4a and T0.6 done. T0.5 (YouCam probe) is ready. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
-| P2 | 5 / 9 | T2.3, T2.3b, T2.4, T2.4b and T2.5 done. T2.1 is ready (T0.6 landed). T2.2 waits on the YouCam probe. |
+| P2 | 6 / 9 | T2.1 landed. Only T2.2 (and its live sibling) remain, waiting on the T0.5 probe. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 8 / 9 | Only T5.9 (control boundaries to 3:1, user-decided) remains, in flight. Phone camera and phone install still need you. |
@@ -158,6 +158,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T2.1 The System One client.** `WorkersAI` and `OpenRouter` in `internal/systemone/`, both behind `SystemOne`. One Ask is one metered call — reserve the estimate, retry the POST through Keel `throttle` (429 three attempts, 5xx/timeout two, Retry-After honoured, never a 4xx), settle the measured `input_tokens` at the model's neuron rate (constants sourced in-code from docs/clef.md's T0.6 measurements). Oversize/unreadable images die typed before any request and before any reserve; 16 MP comes from header-only dimension reads. All 45 clef/cost recordings replay through the real client over HTTP, content-keyed; the T1.3 replay twin needed no change. No OpenRouter recording exists — the decisions shape is pinned by a labelled inline fixture, and the comparison task must record the real exchange and re-check Jev pricing. The first review found two LOWs and two INFOs (a Retry-After test that couldn't catch its own regression; unscrubbed envelope notes; a dead prefix check; missing zero-charge pins); the remediation fixed all four — the new 3s ceiling derived from keel's own `hintWait` spread — and the second review verified it against the keel source. Landed as `d764228`+`16cbd91`, gate green in the worktree and the main checkout, `go test -race -count=1` clean. P3's judge interface now exists.
 
 - **T5.8 Accessibility and contrast.** Chaaya's own `a11yGate` and `contrastGate` run on every screen inside `./tools/check.sh`: 11 screen states (dialogs and the shop sheet included, portals measured) × forced light and dark at a 375 px viewport, plus all eleven text pairs the screens draw at 4.5 across all four theme blocks, plus honesty guards (every colour outside the theme blocks must be a role; every drawn pair must be measured) and a 375 px width scan. jsdom entered as a dev dependency with the user's approval — the DOM host Chaaya's a11y gate needs. No genuine failure on any landed screen; the routed WCAG 1.4.11 finding (control boundaries under 3:1) became the user's decision and then T5.9. The first review verified the matrix; the remediation exposed that the colour-declaration parser had wrong capture groups — **both colour guards had passed vacuously** — and made them live (73 declarations now parsed; the old parser collected zero), extending them to svg paints, semicolon-less final declarations, and a whole-screen width sweep, each with a /tmp break-proof; the second review reproduced all three breaks and confirmed the old parser collected nothing. Two residual documentation LOWs (a stale line citation, two theoretical blind spots) were fixed by the orchestrator under the docs exception and recorded in the task's notes. Landed as `9d0d934`+`6f7d40a`+`7f6581c`, gate green in the worktree and the main checkout. Lesson recorded with it: a guard that has never failed is not yet a guard.
 
