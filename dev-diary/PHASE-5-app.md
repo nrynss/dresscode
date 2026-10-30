@@ -187,7 +187,7 @@ requires:   T5.4, T5.5
 fixture-ok: yes
 size:       S · light
 owns:       web/tests/a11y/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Chaaya's contrast and accessibility gates run on every screen, in light and dark, at 375 px, in the gate.
 
