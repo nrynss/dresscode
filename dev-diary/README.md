@@ -138,7 +138,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | Phase | Tasks complete | Status |
 |---|---|---|
 | P0 | 4 / 7 | T0.4 waits on the user's photos. T0.5 and T0.6 wait on T0.4. |
-| P1 | 1 / 5 | T1.1 done. T1.2, T1.3 and T1.4 are claimed. |
+| P1 | 2 / 5 | T1.1 and T1.2 done. T1.4 is in review. T1.3 is still being written. |
 | P2 | 0 / 4 | Waits for P1. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 0 / 7 | Accounts (T4.1–T4.3) start after P1. |
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T1.2 The store.** `internal/store.Migrate` applies six files through Keel sqlite under the namespace `store`. `UserTables()` is the deletion list. Every owned row carries `user_id`. Identity's tables are not created. The analysis cache key is the normalised photo's hash, scoped to that user, plus the YouCam task. A review of `395aff7` came back clean and the gate passed.
 - **T1.1 The domain model.** `internal/domain` loads `testdata/occasions` and validates it. Fidelity labels are exact product, approximate match, and visual simulation. The catalog tokens `exact` and `approximate` decode as the first two. `Allowlist` is face shape, hair type, hair length, and colour tones, with no photo. A bad file returns `FileError` with the base name and the reason. Interview and funeral share `lip-quiet`. A review of `a0cb3cd` came back clean and the gate passed.
 - **T0.3 Occasions, fix menus and the look vocabulary.** Five occasions in `testdata/occasions/`, prose in `docs/occasions.md`. Each has criteria, an opt-in menu, and a basket. Fixes use printed YouCam paths from Skin, Beauty, Fashion, Jewelry and Watch, and Hair and Beard. The family-function story is gold jhumkas kept and the red lip dismissed. Light, watches, rings, and hair colour have no render. No units spent. Landed without a separate sign-off because the user said not to wait.
 - **T0.7 Lambo probe.** `docs/lambo.md` lists the calls Dresscode needs: initialize, notifications/initialized, `lambo_derive`, `lambo_stats` with the receipt, `lambo_recall`, and `POST /admin/s/<session>/erase`. Recorded in `testdata/lambo/` against Lambo 0.8.0 at `127.0.0.1:7720`. Two scratch sessions each stored a different family-function look. Recall in one did not return the other's. The query "family function" returned the kept fix and the dismissed fix. Erasing a session made the next recall and initialize return JSON-RPC `-32003` with nothing read, and a second erase reported `already_absent` true. The other session was unchanged, then erased. Four `bge-m3` embeddings. Surprised: recall returns this session's nearest concepts even for a query that names the other look, and an erased session answers HTTP 200 `application/json` rather than an empty hit list. Erased ids `dc-u-probe-a` and `dc-u-probe-b` must not be reused.

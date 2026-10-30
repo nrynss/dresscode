@@ -46,7 +46,7 @@ requires:   T1.1
 fixture-ok: yes
 size:       M · mid
 owns:       internal/store/
-status:     in-review
+status:     done
 ```
 SQLite through Keel `sqlite`, with namespaced migrations: looks, renders and their checks, the analysis cache keyed by the normalised photo's hash, products and labels, the user's opt-in menu per occasion, the history switch. Keel `identity` brings its own tables; don't duplicate them.
 
