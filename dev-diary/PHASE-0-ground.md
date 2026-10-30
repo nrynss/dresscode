@@ -156,7 +156,7 @@ requires:   T0.3, T0.4
 fixture-ok: no
 size:       S · mid
 owns:       testdata/samples/products/
-status:     claimed:claude-opus-5-5
+status:     in-review
 ```
 Split from T0.4, which made the people. One reference image per catalog entry in docs/occasions.md (Catalog), as the YouCam task for each fix needs it.
 
@@ -165,6 +165,16 @@ Split from T0.4, which made the people. One reference image per catalog entry in
 - `testdata/samples/products/README.md` records each image's source page URL and what it shows.
 
 **Done when:** every catalog entry has its reference image, meeting its YouCam file spec as docs/occasions.md states it; the README holds the source for each; none shows a logo, a watermark or a person.
+
+Notes:
+
+- Eight files in `testdata/samples/products/`, one per catalog id: six JPEG product photos and two 512 × 512 PNG swatches. All are at least 512 px on the short side and under 110 KB. docs/occasions.md names no file spec for these references, so that is the bar used.
+- The photos come from the retailers' own product pages, found through web image search: jhumka and chain from one Indian jewellery store, the three shirts from one apparel store, the kurta from an Indian ethnic-wear store. The README gives each source page and every edit. Store listings were read through their public product feeds, and only image files were downloaded, each checked with `identify` before use.
+- Jhumka: the cleanest shot was a pair on plain grey. I cropped the left earring and padded it with the photo's own background colour, so the reference is one earring, front view, no ear.
+- Shirts: I chose ghost-mannequin shots so the collar and shoulders are in frame. A camp collar for the open-collar shirt, light blue and navy button-downs closed at the neck for the buttoned and dark shirts. Each had the store's woven neck label showing inside the collar. I painted those three labels out locally with ImageMagick: fabric from just below for the camp collar, a colour fill from the rows around it for the two button-downs. Nothing else in the photos was touched. The decision was a real photo with a small local retouch over a label-free but worse shot; the retouch is listed in the README.
+- Festive top: a maroon kurta with a mandarin collar and zari embroidery on the collar and placket, on a plain hanger. It is a boys' kurta. It was the only product-only kurta shot I found that was a plain colour with festive embroidery and showed no label.
+- Lip swatches: red `#B0172F`, nude `#B8836F`. The makeup task paints a colour, so a flat swatch is the honest shop reference.
+- Surprised that product shots with no person are rare for ethnic wear. Across about twenty Indian kurta stores, almost every image was on a model; the product-only shots were mostly in children's lines. Western shirt stores do ghost-mannequin or flat-lay shots, but every one I looked at shows its woven label inside the collar. Stock-photo sites were no help: watermarks.
 
 ---
 
