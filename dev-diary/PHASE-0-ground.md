@@ -24,7 +24,7 @@ requires:   []
 fixture-ok: yes
 size:       S · light
 owns:       .gitignore, README.md (stub), go.mod, go.sum, cmd/dresscode/main.go, web/ (scaffold), tools/check.sh, .github/workflows/check.yml, .env.example
-status:     in-review
+status:     done
 ```
 The first commit (product, architecture, agent rules, this diary, licence) is in. Add:
 
