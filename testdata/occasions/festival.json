@@ -208,7 +208,7 @@
         {"attribute": "beard", "to": "full"}
       ],
       "products": [],
-      "note": "Template all_garibaldi (Garibaldi), picked by the agent, awaiting the user. The listed full beards are Garibaldi, Bandholz, Long Bandholz and Ducktail. Garibaldi is wide and rounded with an even edge; the Bandholz pair are long and Ducktail is pointed. Clef should read the render as full, so the vocabulary stays full. Nothing infers who should see this fix."
+      "note": "Template all_garibaldi (Garibaldi), picked by the agent and approved by the user. The listed full beards are Garibaldi, Bandholz, Long Bandholz and Ducktail. Garibaldi is wide and rounded with an even edge; the Bandholz pair are long and Ducktail is pointed. Clef should read the render as full, so the vocabulary stays full. Nothing infers who should see this fix."
     },
     {
       "id": "festival-closed-smile",

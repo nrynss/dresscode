@@ -62,8 +62,8 @@ A hair-transfer or beard-style fix carries `template`, the YouCam template id it
 |---|---|---|---|---|
 | `female_casual_updo` | Casual Updo | every `*-tie-hair` | hair bun | The user. No title says tied back; of the two T0.5 rendered, the updo keeps all the hair off the eyes and High Pony Tail does not. |
 | `all_circle` | Circle | every `*-short-beard` | beard goatee | The user. No beard is short and even across the cheeks; Circle (moustache joined to a chin beard, cheeks clear) is the shortest even shape. |
-| `all_garibaldi` | Garibaldi | `festival-full-beard` | beard full | Picked by the agent, awaiting the user. Of the full beards (Garibaldi, Bandholz, Long Bandholz, Ducktail), Garibaldi is wide and rounded with an even edge; the Bandholz pair are long and Ducktail is pointed. Not rendered yet. |
-| `female_crewcut` | Crewcut | `interview-short-hair` | hair short | Picked by the agent, awaiting the user. Crewcut is the title closest to short and neat. Of the two Crewcut templates, this one keeps the user's hair colour (`keep_users_color`); `all_crewcut` does not. Not rendered yet. |
+| `all_garibaldi` | Garibaldi | `festival-full-beard` | beard full | Picked by the agent, approved by the user. Of the full beards (Garibaldi, Bandholz, Long Bandholz, Ducktail), Garibaldi is wide and rounded with an even edge; the Bandholz pair are long and Ducktail is pointed. Not rendered yet. |
+| `female_crewcut` | Crewcut | `interview-short-hair` | hair short | Picked by the agent, approved by the user. Crewcut is the title closest to short and neat. Of the two Crewcut templates, this one keeps the user's hair colour (`keep_users_color`); `all_crewcut` does not. Not rendered yet. |
 
 The `female_` and `all_` prefixes are YouCam's listing categories. They are not a gender choice, and nothing infers one.
 
@@ -114,7 +114,7 @@ A buttoned collar, a plain shirt, hair off the face and close, facial hair absen
 |---|---|---|---|---|---|---|
 | `interview-buttoned-shirt` | Plain buttoned shirt | `cloth-v4` | none | none | collar, garment | collar buttoned, garment plain-shirt |
 | `interview-tie-hair` | Hair tied back | `hair-transfer` | `female_casual_updo` | face shape | hair | hair bun |
-| `interview-short-hair` | Hair short | `hair-transfer` | `female_crewcut` (agent pick) | face shape | hair | hair short |
+| `interview-short-hair` | Hair short | `hair-transfer` | `female_crewcut` | face shape | hair | hair short |
 | `interview-short-beard` | Short even beard | `beard-style` | `all_circle` | none | facial hair | beard goatee |
 | `interview-nude-lip` | Quiet nude | `makeup-vto` | none | none | lip | lip colour nude |
 | `interview-closed-smile` | Closed-mouth smile | `ai-smile` | none | none | expression | expression closed-mouth-smile |
@@ -132,7 +132,7 @@ A festive garment, a festive earring, a necklace, a red or berry lip, finished h
 | `festival-gold-chain` | Gold chain | `2d-vto/necklace` | none | none | necklace | necklace chain, colour gold |
 | `festival-red-lip` | Red lip | `makeup-vto` | none | none | lip | lip colour red |
 | `festival-tie-hair` | Hair tied back | `hair-transfer` | `female_casual_updo` | face shape | hair | hair bun |
-| `festival-full-beard` | Full even beard | `beard-style` | `all_garibaldi` (agent pick) | none | facial hair | beard full |
+| `festival-full-beard` | Full even beard | `beard-style` | `all_garibaldi` | none | facial hair | beard full |
 | `festival-closed-smile` | Closed-mouth smile | `ai-smile` | none | none | expression | expression closed-mouth-smile |
 
 The documented toothy smile is not used. Light has no fix. Basket: garments (`top-festive`), earrings (`gold-jhumkas`), necklaces (`gold-chain`), lip colour (`lip-red`).

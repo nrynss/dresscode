@@ -147,7 +147,7 @@
         {"attribute": "hair", "to": "short"}
       ],
       "products": [],
-      "note": "Template female_crewcut (Crewcut), picked by the agent, awaiting the user. Crewcut is the listed title closest to short and neat; Buzz Cut is shorter than neat and Textured Crop is styled. Two templates are titled Crewcut: this one has keep_users_color true, and all_crewcut does not, so this one leaves the hair colour alone. Clef should read the render as short, so the vocabulary stays short. Separate from the tie-back so memory can tell them apart."
+      "note": "Template female_crewcut (Crewcut), picked by the agent and approved by the user. Crewcut is the listed title closest to short and neat; Buzz Cut is shorter than neat and Textured Crop is styled. Two templates are titled Crewcut: this one has keep_users_color true, and all_crewcut does not, so this one leaves the hair colour alone. Clef should read the render as short, so the vocabulary stays short. Separate from the tie-back so memory can tell them apart."
     },
     {
       "id": "interview-short-beard",
