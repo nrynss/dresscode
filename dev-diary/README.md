@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 0 / 5 | Ready. T5.10 (UX writing, occasion fixtures and real mock media) is ready. |
+| P5B | 0 / 5 | T5.10 (UX writing, occasion fixtures and real mock media) is in flight; the chain is serial by design. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
