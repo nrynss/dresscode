@@ -124,6 +124,6 @@ requires:   T2.4
 fixture-ok: no
 size:       XS · user
 owns:       internal/mail/live_test.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 The user receives one sign-in code at their own address. **Done when:** the user confirms it arrived and how long it took.
