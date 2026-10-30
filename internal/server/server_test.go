@@ -1,7 +1,9 @@
 package server_test
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -306,6 +308,36 @@ func request(t *testing.T, h http.Handler, method, path string, cookie *http.Coo
 		remote = "192.0.2.1:1234"
 	}
 	req.RemoteAddr = remote
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	return rec
+}
+
+// postJSON posts payload to path. A string payload is sent verbatim as the
+// request body (so tests can post malformed JSON); anything else is marshalled
+// as JSON. Pass a remote address to pin the client IP; it defaults to
+// 192.0.2.1:1234.
+func postJSON(t *testing.T, h http.Handler, path string, cookie *http.Cookie, payload any, remote ...string) *httptest.ResponseRecorder {
+	t.Helper()
+	var body io.Reader
+	if raw, ok := payload.(string); ok {
+		body = strings.NewReader(raw)
+	} else {
+		encoded, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body = bytes.NewReader(encoded)
+	}
+	req := httptest.NewRequest(http.MethodPost, path, body)
+	req.Header.Set("Content-Type", "application/json")
+	req.RemoteAddr = "192.0.2.1:1234"
+	if len(remote) > 0 && remote[0] != "" {
+		req.RemoteAddr = remote[0]
+	}
 	if cookie != nil {
 		req.AddCookie(cookie)
 	}

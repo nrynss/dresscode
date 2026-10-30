@@ -57,7 +57,7 @@ func TestMountSignInRejectsABadConfig(t *testing.T) {
 	if err := srv.MountSignIn(t.Context(), good); err == nil || !strings.Contains(err.Error(), "already mounted") {
 		t.Fatalf("second mount error %v", err)
 	}
-	refused := postJSON(t, srv.Handler(), "/api/session/code", `{}`, nil, "192.0.2.2:1000")
+	refused := postJSON(t, srv.Handler(), "/api/session/code", nil, `{}`, "192.0.2.2:1000")
 	assertError(t, refused, http.StatusBadRequest, "invalid_request")
 	if len(good.Mail.(*mail.Recorder).Messages()) != 0 {
 		t.Fatal("a refused start sent mail")
@@ -435,29 +435,13 @@ func readSession(t *testing.T, h http.Handler, cookie *http.Cookie, remote strin
 
 func postCode(t *testing.T, h http.Handler, address string, cookie *http.Cookie, remote string) *httptest.ResponseRecorder {
 	t.Helper()
-	return postJSON(t, h, "/api/session/code", `{"address":`+quoteJSON(t, address)+`}`, cookie, remote)
+	return postJSON(t, h, "/api/session/code", cookie, `{"address":`+quoteJSON(t, address)+`}`, remote)
 }
 
 func postVerify(t *testing.T, h http.Handler, address, code, choice string, cookie *http.Cookie, remote string) *httptest.ResponseRecorder {
 	t.Helper()
 	body := `{"address":` + quoteJSON(t, address) + `,"code":` + quoteJSON(t, code) + `,"choice":` + quoteJSON(t, choice) + `}`
-	return postJSON(t, h, "/api/session/code/verify", body, cookie, remote)
-}
-
-func postJSON(t *testing.T, h http.Handler, path, body string, cookie *http.Cookie, remote string) *httptest.ResponseRecorder {
-	t.Helper()
-	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
-	req.Header.Set("Content-Type", "application/json")
-	if remote == "" {
-		remote = "192.0.2.1:1234"
-	}
-	req.RemoteAddr = remote
-	if cookie != nil {
-		req.AddCookie(cookie)
-	}
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-	return rec
+	return postJSON(t, h, "/api/session/code/verify", cookie, body, remote)
 }
 
 func insertLook(t *testing.T, db *sqlite.DB, userID string) string {

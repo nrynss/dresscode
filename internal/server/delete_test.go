@@ -464,18 +464,6 @@ type streamEvent struct {
 	Data json.RawMessage
 }
 
-func postJSON(t *testing.T, h http.Handler, path string, cookie *http.Cookie, body string) *httptest.ResponseRecorder {
-	t.Helper()
-	req := httptest.NewRequest(http.MethodPost, path, strings.NewReader(body))
-	req.RemoteAddr = "192.0.2.1:1234"
-	if cookie != nil {
-		req.AddCookie(cookie)
-	}
-	rec := httptest.NewRecorder()
-	h.ServeHTTP(rec, req)
-	return rec
-}
-
 func decodeJob(t *testing.T, raw string) string {
 	t.Helper()
 	var body struct {
