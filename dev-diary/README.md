@@ -137,9 +137,9 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Phase | Tasks complete | Status |
 |---|---|---|
-| P0 | 5 / 8 | T0.4 done: four AI sample people, 37 variants. T0.6 is ready. T0.4a (product images) is ready; T0.5 waits on it. |
+| P0 | 6 / 8 | T0.4 and T0.6 done. T0.4a (product images) is being written; T0.5 waits on it. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
-| P2 | 5 / 9 | T2.3, T2.3b, T2.4, T2.4b and T2.5 done. T2.1 and T2.2 (and their live siblings) wait on the photo probes. |
+| P2 | 5 / 9 | T2.3, T2.3b, T2.4, T2.4b and T2.5 done. T2.1 is ready (T0.6 landed). T2.2 waits on the YouCam probe. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 7 / 8 | Only T5.8 (accessibility gates) is left, and it is in flight. Phone camera and phone install still need you. |
@@ -151,13 +151,15 @@ The demo is built around one story, **the second visit** (product.md). First vis
 |---|---|---|
 | YouCam | 1040 credits, they do not expire; 400 held back for judging | 0 |
 | FAL (sample images, Chalachithram's key) | $10 for T0.4, listed prices | $5.70 (T0.4: 12 Seedream at $0.135, 51 nano-banana-2/edit at $0.08) |
-| Workers AI | Free plan until T6.6; then Workers Paid | 7 embeddings (the access check, four in the T0.7 probe, two in the T2.3b live check) |
+| Workers AI | Free plan until T6.6; then Workers Paid | 7 embeddings (the access check, four in the T0.7 probe, two in the T2.3b live check); T0.6: 78 Clef calls, 3,292 neurons in one day (76 on clef, 2 on clef-flash) |
 
 ---
 
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T0.6 Clef probe** (`98a5f95`). Clef's request and response shapes are in `docs/clef.md`. 37 judge recordings on `clef`, one per sample variant (photo, the criteria as `noul`, the biggest-issue `choice`, no YouCam analysis), in `testdata/clef/` in the replay format. The check is recorded on proxies only (V04 against V05 reads 0.91–0.99 on change made, same person and criterion met; V04 against the white woman's anchor reads 0.02–0.06), on clef and clef-flash; redo it after T0.5. Clef is deterministic: ten repeats identical to the last digit. Tokens per image: 1,002 at 896×1200, 771/435/195 at 1024/768/512 px, exactly the documented tokenizer; the question text costs as much as the photo. One look is about 132 neurons all on Clef, 57 with a Clef-flash check (flash is weaker on the vocabulary). Agreement with the README at 0.5, counted only, not a threshold: 260/273; misses gather on the men's beard and light; V08 is the weakest row. **User decision:** `family-hair-finished` reworded to accept short, neat hair (the old wording failed every man); men now read 0.84–0.89. **Contract change (orchestrator's call):** the System One replay loads a recorded image by file, relative to the recording, with request keys unchanged, so `testdata/clef` is 0.6 MB instead of 20 MB; T1.3's guard against any `testdata/clef` is removed. Spend: 78 calls, 3,292 neurons. **Next agent should know:** Clef answers a judge with no image instead of failing, so the judge (T3.1) must refuse to call it without the photo. Rewording one question shifts the answers to the others, so a wording change re-records the whole occasion and thresholds must be measured on final wording. A recording replays only for a byte-identical body. Open findings: `interview-collar-buttoned` reads low on a shirt and tie (V09); the vocabulary has no "calm" expression.
 
 - **T5.6 History and the second visit.** The history screen holds the switch (off by default), the API's sentence of what is kept and where, and, with history on, the second visit: the recorded recall sentence verbatim and past looks grouped by occasion. Off, absence is pinned at three levels — no screen's markup anywhere in the app carries a word of memory, the reader refuses any memory member beside a closed switch, and the second-visit read fetches nothing at all. One fixture added: `recall-empty.json`, the contract's empty-memory example at the date occasion. The review found one minor hole (a stray `occasion` beside the closed switch was tolerated); `08eb3b4` refuses it, with a pin proven against the old reader. Second review clean. Landed as `fd8b525` + `87989ec`, gate green in the worktree and the main checkout. No physical phone (the standing unmet-note class). Surprises worth keeping: a Svelte 5 state variable named `state` breaks svelte-check while vitest passes (feedback.md, Svelte); and a seam for a later task — the account screen's history deletion turns the stored switch off server-side, and this screen's session-held value learns of it only on a reload.
 

@@ -193,7 +193,7 @@ requires:   T0.2, T0.3, T0.4
 fixture-ok: no
 size:       M · mid
 owns:       testdata/clef/, docs/clef.md
-status:     in-review
+status:     done
 ```
 Record what Clef returns, and what it costs, on the sample set. Workers AI spend: within the free daily allowance.
 
