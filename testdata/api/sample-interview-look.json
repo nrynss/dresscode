@@ -1,0 +1,13 @@
+{
+  "method": "POST",
+  "path": "/api/samples/sample-interview/looks",
+  "status": 202,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "look_id": "5a391e00000000000000000000000001",
+    "job_id": "5a391e00000000000000000000000002"
+  }
+}
