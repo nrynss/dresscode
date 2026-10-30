@@ -113,7 +113,7 @@ requires:   T5.4
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/look/render/
-status:     in-review
+status:     done
 ```
 Before and after as a swipe, the original one tap away; shop the look as a bottom sheet with every product's label shown plainly; keep, dismiss, bought. When no render passed the check, the suggestion and products stand without one, and say so.
 
@@ -127,6 +127,7 @@ Notes:
 - Shop the look is a Bits UI `Dialog` styled as a bottom sheet; Bits UI v2 ships no Sheet component, dialogs are its parts. The list is read from `GET /api/looks/{id}/shop` the first time the sheet opens. Every product's `fidelity` is validated against the three domain spellings before the sheet shows it, and a list that cannot be read throws into the usual failure sentence. A product with no url shows no picture box. Keep, dismiss, and bought are the look's verdict; each sends the one-field `PUT` and the screen says what is stored.
 - Fixtures added: `shop-none.json` (the suggestion-only look's shop list, the same recorded product), and `media-render.json` with `media-product.json`, the empty 200s at the media ids `look.json` and `shop.json` already name, in the shape of `media.json`.
 - Surprised: the shell test bans score, probability, percent, gender, attractiveness, and ratio across every source file, and the banned pattern matches inside `aspect-ratio`, so the swipe's portrait frame is a padding spacer. Classes carried through Bits UI props read as unused selectors to Svelte's scoper and are stripped, so the sheet's own classes are `:global()`. The recorded media fixtures carry no bytes, so in mock mode every picture, on this screen and the others, shows as a miss; the server serves the real bytes.
+- Landed after a clean review. The review accepted the 375 px clause on the pinned styles plus the browser-viewport pass (no physical phone, the same unmet-note class as T5.1 and T5.3), and accepted the empty 200 media fixtures as the recorded shape rather than a wrong one. One note for later screens: the sheet's `:global(.sheet)` name is generic — a more specific name when another dialog lands.
 - The 375 px clause: the gate asserts the layout the clause needs — the sheet spans `min(40rem, 100%)`, names and labels wrap, the rows and frames carry `min-inline-size: 0`, and nothing pins a line against wrapping. On top of the gate, the screen and the sheet were opened in a browser at a 375 px viewport on mock data and every label read clearly; the screenshots are in the task report. No physical phone was used.
 
 ---

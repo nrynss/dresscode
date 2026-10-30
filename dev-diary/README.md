@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.4 landed (`8b9ba84`); T5.5 is in flight. T0.4 is claimed elsewhere (four sample people now). T2.4b's one live send was refused (Resend `403`, no error name) — the test is parked on its branch until the Resend console sorts the from-domain or key, then one send completes it.
+**Current status:** T5.5 landed (`f4e8065`); T5.6, the second-visit story, is ready and next. T0.4 is claimed elsewhere. T2.4b stays parked on the Resend console.
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
-| P5 | 5 / 8 | T5.5 is ready now that T5.4 landed; T5.6 and T5.8 follow it. Phone camera and phone install still need you. |
+| P5 | 6 / 8 | T5.6 is ready now that T5.5 landed; T5.8 waits on it. Phone camera and phone install still need you. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
 ### Units and spend
@@ -157,6 +157,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.5 The render and shop the look.** The render screen follows the recorded family-function look: a before/after swipe over one range input with the original one tap away, a Bits UI Dialog styled as the bottom sheet (v2 ships no Sheet) listing every product with its fidelity label validated against the three domain spellings, and keep / dismiss / bought as one-field verdict PUTs. Guideline six is enforced twice — the server withholds a discarded render and the reader discards again, so a failed render cannot reach a picture frame even from the wire. With no render passed, the plain sentence stands with the suggestion and the products. A review of `f4e8065` came back clean; the 375 px clause holds on pinned styles plus a browser-viewport pass, no physical phone (same unmet-note class as T5.1 and T5.3). Bits UI prop-carried classes must be `:global()`; the banned-words shell test matches inside `aspect-ratio`. Landed with the gate green in the worktree and the main checkout.
 
 - **T2.4b Resend live — refused at the first send; parked on the console.** The live test is committed (`1f53fce`, behind the `live` tag, reads `RESEND_API_KEY`/`RESEND_FROM`/`RESEND_TO`, skips without them, one send, no retry; the message id is captured through a `slog.Handler` so the landed sender is unchanged). The one run, at 2026-10-30T13:38:42Z, was refused with `403` and no error name; no mail, no code in any log, nothing to confirm. Done-when unmet, recorded, not glossed. A 403 with no name reads as account or domain gating — the from-domain's verification or the key's send permission in the Resend console — and only the user can look there. The branch stays parked at `in-review`; review runs together with the confirmation send once the console is fixed. See `feedback.md` under Resend.
 
