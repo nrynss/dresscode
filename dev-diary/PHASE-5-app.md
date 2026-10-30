@@ -44,7 +44,7 @@ requires:   T5.1
 fixture-ok: yes
 size:       S · mid
 owns:       web/src/routes/occasion/
-status:     in-review
+status:     done
 ```
 Pick an occasion; tick the fixes you're open to (remembered per occasion). Nothing asks or infers gender.
 
