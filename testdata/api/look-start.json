@@ -1,0 +1,18 @@
+{
+  "method": "POST",
+  "path": "/api/looks",
+  "status": 202,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "look_id": "100c0000000000000000000000000001",
+    "job_id": "10b00000000000000000000000000001"
+  },
+  "request": {
+    "occasion": "family-function",
+    "selfie_id": "5e1f1e00000000000000000000000001",
+    "product_ids": []
+  }
+}

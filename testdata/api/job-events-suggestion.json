@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "path": "/api/jobs/10b00000000000000000000000000002/events",
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream",
+    "cache-control": "no-store",
+    "x-accel-buffering": "no"
+  },
+  "body": "event: progress\nid: 1\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"stage\":\"judge\",\"detail\":{\"flags\":[{\"id\":\"family-earring-festive\",\"suggestion\":\"The ear reads plain; try gold jhumkas.\"},{\"id\":\"family-lip-colour\",\"suggestion\":\"The lip reads bare; try a red lip.\"}]}}\n\nevent: progress\nid: 2\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"stage\":\"pick\",\"detail\":{\"fix\":\"family-gold-jhumkas\",\"runner_up\":\"family-festive-top\"}}\n\nevent: progress\nid: 3\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"stage\":\"measure\",\"detail\":{\"skipped\":true}}\n\nevent: progress\nid: 4\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"stage\":\"render\",\"detail\":{\"fix\":\"family-gold-jhumkas\",\"attempt\":\"fix\"}}\n\nevent: progress\nid: 5\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"stage\":\"check\",\"detail\":{\"fix\":\"family-gold-jhumkas\",\"shown\":false}}\n\nevent: progress\nid: 6\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"stage\":\"render\",\"detail\":{\"fix\":\"family-festive-top\",\"attempt\":\"runner_up\"}}\n\nevent: progress\nid: 7\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"stage\":\"check\",\"detail\":{\"fix\":\"family-festive-top\",\"shown\":false}}\n\nevent: progress\nid: 8\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"stage\":\"shop\",\"detail\":{\"products\":[{\"id\":\"gold-jhumkas\",\"category\":\"earrings\",\"name\":\"Gold jhumkas\",\"fidelity\":\"exact product\",\"origin\":\"catalog\",\"media_id\":\"c0a10600000000000000000000000001\",\"url\":\"/media/c0a10600000000000000000000000001\"}]}}\n\nevent: done\nid: 9\ndata: {\"job_id\":\"10b00000000000000000000000000002\",\"status\":\"done\"}\n\n"
+}

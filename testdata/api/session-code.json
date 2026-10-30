@@ -1,0 +1,15 @@
+{
+  "method": "POST",
+  "path": "/api/session/code",
+  "status": 202,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "ok": true
+  },
+  "request": {
+    "address": "person@example.com"
+  }
+}

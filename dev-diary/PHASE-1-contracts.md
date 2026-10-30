@@ -124,10 +124,23 @@ requires:   T1.1, T1.4
 fixture-ok: yes
 size:       M · frontier
 owns:       docs/api.md, testdata/api/
-status:     claimed:grok-4.7
+status:     in-review
 ```
 Every route the app calls, written down before either side is built: sign-in (start, verify), session, occasions and menus, opt-in menu, upload (resumable), product intake (photo, link), start a look, the look's event stream (stages and their payloads), the verdict, renders, shop the look, keep/dismiss/bought, history on/off and recall, deletion (photo, look, history, account), samples. Errors in Keel's `wire` envelope with stable codes ("budget refused", "no face in photo", "uploads paused").
 
 Record one example response per route in `testdata/api/` for the app to build against.
 
 **Done when:** every product.md flow maps to routes; every route has an example; the orchestrator freezes the contracts.
+
+Notes:
+
+- Wrote `docs/api.md` and one fixture per path under `testdata/api/`. The flow table in the doc is the map from product.md. Alternates of one path (a discarded render, a switch, history off) are separate files, not extra paths. Error codes live in `testdata/api/errors/` and are not paths.
+- The three named refusals are `budget_refused`, `no_face_in_photo`, and `uploads_paused`. The fixture messages are the phrases `budget refused`, `no face in photo`, and `uploads paused`. The app branches on the code.
+- Upload is Keel's resumable protocol at `/api/uploads`. The look stream is Keel's event frames. An `error` frame wraps the wire envelope a second time, because that is what `wire.NewErrorEvent` writes. The job state read does not wrap it twice.
+- A discarded render has no media id on the stream or on `GET /api/looks/{id}/renders`, so the phone cannot show it. A budget refusal or `renders_paused` during render does not fail the job. The suggestion still stands.
+- No probability, score, age, gender, face ratio, skin score, Clef question, or allowlist value is on the wire. Fidelity labels are the domain spellings: `exact product`, `approximate match`, `visual simulation`.
+- Sign-in `choice` is omitted, empty, or `switch`. That is what Keel v0.9.0 `VerifySignInCode` accepts. `merge` is `invalid_request`. A new address upgrades the guest in place, so the looks stay on that user id. An existing account, when the guest has looks, is `guest_data_conflict`, and the same code then verifies with `switch`. `switch` moves the device onto the account and leaves the guest's looks on the guest. Keel does not copy them onto the account, and it does not overwrite the account's looks.
+- Account deletion is Keel's `DeleteHandler`. It clears the session cookie. The job id authorises that deletion's stream afterwards. Other jobs still need the session. The returned job streams stage `delete` with `{version, user, rows_done}` and no `current` or `total`. `rows_done` is omitted until true. `done` is the report that every part has confirmed: the inner erasure, a different job id the handler does not return, has confirmed every target, and the identity rows are gone. A caller who does not hold the address, including a guest, gets `not_found`, not `invalid_request`.
+- Remediation aligned the verify example and the account-deletion stream with those two handlers. The earlier notes said the server would move rows on `choice` `merge`, and that the returned job would stream stage `erase` with `{targets, confirmed}`. Mounting Keel v0.9.0 does neither. Photo, look, and history deletion are unchanged.
+- History is off until a `PUT`. Recall with history off is `{"enabled":false}` and nothing else. The second-visit sentence is the recall fixture.
+- Did not build a server and did not call a live service. The freeze stays with the orchestrator.

@@ -1,0 +1,16 @@
+{
+  "status": 409,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "budget_refused",
+      "message": "budget refused",
+      "detail": {
+        "budget": "youcam"
+      }
+    }
+  }
+}

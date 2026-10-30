@@ -1,0 +1,33 @@
+{
+  "method": "GET",
+  "path": "/api/occasions",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "occasions": [
+      {
+        "id": "date",
+        "name": "Date"
+      },
+      {
+        "id": "family-function",
+        "name": "Family function"
+      },
+      {
+        "id": "interview",
+        "name": "Interview"
+      },
+      {
+        "id": "festival",
+        "name": "Festival"
+      },
+      {
+        "id": "funeral",
+        "name": "Funeral"
+      }
+    ]
+  }
+}

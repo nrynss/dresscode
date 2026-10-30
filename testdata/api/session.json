@@ -1,0 +1,13 @@
+{
+  "method": "GET",
+  "path": "/api/session",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "user_id": "a11ce0000000000000000000000000a1",
+    "kind": "guest"
+  }
+}

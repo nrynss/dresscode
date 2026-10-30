@@ -1,0 +1,13 @@
+{
+  "status": 404,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "not_found",
+      "message": "No such resource exists."
+    }
+  }
+}

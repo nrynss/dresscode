@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "path": "/media/5e1f1e00000000000000000000000001",
+  "status": 200,
+  "headers": {
+    "content-type": "image/jpeg",
+    "cache-control": "private, no-store",
+    "accept-ranges": "bytes"
+  },
+  "body": null
+}

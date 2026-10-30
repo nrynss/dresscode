@@ -1,0 +1,18 @@
+{
+  "status": 409,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "chunk_mismatch",
+      "message": "The chunk does not match the digest declared for it.",
+      "detail": {
+        "index": 0,
+        "declared": "d924940046edbe3fbbcf957afe1f564576f6dd481b6911e36e44e0135f2585a3",
+        "actual": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    }
+  }
+}

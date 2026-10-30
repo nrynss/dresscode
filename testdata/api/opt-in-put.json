@@ -1,0 +1,24 @@
+{
+  "method": "PUT",
+  "path": "/api/occasions/family-function/opt-in",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "occasion": "family-function",
+    "ticked": [
+      "family-gold-jhumkas",
+      "family-red-lip",
+      "family-festive-top"
+    ]
+  },
+  "request": {
+    "ticked": [
+      "family-gold-jhumkas",
+      "family-red-lip",
+      "family-festive-top"
+    ]
+  }
+}

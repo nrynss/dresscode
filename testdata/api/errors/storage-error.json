@@ -1,0 +1,13 @@
+{
+  "status": 500,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "storage_error",
+      "message": "The upload could not be advanced."
+    }
+  }
+}

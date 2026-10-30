@@ -1,0 +1,18 @@
+{
+  "status": 413,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "limit_exceeded",
+      "message": "The bytes exceed the byte limit for this upload.",
+      "detail": {
+        "limit": "upload",
+        "max_bytes": 4194304,
+        "total_bytes": 5000000
+      }
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "method": "GET",
+  "path": "/api/looks/100c0000000000000000000000000002",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "id": "100c0000000000000000000000000002",
+    "job_id": "10b00000000000000000000000000002",
+    "occasion": "family-function",
+    "selfie_id": "5e1f1e00000000000000000000000001",
+    "selfie_url": "/media/5e1f1e00000000000000000000000001",
+    "ready": true,
+    "flags": [
+      {
+        "id": "family-earring-festive",
+        "kind": "grooming",
+        "suggestion": "The ear reads plain; try gold jhumkas."
+      },
+      {
+        "id": "family-lip-colour",
+        "kind": "grooming",
+        "suggestion": "The lip reads bare; try a red lip."
+      }
+    ],
+    "fix": {
+      "id": "family-gold-jhumkas",
+      "changes": "Adds gold jhumkas.",
+      "why": "The ear reads plain; try gold jhumkas."
+    },
+    "runner_up": "family-festive-top",
+    "shown_render": null,
+    "suggestion_only": true,
+    "products": [
+      {
+        "id": "gold-jhumkas",
+        "category": "earrings",
+        "name": "Gold jhumkas",
+        "fidelity": "exact product",
+        "origin": "catalog",
+        "media_id": "c0a10600000000000000000000000001",
+        "url": "/media/c0a10600000000000000000000000001"
+      }
+    ],
+    "verdict": "",
+    "words": ""
+  }
+}

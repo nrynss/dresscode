@@ -1,0 +1,22 @@
+{
+  "method": "GET",
+  "path": "/api/looks/100c0000000000000000000000000001/renders",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "selfie_url": "/media/5e1f1e00000000000000000000000001",
+    "shown": [
+      {
+        "media_id": "2e4de200000000000000000000000001",
+        "url": "/media/2e4de200000000000000000000000001",
+        "fix_id": "family-gold-jhumkas",
+        "changes": "Adds gold jhumkas.",
+        "words": "gold jhumkas"
+      }
+    ],
+    "suggestion_only": false
+  }
+}

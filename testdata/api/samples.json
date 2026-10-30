@@ -1,0 +1,38 @@
+{
+  "method": "GET",
+  "path": "/api/samples",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "samples": [
+      {
+        "id": "sample-date",
+        "name": "Date",
+        "occasion": "date"
+      },
+      {
+        "id": "sample-family",
+        "name": "Family function",
+        "occasion": "family-function"
+      },
+      {
+        "id": "sample-interview",
+        "name": "Interview",
+        "occasion": "interview"
+      },
+      {
+        "id": "sample-festival",
+        "name": "Festival",
+        "occasion": "festival"
+      },
+      {
+        "id": "sample-funeral",
+        "name": "Funeral",
+        "occasion": "funeral"
+      }
+    ]
+  }
+}

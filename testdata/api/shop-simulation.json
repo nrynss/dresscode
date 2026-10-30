@@ -1,0 +1,20 @@
+{
+  "method": "GET",
+  "path": "/api/looks/100c0000000000000000000000000003/shop",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "products": [
+      {
+        "id": "family-closed-smile",
+        "category": "expression",
+        "name": "Closed-mouth smile",
+        "fidelity": "visual simulation",
+        "origin": "catalog"
+      }
+    ]
+  }
+}

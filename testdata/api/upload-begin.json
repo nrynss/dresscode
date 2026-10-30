@@ -1,0 +1,27 @@
+{
+  "method": "POST",
+  "path": "/api/uploads",
+  "status": 201,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "id": "5e1f1e0000000000000000000000000a",
+    "owner": "a11ce0000000000000000000000000a1",
+    "content_type": "image/jpeg",
+    "visibility": "private",
+    "chunk_size": 65536,
+    "stored_bytes": 0,
+    "received": [],
+    "missing": [],
+    "expires_at": "2026-01-02T04:04:05Z"
+  },
+  "request": {
+    "owner": "ignored",
+    "content_type": "image/jpeg",
+    "visibility": "private",
+    "chunk_size": 65536,
+    "group": "selfie"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "method": "GET",
+  "path": "/api/jobs/10b0000000000000000000000000000e/events",
+  "status": 200,
+  "headers": {
+    "content-type": "text/event-stream",
+    "cache-control": "no-store",
+    "x-accel-buffering": "no"
+  },
+  "body": "event: error\nid: 1\ndata: {\"job_id\":\"10b0000000000000000000000000000e\",\"status\":\"error\",\"error\":{\"error\":{\"code\":\"no_face_in_photo\",\"message\":\"no face in photo\"}}}\n\n"
+}

@@ -1,0 +1,13 @@
+{
+  "status": 422,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "too_many_input_bytes",
+      "message": "The photo is too large."
+    }
+  }
+}

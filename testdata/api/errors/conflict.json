@@ -1,0 +1,13 @@
+{
+  "status": 409,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "conflict",
+      "message": "The upload id already names stored bytes."
+    }
+  }
+}

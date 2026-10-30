@@ -1,0 +1,17 @@
+{
+  "status": 415,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "unsupported_type",
+      "message": "The content type is not accepted.",
+      "detail": {
+        "field": "content_type",
+        "reason": "not an accepted media type"
+      }
+    }
+  }
+}

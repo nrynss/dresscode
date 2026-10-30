@@ -1,0 +1,21 @@
+{
+  "method": "POST",
+  "path": "/api/products/link",
+  "status": 201,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "id": "11a4c000000000000000000000000001",
+    "category": "earrings",
+    "name": "Gold jhumkas",
+    "fidelity": "approximate match",
+    "origin": "user",
+    "media_id": "11a4c000000000000000000000000001",
+    "url": "/media/11a4c000000000000000000000000001"
+  },
+  "request": {
+    "url": "https://example.com/gold-jhumkas"
+  }
+}

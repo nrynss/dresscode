@@ -1,0 +1,13 @@
+{
+  "status": 500,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "error": {
+      "code": "internal_error",
+      "message": "The request could not be finished."
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "method": "POST",
+  "path": "/api/history/deletion",
+  "status": 202,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "job_id": "de1e7e00000000000000000000000001"
+  }
+}

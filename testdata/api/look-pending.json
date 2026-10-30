@@ -1,0 +1,18 @@
+{
+  "method": "GET",
+  "path": "/api/looks/100c0000000000000000000000000001",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "id": "100c0000000000000000000000000001",
+    "job_id": "10b00000000000000000000000000001",
+    "occasion": "family-function",
+    "selfie_id": "5e1f1e00000000000000000000000001",
+    "selfie_url": "/media/5e1f1e00000000000000000000000001",
+    "ready": false,
+    "verdict": ""
+  }
+}

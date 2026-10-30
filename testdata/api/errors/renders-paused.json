@@ -1,0 +1,9 @@
+{
+  "where": "render stage detail",
+  "body": {
+    "error": {
+      "code": "renders_paused",
+      "message": "renders paused"
+    }
+  }
+}

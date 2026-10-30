@@ -1,0 +1,20 @@
+{
+  "method": "GET",
+  "path": "/api/history/recall?occasion=family-function",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "enabled": true,
+    "occasion": "family-function",
+    "line": "Last family function you kept the gold jhumkas and dismissed the red lip.",
+    "kept": [
+      "family-gold-jhumkas"
+    ],
+    "dismissed": [
+      "family-red-lip"
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "method": "GET",
+  "path": "/api/jobs/5a391e00000000000000000000000002",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "job_id": "5a391e00000000000000000000000002",
+    "root_id": "5a391e00000000000000000000000002",
+    "status": "done",
+    "stage": "shop"
+  }
+}

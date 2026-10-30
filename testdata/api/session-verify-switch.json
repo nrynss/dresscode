@@ -1,0 +1,17 @@
+{
+  "method": "POST",
+  "path": "/api/session/code/verify",
+  "status": 200,
+  "headers": {
+    "content-type": "application/json",
+    "cache-control": "no-store"
+  },
+  "body": {
+    "ok": true
+  },
+  "request": {
+    "address": "person@example.com",
+    "code": "000000",
+    "choice": "switch"
+  }
+}
