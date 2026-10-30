@@ -110,7 +110,7 @@ size:       M · mid
 owns:       testdata/samples/, testdata/samples/README.md
 status:     claimed:claude-opus-5-5
 ```
-Two sample people, a man and a woman, generated with AI (user decision). No photo of a real person is in the samples, the demo or the video, the user included.
+Four sample people, generated with AI (user decision): an Indian man and woman (the first pair), then a white woman and an East Asian man (the second pair, about 8 variants each). The user approves every anchor. No photo of a real person is in the samples, the demo or the video, the user included.
 
 - **The people:** one anchor still each, an original text-to-image design made with Chalachithram's character lock (`bytedance/seedream/v5/pro`). Never generated from a real person's photo or prompted to look like anyone. **The user approves both anchors** before any variant is made.
 - **Selfies:** about 20 variants composed from the anchors (`fal-ai/nano-banana-2/edit`), across the five occasions. Chest up with the collar and shoulders in frame, ears and neck clear (docs/occasions.md). Deliberate misses (formal collar on a date, flat light, patchy beard, hair over the eyes, smeared lip) so each criterion has a yes and a no. The man covers the beard criteria, the woman the jewellery and lip criteria, both the rest. The woman also carries the second-visit story: a family-function look that misses the earring and lip criteria.

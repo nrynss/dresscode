@@ -52,10 +52,10 @@ Not built: recall by visual similarity. It needs image embeddings no host serves
 
 ## Sample people (user decision)
 
-- The demo, the video and the samples judges open use **two AI-generated people, a man and a woman**. No photo of a real person is used anywhere, the author included.
+- The demo, the video and the samples judges open use **four AI-generated people**: an Indian man and woman, a white woman and an East Asian man. No photo of a real person is used anywhere, the author included.
 - Each is an original design, never generated from a real photo or to look like anyone.
 - The video and the README say the people are generated.
-- The second-visit story is the woman's. The man covers the beard criteria.
+- The second-visit story is the Indian woman's. The two men cover the beard criteria, the two women the earring and lip criteria.
 
 ## Shape
 

@@ -51,7 +51,7 @@ Rules for any agent working in this repository. The product is in [`product.md`]
 
 ## Photos and people
 
-- Fixtures, the demo and the video use only the two AI-generated sample people (T0.4) and product images we may use. No photo of a real person, the user included.
+- Fixtures, the demo and the video use only the AI-generated sample people (T0.4) and product images we may use. No photo of a real person, the user included.
 - A sample person is an original design: never generated from a real person's photo, and never prompted to look like anyone.
 - No third-party logos or brand imagery in the video.
 - Never send a model anything the "Who sees what" table in product.md forbids. Never show a probability to the user.
