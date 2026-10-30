@@ -20,11 +20,21 @@ requires:   T1.5
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/app/, web/src/lib/api/, web/static/manifest.webmanifest
-status:     claimed:grok-4.7
+status:     in-review
 ```
 The app shell, Dresscode's own look on Chaaya's theme roles (light, dark, system), the installable manifest and icons, and Chaaya's API client with its Keel adapter so every `wire` error arrives typed. A mock mode serving `testdata/api/`.
 
 **Done when:** the app installs on a phone from a local tunnel; every recorded error code renders a human message.
+
+Notes:
+
+- The shell is `web/src/app/`. Dresscode's colours sit on Chaaya's theme roles: warm paper, wine, and gold, in the four blocks the token checker expects (light root, system dark, forced light, forced dark). The appearance control calls Chaaya's `theme.set` with `light`, `dark`, or `system`. The head script is Chaaya's `themeScript`, so a stored mode paints before the first frame.
+- The JSON client is Chaaya's Keel client from `@nrynss/chaaya/keel`, with cookies (`credentials: "include"`) and no bearer token. A wire envelope arrives as `ApiError` with the stable code, the detail record, and `Retry-After` when the header names whole seconds. The generic client at `@nrynss/chaaya/api` does not read the envelope. A job state `error` is the envelope's error member, not wrapped again. A stream `error` frame wraps it a second time, and `parseJobEvent` reads that. A private media miss is plain text, so the client reports `http_error` rather than inventing a wire code.
+- Mock mode serves every file under `testdata/api`. It is on in dev and in tests. A production build calls the network unless `VITE_DRESSCODE_API=mock`, and the fixture chunk is emitted but not loaded. `VITE_DRESSCODE_API=live` forces the network in dev. An unrecorded `/api/` path answers with the recorded `not_found` envelope. An unrecorded `/media/` path answers with the recorded plain-text miss. The story default is the finished family-function look, and recall with history off. `choice` `switch` and a verdict body select the other recorded file. `preferFixture` pins a file for a path.
+- Every code in `testdata/api/errors/` has its own sentence. The screen branches on the code and does not show the wire phrase for those codes. The sentences contain no digits, so a byte count or a wait is not shown as a figure. `renders_paused` and `job_failed` have no HTTP status; they are still parsed as wire envelopes. The proof is `web/src/lib/api/errors.test.ts`.
+- The manifest is installable on paper: name, `start_url`, `display: standalone`, a 192 icon and a 512 icon. The mark is a hanger, not a person. Vite serves `web/static/` because its public directory is `static`.
+- Boot files outside `owns`, because the shell has to replace the placeholder: `web/index.html`, `web/src/main.ts`, `web/src/vite-env.d.ts`, `web/vite.config.ts`. The placeholder page is gone. The typecheck has no Node types package, so `vite-env.d.ts` declares the `node:` imports the fixture loader and the tests use.
+- The phone install from a local tunnel was not done. No tunnel was opened and no phone was used. That clause is unmet.
 
 ---
 
