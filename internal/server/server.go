@@ -6,6 +6,7 @@
 // cookie against the rows, so a revoked session does not survive into the
 // next request. Keel gate stands in front of every route that spends.
 // Sign-in, deletion, and the look handler are not mounted here.
+// Intake mounts uploads, photos, products, links, and media.
 package server
 
 import (
@@ -182,7 +183,7 @@ func Open(ctx context.Context, cfg Config) (*Server, error) {
 		log:      log,
 		spend:    make(map[string]*spendSlot),
 	}
-	if err := s.mount(g, cfg); err != nil {
+	if err := s.mount(ctx, g, cfg); err != nil {
 		return nil, err
 	}
 	s.handler = svc.Middleware(s.mux)
@@ -214,7 +215,7 @@ func (cfg Config) check() error {
 	return nil
 }
 
-func (s *Server) mount(g *gate.Gate, cfg Config) error {
+func (s *Server) mount(ctx context.Context, g *gate.Gate, cfg Config) error {
 	s.mux.Handle(routeSession, http.HandlerFunc(s.serveSession))
 	s.mux.Handle("/", http.HandlerFunc(s.serveApp))
 
@@ -230,7 +231,7 @@ func (s *Server) mount(g *gate.Gate, cfg Config) error {
 	}
 	s.spend[RouteLook] = slot
 	s.mux.Handle(RouteLook, protected)
-	return nil
+	return s.mountIntake(ctx, cfg)
 }
 
 func limitOr(got, fallback gate.Limit) gate.Limit {
@@ -267,6 +268,7 @@ func (s *Server) Close() error {
 	if s == nil || s.db == nil {
 		return nil
 	}
+	s.closeIntake()
 	err := s.db.Close()
 	s.db = nil
 	return err

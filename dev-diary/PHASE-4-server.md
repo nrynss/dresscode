@@ -86,11 +86,21 @@ requires:   T4.1
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/intake.go
-status:     claimed:grok-4.7
+status:     in-review
 ```
 Resumable uploads through Keel `upload` into `mediastore`; every photo normalised by Keel `photo` (orientation applied, EXIF and GPS stripped, resized to YouCam's 1024 px and Clef's 4 MiB) and hashed for the cache. Product links through Keel `fetch` (SSRF-safe, `og:image`); a blocked retailer falls back to "upload a photo instead". The share-target intake for installed apps.
 
 **Done when:** a photo with GPS comes out without it; a link to a private address is refused; a blocked fetch returns the fallback code.
+
+Notes:
+
+- `Open` mounts Keel upload at `/api/uploads`, `POST /api/photos`, `POST /api/products`, `POST /api/products/link`, and `GET /media/{id}`. The two calls in `server.go` (`mount` and `Close`) are the wiring. The mux is built there, and intake cannot register routes without them. Blobs sit in `media/` beside the database. Chunks stage in `upload-staging/`. `Close` stops the upload sweep.
+- The open body is rewritten before Keel sees it. Keel stores the body's owner and visibility. Dresscode sets the owner to the session user, forces `private`, and defaults an omitted group to `selfie`. `group` must be `selfie` or `product`. A declared size may be omitted. `fresh_uploads_off` refuses a selfie open and `POST /api/photos` with `uploads_paused`. A product open still proceeds. `samples_only` refuses uploads, photos, products, and links, and it wins when both switches are on. The flags are Keel `flag` rows (`fresh_uploads_off`, `samples_only`), read on the request.
+- `POST /api/photos` and `POST /api/products` normalise with Keel `photo`: long side 1024, output cap 4 MiB, JPEG. Orientation is applied first, so a wide image tagged orientation 6 comes out tall. The re-encode drops EXIF, including GPS. The response `sha256` is the normalised bytes and is the analysis cache key. No analysis row is written here. The same pixels with different GPS text hash the same. The raw blob is deleted on success and on a photo refusal, so a rejected upload does not keep the GPS. A photo whose longer side is under 64 px is `too_small`. There is no face detector on this path, so `no_face_in_photo` is left to the look job. The product id is the normalised media id. `photograph` stays empty. A photo product is `exact product`. A link product is `approximate match`. `origin` is `user`.
+- A product link uses Keel `fetch` with the default address policy. `https://10.1.2.3`, `https://192.168.9.4`, and `https://127.0.0.1` answer `fetch_blocked_address` with `That link was refused.` and the body does not contain the address. `http` is `fetch_bad_scheme`. A page with no `og:image` (a block page included) is `upload_a_photo`. A non-2xx page stays `fetch_bad_status`, because Keel does not distinguish a block from any other failed status. The preview image is fetched again under the same policy and normalised the same way. `og:title` is the name. `product:category` is the category. No retailer host list was named, so none was invented.
+- Share intake has no API path, as the contract says. `GET /share` is the app shell. The app reads the share on the device and calls the link path or the upload path. The camera uses that same upload. A private media miss stays the plain 404.
+- One upload is capped at 64 MiB and one owner at 512 MiB across uploads this process is holding. `image/heic` is accepted into the store so the photo path can answer `heic`. `go.sum` gained the indirect `golang.org/x/image` and `golang.org/x/net` sums that `photo` and `fetch` import. Keel was already required.
+- Surprised: Keel upload believes the JSON owner. The rewrite is the whole of "the server sets the owner". A revoked cookie still mints a new guest before these routes run, which is T4.1's behaviour, so intake never sees a missing session.
 
 ---
 
