@@ -117,7 +117,7 @@ test("occasions stay in product order and the menu lists every fix", async () =>
     "family-short-beard",
     "family-closed-smile",
   ]);
-  expect(family.fixes.map((fix) => fix.changes)).toContain("Renders a short even beard.");
+  expect(family.fixes.map((fix) => fix.changes)).toContain("Shapes a short, even beard.");
   expect(family.fixes.map((fix) => fix.changes)).toContain("Paints the lip red.");
 });
 

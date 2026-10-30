@@ -70,21 +70,21 @@
       },
       {
         "id": "family-tie-hair",
-        "changes": "Renders the hair tied back.",
+        "changes": "Ties the hair back.",
         "criteria": [
           "family-hair-finished"
         ]
       },
       {
         "id": "family-short-beard",
-        "changes": "Renders a short even beard.",
+        "changes": "Shapes a short, even beard.",
         "criteria": [
           "family-beard-even"
         ]
       },
       {
         "id": "family-closed-smile",
-        "changes": "Renders a closed-mouth smile.",
+        "changes": "Sets a calm, closed-mouth smile.",
         "criteria": [
           "family-expression-present"
         ]

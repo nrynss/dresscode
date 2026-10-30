@@ -158,7 +158,7 @@
     {
       "id": "festival-tie-hair",
       "opt_in": true,
-      "changes": "Renders the hair tied back.",
+      "changes": "Ties the hair back.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "hair-transfer",
@@ -190,7 +190,7 @@
     {
       "id": "festival-full-beard",
       "opt_in": true,
-      "changes": "Renders a full even beard.",
+      "changes": "Shapes a full, even beard.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "beard-style",
@@ -211,7 +211,7 @@
     {
       "id": "festival-closed-smile",
       "opt_in": true,
-      "changes": "Renders a closed-mouth smile.",
+      "changes": "Sets a calm, closed-mouth smile.",
       "youcam": {
         "set": "Skin",
         "task": "ai-smile",

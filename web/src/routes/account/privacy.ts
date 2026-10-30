@@ -28,7 +28,7 @@ export interface PrivacyCopy {
 export function privacyCopy(markdown = source): PrivacyCopy {
   const text = plain(markdown);
   const heading = "Who sees what";
-  const cloudflare = "Cloudflare Workers AI over REST: Clef, Clef-flash";
+  const cloudflare = "Cloudflare Workers AI runs Clef to read the dress code and check the render";
   if (!text.includes(heading)) throw new Error("product.md has no who-sees heading");
   if (!text.includes(cloudflare)) throw new Error("product.md has no Cloudflare line");
   return {
@@ -37,7 +37,7 @@ export function privacyCopy(markdown = source): PrivacyCopy {
     clef: [
       productSentence("Clef reads the photo and the occasion's written criteria", markdown),
       productSentence("Clef picks one fix from the occasion's menu", markdown),
-      productSentence("The call is text only.", markdown),
+      productSentence("That step is text only, with no photo sent.", markdown),
       productSentence("Clef sees the original and the render together", markdown),
     ],
     youcam: [
@@ -69,8 +69,8 @@ export function accountSentences(markdown = source): {
 } {
   return {
     keepsLooks: productSentence("Signing in keeps the guest's looks.", markdown),
-    noGoogle: productSentence("No Google sign-in for the event.", markdown),
-    deletion: productSentence("Account deletion fans out across stored files", markdown),
+    noGoogle: productSentence("No Google sign-in", markdown),
+    deletion: productSentence("Account deletion removes your stored photos", markdown),
     notAutomatic: productSentence("Nothing is deleted automatically.", markdown),
     stays: productSentence("Photos, renders and history stay until the user deletes them.", markdown),
   };

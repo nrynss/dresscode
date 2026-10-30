@@ -11,7 +11,7 @@ People are judged against dress codes all the time: first dates, family function
 The user picks an **occasion** and brings **one selfie**, plus any products they are considering. Then:
 
 1. **Check against the dress code.** Clef reads the photo and the occasion's written criteria, nothing else, and flags the criteria the look misses: "the collar reads formal", "the face is lit flat". The app shows them as reasons, worded as a suggestion. **No score is ever shown.**
-2. **Pick a fix.** Clef picks one fix from the occasion's menu, limited to the fixes the user ticked as open to. The call is text only. Jev, on OpenRouter, takes the same call and is kept so the two can be compared. That comparison is still required. Clef remains the picker until it is done.
+2. **Pick a fix.** Clef picks one fix from the occasion's menu, limited to the fixes the user ticked as open to. That step is text only, with no photo sent. Jev, on OpenRouter, takes the same call and is kept so the two can be compared. That comparison is still required. Clef remains the picker until it is done.
 3. **Measure, only for that fix.** YouCam analysis runs only when the fix needs it: colour tones for a shade match, face shape and hair type for a hairstyle. Each result is cached for that photo.
 4. **Render.** YouCam renders the fix on the user's own photo. The original is always one tap away.
 5. **Check the render.** Clef sees the original and the render together and answers: was the change made, is it still the same person, is the criterion met now, and what does the look show (a fixed vocabulary, for memory). A render that fails either of the first two is discarded, never shown; the runner-up fix is tried, and after that the suggestion stands without a render.
@@ -40,8 +40,8 @@ Never sent to any model: face ratios, Skin Analysis scores, any age or attractiv
 
 - **Every visitor is a guest user.** A real user row, a server-side session, a signed cookie carrying only the session id. A guest can do everything, style history included.
 - **Sign in by emailed code** (Resend) to keep history across devices. Signing in keeps the guest's looks.
-- **No Google sign-in** for the event.
-- **Deletion finishes.** A photo, a look, the style history, or the whole account (after a fresh code). Account deletion fans out across stored files, rows and the Lambo session, survives a restart, and reports when every part has confirmed.
+- **No Google sign-in**, and no social login.
+- **Deletion finishes.** A photo, a look, the style history, or the whole account (after a fresh code). Account deletion removes your stored photos, looks, and style memory, continues if the server restarts, and reports when every part has confirmed.
 - **Nothing is deleted automatically.** Photos, renders and history stay until the user deletes them.
 
 ## Style memory (decided 30 Oct)
@@ -63,7 +63,7 @@ Not built: recall by visual similarity. It needs image embeddings no host serves
 |---|---|
 | Server | One Go binary on **Keel v0.9.0**: gate, lease, cost (budgets in YouCam units and dollars), job, stream, providertask, mediastore, upload, photo, fetch, identity, erase, sqlite, flag, config, id, wire |
 | App | **Svelte 5 + Chaaya 0.5.0**, a mobile-first installable web app built as a static single-page app (Capacitor can wrap it later). Chaaya: capture, upload, job stream, priced actions, share intake, theme, accessibility gates |
-| Decisions | **Cloudflare Workers AI** over REST: Clef, Clef-flash |
+| Decisions | **Cloudflare Workers AI** runs Clef to read the dress code and check the render |
 | Try-on and analysis | **YouCam API v2**, India region |
 | Memory | **Lambo v0.8.0**, beside the server, multi-session, embeddings on Workers AI |
 | Mail | **Resend**, for sign-in codes only |

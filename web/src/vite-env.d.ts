@@ -6,6 +6,7 @@ declare module "node:fs" {
   interface ReadBytes {
     subarray(start: number, end: number): { toString(encoding: "hex"): string };
     readUInt32BE(offset: number): number;
+    toString(encoding: "base64"): string;
   }
   interface Stats {
     isDirectory(): boolean;
@@ -34,4 +35,10 @@ interface DresscodeFixtureFile {
 declare module "virtual:dresscode-api-fixtures" {
   const fixtures: DresscodeFixtureFile[];
   export default fixtures;
+}
+
+declare module "virtual:dresscode-sample-media" {
+  /** A recorded media path and its sample photograph, base64 JPEG bytes. */
+  const media: Record<string, string>;
+  export default media;
 }

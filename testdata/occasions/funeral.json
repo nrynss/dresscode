@@ -114,7 +114,7 @@
     {
       "id": "funeral-tie-hair",
       "opt_in": true,
-      "changes": "Renders the hair tied back.",
+      "changes": "Ties the hair back.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "hair-transfer",
@@ -146,7 +146,7 @@
     {
       "id": "funeral-short-beard",
       "opt_in": true,
-      "changes": "Renders a short close beard.",
+      "changes": "Shapes a short, close beard.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "beard-style",

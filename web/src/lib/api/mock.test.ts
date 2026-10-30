@@ -94,7 +94,7 @@ test("verify and verdict follow the request body", async () => {
   expect(lastFixtureFile).toBe("session-verify.json");
 });
 
-test("an event stream and a private media miss keep their recorded bodies", async () => {
+test("an event stream keeps its recorded body and the story media serves real photographs", async () => {
   installMock();
   const events = await fetch("/api/jobs/10b0000000000000000000000000000e/events");
   expect(events.headers.get("content-type")).toBe("text/event-stream");
@@ -106,13 +106,47 @@ test("an event stream and a private media miss keep their recorded bodies", asyn
   expect(missing.status).toBe(404);
   expect(await missing.text()).toBe(disk("media-missing.json").body);
 
+  // The recorded media ids serve the committed sample photographs: real
+  // JPEG bytes, not the recorded empty body. The selfie is the first
+  // visit, the render the finished look, the product the kept jhumkas.
   const photo = await fetch("/media/5e1f1e00000000000000000000000001");
   expect(photo.status).toBe(200);
   expect(photo.headers.get("content-type")).toBe("image/jpeg");
-  expect((await photo.arrayBuffer()).byteLength).toBe(0);
+  const bytes = new Uint8Array(await photo.arrayBuffer());
+  expect(bytes.byteLength).toBeGreaterThan(0);
+  expect(bytes[0]).toBe(0xff);
+  expect(bytes[1]).toBe(0xd8);
+
+  for (const id of ["2e4de200000000000000000000000001", "c0a10600000000000000000000000001"]) {
+    const media = await fetch(`/media/${id}`);
+    expect(media.status).toBe(200);
+    expect(media.headers.get("content-type")).toBe("image/jpeg");
+    expect((await media.arrayBuffer()).byteLength).toBeGreaterThan(0);
+  }
 
   await expect(api("/media/00000000000000000000000000000000")).rejects.toMatchObject({
     code: "http_error",
     status: 404,
   });
+});
+
+test("recall answers the off world until the session turns history on", async () => {
+  installMock();
+  const off = await api<Record<string, unknown>>("/api/history/recall?occasion=family-function");
+  expect(off).toEqual(disk("recall-off.json").body);
+  expect(lastFixtureFile).toBe("recall-off.json");
+
+  await api("/api/history", { method: "PUT", body: JSON.stringify({ enabled: true }) });
+  expect(lastFixtureFile).toBe("history-put.json");
+  const on = await api<Record<string, unknown>>("/api/history/recall?occasion=family-function");
+  expect(on).toEqual(disk("recall.json").body);
+  expect(on.enabled).toBe(true);
+  expect(on.line).toBe((disk("recall.json").body as { line: string }).line);
+
+  // A fresh session, or a session that turned the switch back off, reads
+  // the off world again.
+  await api("/api/history", { method: "PUT", body: JSON.stringify({ enabled: false }) });
+  const offAgain = await api<Record<string, unknown>>("/api/history/recall?occasion=family-function");
+  expect(offAgain).toEqual(disk("recall-off.json").body);
+  expect(lastFixtureFile).toBe("recall-off.json");
 });

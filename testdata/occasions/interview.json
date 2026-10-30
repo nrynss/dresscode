@@ -86,7 +86,7 @@
     {
       "id": "interview-tie-hair",
       "opt_in": true,
-      "changes": "Renders the hair tied back.",
+      "changes": "Ties the hair back.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "hair-transfer",
@@ -118,7 +118,7 @@
     {
       "id": "interview-short-hair",
       "opt_in": true,
-      "changes": "Renders the hair short.",
+      "changes": "Cuts the hair short and neat.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "hair-transfer",
@@ -150,7 +150,7 @@
     {
       "id": "interview-short-beard",
       "opt_in": true,
-      "changes": "Renders a short even beard.",
+      "changes": "Shapes a short, even beard.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "beard-style",
@@ -192,7 +192,7 @@
     {
       "id": "interview-closed-smile",
       "opt_in": true,
-      "changes": "Renders a closed-mouth smile.",
+      "changes": "Sets a calm, closed-mouth smile.",
       "youcam": {
         "set": "Skin",
         "task": "ai-smile",

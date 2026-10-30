@@ -178,11 +178,14 @@ test("turning it on persists across the screens that read it", async () => {
 
   // The reader of the second visit sees the same switch: where the fresh
   // session refused to ask, now it reads the past looks.
+  // The mock's story now follows the session's switch, so this reader pin
+  // names the file it reads: the off body, whatever the session stored.
+  preferFixture("GET", "/api/history/recall?occasion=family-function", "recall-off.json");
   const visit = await loadSecondVisit();
   expect(visit.groups).toHaveLength(1);
   expect(visit.groups[0]?.occasion).toEqual({ id: "family-function", name: "Family function" });
-  // The one recorded recall answer is still the off world, and the reader
-  // honours a body's own switch over the session's: no sentence comes out.
+  // The reader honours a body's own switch over the session's: the off
+  // body is pinned, so no sentence comes out.
   expect(visit.groups[0]?.line).toBe("");
 });
 

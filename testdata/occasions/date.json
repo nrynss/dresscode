@@ -86,7 +86,7 @@
     {
       "id": "date-tie-hair",
       "opt_in": true,
-      "changes": "Renders the hair tied back.",
+      "changes": "Ties the hair back.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "hair-transfer",
@@ -118,7 +118,7 @@
     {
       "id": "date-short-beard",
       "opt_in": true,
-      "changes": "Renders a short even beard.",
+      "changes": "Shapes a short, even beard.",
       "youcam": {
         "set": "Hair & Beard",
         "task": "beard-style",
@@ -160,7 +160,7 @@
     {
       "id": "date-closed-smile",
       "opt_in": true,
-      "changes": "Renders a closed-mouth smile.",
+      "changes": "Sets a calm, closed-mouth smile.",
       "youcam": {
         "set": "Skin",
         "task": "ai-smile",

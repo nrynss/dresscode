@@ -1,19 +1,24 @@
 import { loadFixtures } from "./fixtures";
+import mediaSamples from "virtual:dresscode-sample-media";
 import type { ApiFixture } from "./types";
 
 /** The family-function story when more than one file records the same path.
- * History is off until the user turns it on, so recall is the off fixture.
- * The finished look is the one the shell can open. A verify or verdict body
- * still picks its own file. */
+ * Recall is not here: it answers the world the session's switch names, off
+ * until a PUT turns it on. The finished look is the one the shell can open.
+ * A verify or verdict body still picks its own file. */
 const storyFile: Record<string, string> = {
   "GET /api/looks/100c0000000000000000000000000001": "look.json",
-  "GET /api/history/recall?occasion=family-function": "recall-off.json",
   "POST /api/session/code/verify": "session-verify.json",
   "PUT /api/looks/100c0000000000000000000000000001/verdict": "verdict.json",
 };
 
 const pins = new Map<string, ApiFixture>();
 const preferences = new Map<string, string>();
+
+/** The style-history switch as this mock session stored it. A PUT to
+ * /api/history writes it, and recall answers the world it names: the off
+ * body for a fresh session, the kept sentence once it is on. */
+let historyOn = false;
 
 let restoreFetch: (() => void) | undefined;
 
@@ -68,6 +73,9 @@ function choose(matches: ApiFixture[], method: string, path: string, body: strin
       verdict === "bought" ? "verdict-bought.json" : verdict === "dismissed" ? "verdict-dismissed.json" : "verdict.json";
     return byFile(matches, file) ?? matches[0];
   }
+  if (method === "GET" && path === "/api/history/recall?occasion=family-function") {
+    return byFile(matches, historyOn ? "recall.json" : "recall-off.json") ?? matches[0];
+  }
   const story = storyFile[key(method, path)];
   if (story) return byFile(matches, story) ?? matches[0];
   return matches[0];
@@ -80,11 +88,16 @@ function resolve(catalog: ApiFixture[], method: string, path: string, body: stri
   return choose(matches, method, path, body);
 }
 
-function fixtureResponse(fixture: ApiFixture): Response {
+function headersOf(fixture: ApiFixture): Headers {
   const headers = new Headers();
   if (fixture.headers) {
     for (const [name, value] of Object.entries(fixture.headers)) headers.set(name, value);
   }
+  return headers;
+}
+
+function fixtureResponse(fixture: ApiFixture): Response {
+  const headers = headersOf(fixture);
   let payload: BodyInit | null = null;
   if (typeof fixture.body === "string") payload = fixture.body;
   else if (fixture.body !== null && fixture.body !== undefined) {
@@ -92,6 +105,18 @@ function fixtureResponse(fixture: ApiFixture): Response {
     if (!headers.has("content-type")) headers.set("content-type", "application/json");
   }
   return new Response(payload, { status: fixture.status ?? 200, headers });
+}
+
+/** The sample photographs behind the recorded media ids, decoded once. */
+function decodeSamples(): Map<string, Uint8Array<ArrayBuffer>> {
+  const media = new Map<string, Uint8Array<ArrayBuffer>>();
+  for (const [mediaPath, base64] of Object.entries(mediaSamples)) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+    for (let at = 0; at < binary.length; at += 1) bytes[at] = binary.charCodeAt(at);
+    media.set(mediaPath, bytes);
+  }
+  return media;
 }
 
 /** Serve one recorded file for a path, whatever the story default is. */
@@ -107,6 +132,7 @@ export function pinAnswer(method: string, path: string, fixture: ApiFixture): vo
 export function resetMockChoices(): void {
   pins.clear();
   preferences.clear();
+  historyOn = false;
 }
 
 /** Install the fixture fetch. Calling it again returns the same uninstall. */
@@ -116,6 +142,7 @@ export function installMock(): () => void {
   const catalog = loadFixtures();
   const notFound = catalog.find((item) => item.file === "errors/not-found.json");
   const mediaMissing = catalog.find((item) => item.file === "media-missing.json");
+  const mediaBytes = decodeSamples();
 
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
@@ -128,10 +155,25 @@ export function installMock(): () => void {
     if (typeof init?.body === "string") body = init.body;
     else if (input instanceof Request) body = await input.clone().text();
 
+    // The switch is stored the way the server stores it, so the session's
+    // later reads answer the world it named.
+    if (method === "PUT" && path === "/api/history") {
+      const enabled = readJson(body)?.enabled;
+      if (typeof enabled === "boolean") historyOn = enabled;
+    }
+
     const hit = resolve(catalog, method, path, body);
     const chosen = hit ?? (path.startsWith("/media/") ? mediaMissing : notFound);
     if (chosen) {
       lastFixtureFile = chosen.file;
+      // A matched media id serves the real photograph, not the recorded
+      // empty body, so dev mode and screenshots show what the user sees.
+      const sample = method === "GET" && (chosen.status ?? 200) === 200 ? mediaBytes.get(path) : undefined;
+      if (sample) {
+        const headers = headersOf(chosen);
+        headers.set("content-type", "image/jpeg");
+        return new Response(sample, { status: chosen.status ?? 200, headers });
+      }
       return fixtureResponse(chosen);
     }
     lastFixtureFile = undefined;

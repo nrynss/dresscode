@@ -3,7 +3,7 @@ import type { ShownError } from "./types";
 /** Sentences for the recorded codes. The screen branches on the code and shows these. */
 const sentences: Record<string, string> = {
   budget_refused: "Dresscode cannot take on a new look right now.",
-  chunk_mismatch: "A piece of the upload did not match. Dresscode will need it again.",
+  chunk_mismatch: "A piece of the upload did not match. Start it again.",
   conflict: "That upload was already saved.",
   fetch_bad_port: "That link uses a port Dresscode does not open.",
   fetch_bad_scheme: "That link has to be a secure web address.",
@@ -23,7 +23,7 @@ const sentences: Record<string, string> = {
   invalid_code: "That code did not work. Request a new one.",
   invalid_request: "That request could not be used.",
   job_failed: "This look could not be finished.",
-  lease_refused: "This session cannot start another fresh look.",
+  lease_refused: "This session cannot start another look.",
   limit_exceeded: "That is too large to store.",
   no_face_in_photo: "No face is visible in that photo. Try another.",
   not_found: "That is not available.",
@@ -65,7 +65,7 @@ function specific(error: ShownError): string | undefined {
   if (error.code === "invalid_request") {
     const field = detailString(error.detail, "field");
     if (field === "occasion") return "That occasion is not one Dresscode knows.";
-    if (field === "choice") return "That sign-in choice is not one Dresscode honours.";
+    if (field === "choice") return "That sign-in choice is not one Dresscode knows.";
   }
   if (error.code === "http_error" && error.status === 404) return "That is not available.";
   return undefined;
