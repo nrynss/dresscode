@@ -18,11 +18,20 @@ requires:   T1.3, T0.6
 fixture-ok: yes
 size:       M · mid
 owns:       internal/systemone/workersai.go, internal/systemone/openrouter.go (the Jev comparison)
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 Workers AI REST (`/ai/run/@cf/cloudflare/clef` and `clef-flash`): images embedded as base64 under Clef's limits (4 MiB, 16 MP each, 8 MiB decoded in total), questions and state in, probabilities out. Retries through Keel `throttle` for errors a wait can fix. Every call metered through `cost`. The OpenRouter endpoint is the Jev comparison behind the same interface. Clef is the picker. The comparison is still required and is not this task's done-when.
 
 **Done when:** tests against the T0.6 recordings pass; oversize images are refused before the call with a typed error; the meter records every call.
+
+Notes:
+
+- Added `WorkersAI` in `internal/systemone/workersai.go` and `OpenRouter` in `internal/systemone/openrouter.go`, both behind `SystemOne`. One Ask is one metered call: the quote is reserved, the POST is retried through Keel `throttle`, and the settle is the input tokens the reply reports priced at the model's rate (21,818 neurons per million for `clef`, 3,455 for `clef-flash`, $0.011 per 1,000 neurons). A refused attempt books nothing and frees the reserve. No `Once` settle: the same request asked again is a new paid call on the wire, and the books say so.
+- Images are refused before any call and before any reserve, with a typed `LimitError`: 4 MiB per image, 16 megapixels per image, 8 MiB of images in all, and a 13 MiB body. The pixel size is read from the header alone — PNG and JPEG through the standard `image.DecodeConfig`, WebP through the three chunk forms the container spec fixes — and a file whose header holds no readable size is refused too, because Clef could not decode it either. The photo pipeline normalises EXIF orientation first, so header dimensions are the displayed ones. The 16 MP cap runs on Workers AI only; the OpenRouter endpoint keeps the byte caps until the comparison task records Jev's own.
+- The throttle classes are split: a 429 draws the default three attempts, a 5xx or a transport timeout draws the two transient attempts, and the caller's own deadline is never read as a provider timeout. A Retry-After header on a 429 names the wait. Every other 4xx, a 200 whose envelope reports failure, and an incomplete answer come back at once and settle nothing.
+- The tests replay all 41 top-level `testdata/clef` exchanges and the 4 `cost/` recordings through the real client over HTTP, matched by content key through the replay twin, with the harness stripping the account prefix the recordings leave out. Each reply decodes to the probabilities the recording holds, and each request goes to the model's own path, so the clef-flash checks pin the clef-flash endpoint. `stability/` is not replayed through the client: its ten repeats are one request, `Ambiguous` by design. The replay twin needed no change.
+- No OpenRouter recording exists — T0.6 recorded Clef only — and no live call was made. The OpenRouter tests pin the documented decisions shape with an inline fixture and say so in place. The endpoint is `alpha/decisions` appended to the resolved `OPENROUTER_BASE_URL` (`https://openrouter.ai/api/v1` in docs/keys.md); if OpenRouter serves the decisions call only outside that prefix, the setting changes, not the code. Images ride in the state as `image_url` data-URL parts, the documented form; the pick comparison is text only, so no image crosses on the recorded path. A reply that reports its own `usage.cost` settles at that figure; the reserve uses the documented $0.042 per million input tokens.
+- The key and the account id come from the caller's resolved references. Neither is in an error — a transport error is scrubbed and a provider note is trimmed to 200 characters — and a test pins the bearer on every recorded call. No new dependency.
 
 ### T2.1b: System One live
 ```yaml
