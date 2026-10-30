@@ -156,7 +156,7 @@ requires:   T0.3, T0.4
 fixture-ok: no
 size:       S · mid
 owns:       testdata/samples/products/
-status:     in-review
+status:     done
 ```
 Split from T0.4, which made the people. One reference image per catalog entry in docs/occasions.md (Catalog), as the YouCam task for each fix needs it.
 

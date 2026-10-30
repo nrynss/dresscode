@@ -137,7 +137,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Phase | Tasks complete | Status |
 |---|---|---|
-| P0 | 6 / 8 | T0.4 and T0.6 done. T0.4a (product images) is being written; T0.5 waits on it. |
+| P0 | 7 / 8 | T0.4, T0.4a and T0.6 done. T0.5 (YouCam probe) is ready. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 5 / 9 | T2.3, T2.3b, T2.4, T2.4b and T2.5 done. T2.1 is ready (T0.6 landed). T2.2 waits on the YouCam probe. |
 | P3 | 0 / 9 | Waits for P2. |
@@ -158,6 +158,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T0.4a The catalog product images** (`2ed898f`). `testdata/samples/products/` holds one reference per catalog id: six real product photos from retailer product pages (the user's fair-use decision) and two lip swatches made locally (red `#B0172F`, nude `#B8836F`). The README gives each source page and every edit. **User decisions:** the three shirts had the store's woven neck label painted out locally, nothing else changed, accepted; the festive top is a boys' maroon zari kurta, the only model-free festive kurta found, accepted, to be replaced by an adult one if T0.5 shows it renders short or tight. The gold chain is listed by its store as gold-plated silver. No spend, no keys. **Next agent should know:** ethnic-wear stores show adult kurtas only on models; western shirt stores shoot without one but show their label inside the collar; stock sites watermark.
 
 - **T0.6 Clef probe** (`98a5f95`). Clef's request and response shapes are in `docs/clef.md`. 37 judge recordings on `clef`, one per sample variant (photo, the criteria as `noul`, the biggest-issue `choice`, no YouCam analysis), in `testdata/clef/` in the replay format. The check is recorded on proxies only (V04 against V05 reads 0.91–0.99 on change made, same person and criterion met; V04 against the white woman's anchor reads 0.02–0.06), on clef and clef-flash; redo it after T0.5. Clef is deterministic: ten repeats identical to the last digit. Tokens per image: 1,002 at 896×1200, 771/435/195 at 1024/768/512 px, exactly the documented tokenizer; the question text costs as much as the photo. One look is about 132 neurons all on Clef, 57 with a Clef-flash check (flash is weaker on the vocabulary). Agreement with the README at 0.5, counted only, not a threshold: 260/273; misses gather on the men's beard and light; V08 is the weakest row. **User decision:** `family-hair-finished` reworded to accept short, neat hair (the old wording failed every man); men now read 0.84–0.89. **Contract change (orchestrator's call):** the System One replay loads a recorded image by file, relative to the recording, with request keys unchanged, so `testdata/clef` is 0.6 MB instead of 20 MB; T1.3's guard against any `testdata/clef` is removed. Spend: 78 calls, 3,292 neurons. **Next agent should know:** Clef answers a judge with no image instead of failing, so the judge (T3.1) must refuse to call it without the photo. Rewording one question shifts the answers to the others, so a wording change re-records the whole occasion and thresholds must be measured on final wording. A recording replays only for a byte-identical body. Open findings: `interview-collar-buttoned` reads low on a shirt and tie (V09); the vocabulary has no "calm" expression.
 
