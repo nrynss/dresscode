@@ -24,7 +24,7 @@ requires:   []
 fixture-ok: yes
 size:       S · light
 owns:       .gitignore, README.md (stub), go.mod, go.sum, cmd/dresscode/main.go, web/ (scaffold), tools/check.sh, .github/workflows/check.yml, .env.example
-status:     claimed:grok-4.7
+status:     in-review
 ```
 The first commit (product, architecture, agent rules, this diary, licence) is in. Add:
 
@@ -36,6 +36,13 @@ The first commit (product, architecture, agent rules, this diary, licence) is in
 - `.env.example` with names only (T0.2 fills the list).
 
 **Done when:** a fresh clone passes `./tools/check.sh`; CI runs it on push; `git ls-files` shows no `.env` and no `data/`.
+
+Notes:
+
+- Built the module `github.com/nrynss/dresscode` on `go 1.27.1` with no toolchain line, requiring Keel v0.9.0. `version` prints `dresscode 0.0.0` after `id.Valid` accepts a fixed id, so the require is a real call. `serve` prints one line and exits. It does not listen, dial, or read a key. The test re-executes the test binary and checks that both commands exit 0.
+- The app is Vite and Svelte 5, one page at `web/src/placeholder.svelte`, not a Kit app. That page imports `packageName` from `@nrynss/chaaya` and `Dialog` from `bits-ui`. `tools/check.sh` runs gofmt, go vet, `go test -race ./...`, then eslint, svelte-check, and Vitest. Vite's `outDir` is `web/build`.
+- Chose `github.com/nrynss/dresscode` so the module sits beside Keel. Did not add `@sveltejs/kit`: Chaaya marks that peer optional, and nothing imports `@nrynss/chaaya/sveltekit`. Did not declare `axe-core` or `@internationalized/date`; pnpm `autoInstallPeers` still records them for Chaaya and Bits UI. `.env.example` is a comment only, because T0.2 owns the names. `.gitignore` already ignored `.claude/worktrees/`, and no other in-repo worktree folder was missing.
+- Surprised that the Chaaya root export is only `packageName`. Surprised that pnpm's minimum release age rejects the exact `@nrynss/chaaya@0.5.0` pin; `web/pnpm-workspace.yaml` excludes that version so a frozen install can run. `go mod tidy` added no indirect modules, because `keel/id` uses only the standard library.
 
 ---
 
