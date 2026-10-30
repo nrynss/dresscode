@@ -22,7 +22,7 @@ requires:   T2.1
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/pipeline/judge.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 One Clef request: the normalised photo, the occasion, its criteria as `noul` questions, the biggest-issue `choice`. Turn probabilities into flags with thresholds from settings (placeholders until T3.9 sets them). Output: the flagged criteria with the user-facing wording, and the biggest issue.
 

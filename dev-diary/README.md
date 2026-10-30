@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.12 landed (`9949451`) — the front door is the occasion picker with one-tap judge samples. T5.13 (vanity mirror capture + arched comparator) dispatches next; T5.14 closes P5B. T2.2 (YouCam client) in flight here; P3 opens when it lands.
+**Current status:** **P3 has opened** — T2.2 (YouCam client) landed, so all clients exist. T3.1 (Judge, frontier) dispatches now; T5.13 (vanity mirror) is in flight; T5.14 closes P5B after it.
 
 ---
 
@@ -141,7 +141,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 |---|---|---|
 | P0 | 8 / 8 | Done. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
-| P2 | 6 / 9 | T2.1 landed. T2.2 (YouCam client) is ready now that T0.5 landed; T2.2b follows it. |
+| P2 | 7 / 9 | T2.2 landed. Only the live siblings (T2.1b, T2.2b) remain — they need the user present for live runs. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
