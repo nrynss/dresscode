@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
-import { installMock, pinAnswer } from "../../lib/api/mock";
+import { installMock, pinAnswer, preferFixture } from "../../lib/api/mock";
 import type { ApiFixture } from "../../lib/api/types";
-import { listOccasions, readOccasion, readOptIn, resetOccasionMenu, writeOptIn } from "./menu";
+import { listOccasions, readOccasion, readOptIn, readRecallLine, resetOccasionMenu, writeOptIn } from "./menu";
 
 interface Call {
   method: string;
@@ -119,6 +119,22 @@ test("occasions stay in product order and the menu lists every fix", async () =>
   ]);
   expect(family.fixes.map((fix) => fix.changes)).toContain("Shapes a short, even beard.");
   expect(family.fixes.map((fix) => fix.changes)).toContain("Paints the lip red.");
+});
+
+test("the past-visit line answers the session's switch and refuses what is not recorded", async () => {
+  installMock();
+  // A fresh session's switch is off, so the recorded answer is the closed
+  // one: the line comes back empty and nothing else arrives.
+  expect(await readRecallLine("family-function")).toBe("");
+
+  // With the switch on, the recorded answer is the line the visit kept.
+  preferFixture("GET", "/api/history/recall?occasion=family-function", "recall.json");
+  const line = await readRecallLine("family-function");
+  expect(line).toContain("gold jhumkas");
+
+  // An occasion the story has not met answers not_found, which the screen
+  // reads as no line for now rather than a broken menu.
+  await expect(readRecallLine("interview")).rejects.toMatchObject({ code: "not_found" });
 });
 
 test("the occasion screen does not grade a person", () => {

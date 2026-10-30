@@ -1,4 +1,5 @@
 import { api } from "../../lib/api/client";
+import { recallFromResponse } from "../history/copy";
 import type { OccasionDetail, OccasionFix, OccasionSummary } from "./types";
 
 /** Stored sets for this page session, keyed by occasion id.
@@ -124,4 +125,14 @@ export async function writeOptIn(id: string, ticked: readonly string[], signal?:
   ticksOf(await putJson(optInPath(id), { ticked: ids }, signal), id);
   remembered.set(id, ids);
   return [...ids];
+}
+
+/** The line the occasion's past visits keep, or "" when there is none. The
+ * screen asks only while the style-history switch is on, and the answer is
+ * the recorded body for that occasion: the closed switch answers nothing.
+ * A visit the story has not met answers not_found, and the caller decides
+ * what an unread line is worth. */
+export async function readRecallLine(id: string, signal?: AbortSignal): Promise<string> {
+  const path = `/api/history/recall?occasion=${encodeURIComponent(id)}`;
+  return recallFromResponse(await getJson(path, signal), id).line;
 }

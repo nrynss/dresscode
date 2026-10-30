@@ -1,6 +1,6 @@
 import { test } from "vitest";
 import { preferFixture } from "../../src/lib/api/mock";
-import { resetHistory } from "../../src/routes/history/flow";
+import { resetHistory, writeHistory } from "../../src/routes/history/flow";
 import {
   gate,
   mountApp,
@@ -20,7 +20,7 @@ const modes: Mode[] = ["light", "dark"];
 interface ScreenState {
   name: string;
   hash: string;
-  before?: () => void;
+  before?: () => void | Promise<void>;
   ready?: () => Element | null;
   open?: () => Promise<void>;
 }
@@ -45,6 +45,18 @@ const states: ScreenState[] = [
     hash: "#/occasion",
     ready: () => withText("label", "Family function"),
     open: openFixMenu,
+  },
+  {
+    name: "the front door with the occasion cards and the samples ready",
+    hash: "",
+    ready: () => withText("label", "Family function"),
+    open: async () => {
+      await waitUntil(
+        () => withText("p", "Open a sample selfie to see a finished look right away."),
+        "the sample looks section",
+      );
+      await openFixMenu();
+    },
   },
   {
     name: "the capture screen",
@@ -84,6 +96,23 @@ const states: ScreenState[] = [
     open: openSecondVisit,
   },
   {
+    name: "the occasion menu with the past-visit line above the fixes",
+    hash: "#/occasion",
+    before: async () => {
+      resetHistory();
+      preferFixture("GET", "/api/history/recall?occasion=family-function", "recall.json");
+      await writeHistory(true);
+    },
+    ready: () => withText("label", "Family function"),
+    open: async () => {
+      await openFixMenu();
+      await waitUntil(
+        () => withText("p", "Last family function you kept the gold jhumkas and dismissed the red lip."),
+        "the past-visit line",
+      );
+    },
+  },
+  {
     name: "the account screen with the privacy text",
     hash: "#account",
     ready: () => withText("h2", "Who sees what"),
@@ -100,7 +129,7 @@ for (const state of states) {
   for (const mode of modes) {
     test(`${state.name} passes the accessibility gate, forced ${mode}, 375 px`, { timeout: 30000 }, async () => {
       useMock();
-      state.before?.();
+      await state.before?.();
       const leave = await mountApp(mode, state.hash);
       try {
         if (state.ready !== undefined) await waitUntil(state.ready, `${state.name} is ready`);

@@ -42,7 +42,7 @@
   <p class="session">Opening a session.</p>
 {/if}
 
-<p class="lead">Bring one selfie for an occasion. Dresscode suggests what the dress code still asks for.</p>
+<p class="lead">Bring one selfie. Dresscode suggests what the dress code still asks for.</p>
 
 <div class="actions">
   <Dialog.Root bind:open>

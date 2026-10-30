@@ -53,7 +53,13 @@ const textPairs: readonly ContrastPair[] = [
  * notice against its own soft fill and the page, and the danger button
  * against its surface fill; --accent bounds the primary button and the
  * appearance pill's active segment against the surface, the page, and the
- * raised card. */
+ * raised card, and bounds the checked fix chip and the selected occasion
+ * card's accent edge against the soft accent fill they name (computed before
+ * it was drawn: 8.81 light, 8.00 dark). The line-on-raised edge an earlier
+ * card recipe would have drawn was computed first and dropped: it reaches
+ * 3.88 light but only 2.81 dark, under the non-text minimum, so the raised
+ * occasion cards carry the soft line instead and this table never measures
+ * that pair. */
 const boundaryPairs: readonly ContrastPair[] = [
   ["line", "ground"],
   ["line", "surface"],
@@ -64,6 +70,7 @@ const boundaryPairs: readonly ContrastPair[] = [
   ["accent", "surface"],
   ["accent", "ground"],
   ["accent", "raised"],
+  ["accent", "accent-soft"],
 ];
 
 /** Border roles that draw no control boundary: the soft edges around cards
