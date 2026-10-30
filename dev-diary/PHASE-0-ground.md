@@ -157,7 +157,7 @@ requires:   T0.2
 fixture-ok: no
 size:       S · light
 owns:       testdata/lambo/, docs/lambo.md
-status:     in-review
+status:     done
 ```
 Against the Dresscode Lambo server (T0.2), in scratch sessions:
 
