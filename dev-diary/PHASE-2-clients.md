@@ -90,11 +90,19 @@ requires:   T1.4
 fixture-ok: yes
 size:       S · light
 owns:       internal/mail/
-status:     claimed:grok-4.7
+status:     in-review
 ```
 A Keel `identity.Sender` over Resend for sign-in codes only: plain text and a minimal HTML version, the from address from settings, Keel's send limits applied before sending. A recorder implementation for tests.
 
 **Done when:** tests on a recorded Resend reply pass; the code never appears in a log.
+
+Notes:
+
+- Added `internal/mail`. `Client` implements Keel `identity.Sender` and posts one sign-in code to `POST /emails`. The body is plain text and a minimal HTML version of the same words. The from address is the resolved `RESEND_FROM`. The key is the resolved `RESEND_API_KEY`. Redirects are not followed, so the bearer token stays on that one request. A `User-Agent` is set because Resend's docs say a missing one can be refused.
+- `Recorder` implements the same interface for tests. It keeps each accepted send and does not dial. Formatting a message or the recorder does not include the code.
+- Keel's identity service applies its send ceilings before it calls `Send`. This client does not keep a second copy of those ceilings. A test mounts the code route on this client: five codes are posted, and the sixth is `send_limited` with no sixth request.
+- The sign-in code is not in the subject, not in an error, and not in a log line. A provider id that contains the code is not logged. A transport error that contains the code or the key is replaced.
+- The fixture `internal/mail/testdata/send.json` is Resend's documented success body, an id and nothing else. This task does not send a live message, so the fixture has no key and no address. The only address in the tests is `dresscode@nryn.dev`.
 
 ### T2.4b: Resend live
 ```yaml
