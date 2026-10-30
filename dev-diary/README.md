@@ -158,4 +158,5 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **Fix selection is Clef.** Jev on OpenRouter stays available so the two can be compared on the same pick requests. That comparison is still required. Clef remains the picker until it is done.
 - **Repository started.** Product, architecture, agent rules and this diary. Decided before the first task: guests plus emailed-code sign-in, no Google; style memory is text only, with Clef describing each render in a fixed vocabulary; Keel v0.9.0, Chaaya 0.5.0, Lambo v0.8.0. Checked: the YouCam key authenticates on the India server (an upload slot, no units), and a Workers AI token lists Clef, Clef-flash and bge-m3 and ran one bge-m3 call.

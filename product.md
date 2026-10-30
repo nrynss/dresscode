@@ -11,7 +11,7 @@ People are judged against dress codes all the time: first dates, family function
 The user picks an **occasion** and brings **one selfie**, plus any products they are considering. Then:
 
 1. **Check against the dress code.** Clef reads the photo and the occasion's written criteria, nothing else, and flags the criteria the look misses: "the collar reads formal", "the face is lit flat". The app shows them as reasons, worded as a suggestion. **No score is ever shown.**
-2. **Pick a fix.** Clef picks one fix from the occasion's menu, limited to the fixes the user ticked as open to. The call is text only.
+2. **Pick a fix.** Clef picks one fix from the occasion's menu, limited to the fixes the user ticked as open to. The call is text only. Jev, on OpenRouter, takes the same call and is kept so the two can be compared. That comparison is still required. Clef remains the picker until it is done.
 3. **Measure, only for that fix.** YouCam analysis runs only when the fix needs it: colour tones for a shade match, face shape and hair type for a hairstyle. Each result is cached for that photo.
 4. **Render.** YouCam renders the fix on the user's own photo. The original is always one tap away.
 5. **Check the render.** Clef sees the original and the render together and answers: was the change made, is it still the same person, is the criterion met now, and what does the look show (a fixed vocabulary, for memory). A render that fails either of the first two is discarded, never shown; the runner-up fix is tried, and after that the suggestion stands without a render.
@@ -80,4 +80,5 @@ Architecture in [`docs/architecture.md`](docs/architecture.md).
 
 ## Open decisions
 
+- Compare Clef and Jev on the same fix-selection requests. Clef remains the picker until that comparison is done.
 - The occasions' criteria, fix menus and the look vocabulary (T0.3).

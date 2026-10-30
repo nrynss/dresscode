@@ -17,10 +17,10 @@ parallel: P4 accounts, P5
 requires:   T1.3, T0.6
 fixture-ok: yes
 size:       M · mid
-owns:       internal/systemone/workersai.go, internal/systemone/openrouter.go (only if T0.2 kept Jev)
+owns:       internal/systemone/workersai.go, internal/systemone/openrouter.go (the Jev comparison)
 status:     not-started
 ```
-Workers AI REST (`/ai/run/@cf/cloudflare/clef` and `clef-flash`): images embedded as base64 under Clef's limits (4 MiB, 16 MP each, 8 MiB decoded in total), questions and state in, probabilities out. Retries through Keel `throttle` for errors a wait can fix. Every call metered through `cost`. If Jev was kept, the OpenRouter endpoint behind the same interface.
+Workers AI REST (`/ai/run/@cf/cloudflare/clef` and `clef-flash`): images embedded as base64 under Clef's limits (4 MiB, 16 MP each, 8 MiB decoded in total), questions and state in, probabilities out. Retries through Keel `throttle` for errors a wait can fix. Every call metered through `cost`. The OpenRouter endpoint is the Jev comparison behind the same interface. Clef is the picker. The comparison is still required and is not this task's done-when.
 
 **Done when:** tests against the T0.6 recordings pass; oversize images are refused before the call with a typed error; the meter records every call.
 

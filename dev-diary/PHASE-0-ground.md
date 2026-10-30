@@ -52,7 +52,7 @@ The user confirms each account; an agent writes `docs/keys.md` (where each key l
 - **YouCam:** key in the keyring (`service youcam … kind api-key`), already proved on the India server. Record the unit balance from the console, and when the event units expire (90 days from redemption).
 - **Workers AI:** token in the keyring (`service cloudflare … kind workers-ai`), already proved. Record the account id's variable name.
 - **Resend:** an API key and a verified sending domain or address for sign-in codes. Reprise's settings name `RESEND_API_KEY` and `RESEND_FROM`; decide whether Dresscode gets its own key.
-- **OpenRouter (Jev):** not used. Fix selection is Clef.
+- **OpenRouter (Jev):** the key is available. Fix selection is Clef. A comparison of Clef and Jev on the same pick requests is still required.
 - **Lambo:** a Lambo v0.8.0 server for Dresscode, separate from the dogfood writer, with Workers AI bge-m3 as its embedder and multi-session serving on.
 
 **Done when:** `docs/keys.md` lists every key by name and location, no value anywhere; the handoff log records the YouCam balance and the Clef-or-Jev decision.
@@ -132,7 +132,7 @@ Record what Clef returns, and what it costs, on the sample set. Workers AI spend
 - The check request: original plus a T0.5 render, the three checks and the look-vocabulary `choice` questions.
 - **Stability:** one photo, ten repeats; record the spread of each probability.
 - **Cost:** the input tokens Workers AI counts for an embedded image, at 1,024 px and smaller. That sets the real cost per look and whether Clef-flash is enough for the check.
-- Fix selection is Clef, so there is no Jev pick request.
+- Fix selection is Clef. This probe records Clef. The Jev comparison on the same pick request is still required and is not part of this probe.
 
 **Done when:** replies for every sample photo are recorded; the stability spread and tokens per image are in `docs/clef.md` and the handoff log.
 
