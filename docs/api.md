@@ -16,7 +16,7 @@ Public ids that the server mints are 32 lowercase hex characters, Keel `id`. Occ
 
 JSON responses use `Content-Type: application/json` and `Cache-Control: no-store`. Keel writes one JSON value and a newline. The fixtures are pretty-printed so they can be read; a parser must accept either form.
 
-Request and response bodies are JSON objects unless a section says otherwise. On Dresscode's own routes, a request field the section does not name is `invalid_request`. Upload, sign-in, and account deletion are Keel's handlers, and they follow Keel's decoding.
+Request and response bodies are JSON objects unless a section says otherwise. On Dresscode's own routes, a request field the section does not name is `invalid_request`. Upload, sign-in, and account deletion are Keel's handlers, and they follow Keel's decoding. Keel ignores a JSON field it does not decode. It does not reject that field. A sign-in `choice` other than empty or `switch` is `invalid_request`. Account deletion answers `not_found` when this user does not hold the address. A guest does not hold it.
 
 ### Nothing that judges
 
@@ -94,7 +94,7 @@ A private media miss is not this envelope. See Media.
 |---|---|
 | A visitor is a guest and can do everything | `GET /api/session` |
 | Sign in by emailed code, and keep this device's looks | `POST /api/session/code`, `POST /api/session/code/verify` |
-| An address that already has an account | verify returns `guest_data_conflict`; the app repeats with `choice` `merge` |
+| An address that already has an account | verify returns `guest_data_conflict`; the app repeats with `choice` `switch`. The guest's looks stay on the guest |
 | No Google sign-in | no such path |
 | Pick an occasion and read its dress code | `GET /api/occasions`, `GET /api/occasions/{id}` |
 | Tick the fixes you are open to. Nothing infers gender | `GET` and `PUT /api/occasions/{id}/opt-in` |
@@ -113,7 +113,7 @@ A private media miss is not this envelope. See Media.
 | The second visit: recall for the occasion, and past looks | `GET /api/history/recall`, `GET /api/looks` |
 | Remember only after a verdict, and only when history is on | the verdict response, not a stage |
 | Delete a photo, a look, history, or the account | the four deletion paths, then the job stream |
-| Account deletion needs a fresh code and reports when every part has confirmed | `POST /api/account/deletion` and the erase stream |
+| Account deletion needs a fresh code and reports when every part has confirmed | `POST /api/account/deletion`, then the returned job: stage `delete`, then `done` |
 | Judges open a sample and spend nothing | `GET /api/samples`, `POST /api/samples/{id}/looks` |
 | Budget, lease, upload pause, render pause, samples only, no face, too small | the error codes above |
 
@@ -145,21 +145,21 @@ The boot call. It also mints the guest when the cookie is absent, and the respon
 {"address":"person@example.com","code":"000000","choice":""}
 ```
 
-`choice` is omitted, empty, or `merge`.
+`choice` is omitted, empty, or `switch`. Any other value, including `merge`, is `invalid_request`. Keel v0.9.0 `VerifySignInCode` accepts only an empty choice or `switch`.
 
 `200` and `{"ok":true}`. The response sets a new session cookie. The app then reads `GET /api/session` and sees `owner`.
 
-A new address upgrades this guest in place. The looks stay on the same user id.
+A new address upgrades this guest in place. The user id does not change, so the looks stay. That is how signing in keeps this device's looks.
 
-An address that already has an account, when this guest has no looks, joins that account.
+An address that already has an account, when this guest has no looks, joins that account. The device then uses the account's session.
 
-An address that already has an account, when this guest has looks, returns `409` `guest_data_conflict` and changes nothing. The app asks, then repeats the same code with `"choice":"merge"`. Merge attaches this guest's looks to that account and does not overwrite the account's looks. The device then uses the account's session.
+An address that already has an account, when this guest has looks, returns `409` `guest_data_conflict` and changes nothing. The code stays live. The app repeats the same code with `"choice":"switch"`.
 
-`merge` is not Keel's `switch`. `switch` would leave the guest's rows on the guest. This path does not send `switch`. The server moves the store rows onto the account and only then completes the sign-in. If that completion fails, the rows stay on the guest.
+`switch` moves the device onto that account. The guest's rows, including its looks, stay on the guest. The account's looks are not overwritten, and the guest's looks are not attached to the account. Mounting Keel's verify handler cannot accept `merge` or copy those rows. After `switch`, `GET /api/session` reports the account's user id.
 
-The code in the fixtures is `000000` so the file is obviously not a live code. A live code is six digits. One code is single use. Request a new code for a deletion; the verify code is already spent.
+The code in the fixtures is `000000` so the file is obviously not a live code. A live code is six digits. One code is single use. Request a new code for a deletion; the verify code is already spent. A conflict does not spend the code. The `switch` repeat uses the same code.
 
-Fixtures: `session-verify.json`, `session-verify-merge.json`.
+Fixtures: `session-verify.json` (empty choice), `session-verify-switch.json` (the `switch` repeat).
 
 ## Occasions
 
@@ -356,7 +356,7 @@ The state read is not double-wrapped. The stream is. The app's Keel parser accep
 {"job_id":"<id>","stage":"judge","detail":{}}
 ```
 
-`current` and `total` are omitted on a look. They are present on a deletion. The app maps the stage to a screen word and does not show a fraction.
+`current` and `total` are omitted on a look, and on the account-deletion job. They are present on a photo, look, or history deletion. The app maps the stage to a screen word and does not show a fraction. An account deletion's stage is `delete`. Its `detail` is Keel's deletion snapshot, not a look detail. See Deletion.
 
 | Stage | Screen word | `detail` |
 |---|---|---|
@@ -373,7 +373,7 @@ The order is judge, pick, measure, render, check, and, when the first check is n
 
 A budget refusal or `renders_paused` on `render` does not fail the job. The suggestion stands, shop still runs, and `done` still arrives.
 
-Fixtures: `job-events.json` (the family-function render that is shown), `job-events-suggestion.json` (both checks discarded), `job-events-error.json` (`no_face_in_photo`), `job-events-erase.json` (account deletion).
+Fixtures: `job-events.json` (the family-function render that is shown), `job-events-suggestion.json` (both checks discarded), `job-events-error.json` (`no_face_in_photo`), `job-events-erase.json` (account deletion, stage `delete`).
 
 Screen words the progress view uses, and no others: Checking, Choosing a fix, Rendering, Checking the render.
 
@@ -493,26 +493,35 @@ An occasion with no memory yet, while history is on, returns `enabled` true, the
 
 ## Deletion
 
-Each deletion is `202` and `{"job_id":"<id>"}`. The app follows that job. Progress uses stage `erase`. `detail` is `{targets, confirmed}`. `current` is how many targets are confirmed. `total` is how many there are. `done` means every target confirmed. Repeating a deletion whose resource is already gone is `not_found`. The work itself is safe to repeat.
+Each deletion is `202` and `{"job_id":"<id>"}`. The app follows that job. Repeating a deletion whose resource is already gone is `not_found`. The work itself is safe to repeat.
+
+Photo, look, and history deletion are Dresscode jobs. Progress uses stage `erase`. `detail` is `{targets, confirmed}`. `current` is how many targets are confirmed. `total` is how many there are. `done` means every target confirmed.
 
 | Path | Targets | Fixture |
 |---|---|---|
 | `POST /api/photos/{id}/deletion` | `files`, `looks` | `delete-photo.json` |
 | `POST /api/looks/{id}/deletion` | `look`, `files` | `delete-look.json` |
 | `POST /api/history/deletion` | `memory` | `delete-history.json` |
-| `POST /api/account/deletion` | `files`, `rows`, `memory` | `delete-account.json` |
 
-`files` is the stored blobs. `looks` is the looks that used that photo. `look` is that look's rows. `memory` is the account's style memory. `rows` is the account's remaining rows, including the sign-in rows.
+`files` is the stored blobs. `looks` is the looks that used that photo. `look` is that look's rows. `memory` is the account's style memory.
 
 Photo deletion removes that blob and the looks that cannot be shown without it. Look deletion removes that look and its render blobs. The selfie blob stays until a photo deletion. History deletion clears style memory and turns the switch off. Looks stay.
 
-Account deletion:
+Account deletion is Keel's `DeleteHandler`. The body is the address and a fresh code:
 
 ```json
 {"address":"person@example.com","code":"000000"}
 ```
 
-The caller must be `owner`. A guest receives `invalid_request`. The code is a fresh sign-in code for this session. The response clears the session cookie, because the deletion revokes every session. The job id is the capability for the stream after that: `GET /api/jobs/{id}` and the event stream for that deletion do not need the cookie. Any other job still needs the session. Fixture of the stream: `job-events-erase.json`.
+The address must already be an identity of this user. A caller who does not hold it, including a guest, receives `not_found`. An unknown account is the same answer. A malformed body, or an empty address or code, is `invalid_request`. A code that is unknown, expired, used, or from another session is `invalid_code`. The check is the holder of the address, not the caller's kind.
+
+The response clears the session cookie, because the deletion revokes every session. The job id in the body is the capability for the stream after that: `GET /api/jobs/{id}` and the event stream for that deletion do not need the cookie. Any other job still needs the session. Fixture: `delete-account.json`. Fixture of the stream: `job-events-erase.json`.
+
+The returned job streams stage `delete`. `detail` is `{version, user, rows_done}`. `version` is `1`. `user` is the user id being deleted. `rows_done` is omitted until the identity rows are gone, and then it is true. `current` and `total` are omitted. This job id never carries stage `erase`.
+
+The per-target ledger is a different, inner erasure job. Keel starts it under kind `erase` and does not return its id. That job's progress has `stage` as an empty string, plus `current`, `total`, and `detail` `{ref, targets, confirmed}`. `ref` is the user id. The targets Dresscode registers there are `files`, `rows`, and `memory`: the stored blobs, the account's remaining rows (including the sign-in rows), and the style memory. The app does not follow that job.
+
+`rows_done` becomes true only after that inner erasure has confirmed every target and the identity rows are gone. `done` on the returned job is the report that every part has confirmed. The app branches on stage `delete` and on that `done`.
 
 ## Samples
 

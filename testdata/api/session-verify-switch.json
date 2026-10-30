@@ -12,6 +12,6 @@
   "request": {
     "address": "person@example.com",
     "code": "000000",
-    "choice": "merge"
+    "choice": "switch"
   }
 }

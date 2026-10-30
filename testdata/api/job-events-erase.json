@@ -7,5 +7,5 @@
     "cache-control": "no-store",
     "x-accel-buffering": "no"
   },
-  "body": "event: progress\nid: 1\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"stage\":\"erase\",\"current\":1,\"total\":3,\"detail\":{\"targets\":[\"files\",\"rows\",\"memory\"],\"confirmed\":[\"files\"]}}\n\nevent: progress\nid: 2\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"stage\":\"erase\",\"current\":3,\"total\":3,\"detail\":{\"targets\":[\"files\",\"rows\",\"memory\"],\"confirmed\":[\"files\",\"rows\",\"memory\"]}}\n\nevent: done\nid: 3\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"status\":\"done\"}\n\n"
+  "body": "event: progress\nid: 1\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"stage\":\"delete\",\"detail\":{\"version\":1,\"user\":\"a11ce0000000000000000000000000a1\"}}\n\nevent: progress\nid: 2\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"stage\":\"delete\",\"detail\":{\"version\":1,\"user\":\"a11ce0000000000000000000000000a1\",\"rows_done\":true}}\n\nevent: done\nid: 3\ndata: {\"job_id\":\"de1e7e00000000000000000000000001\",\"status\":\"done\"}\n\n"
 }
