@@ -192,3 +192,17 @@ status:     claimed:glm-5.3-flash
 Chaaya's contrast and accessibility gates run on every screen, in light and dark, at 375 px, in the gate.
 
 **Done when:** the gates pass in `./tools/check.sh`.
+
+### T5.9: Control boundaries meet 3:1
+```yaml
+requires:   T5.8
+fixture-ok: yes
+size:       S · light
+owns:       web/src/app/theme.css, web/tests/a11y/
+status:     not-started
+```
+The user accepted the 1.4.11 recommendation: control boundaries must be visible. `--line` reaches at least 3:1 against both `--ground` and `--surface`, in light and dark, with the smallest visual change that gets there. The contrast gate gains the non-text pairs (line vs ground, line vs surface, both modes) at 3:1, so the boundary cannot quietly fade again.
+
+**Done when:** the new pairs pass at 3:1 in all four theme blocks and the gates still bite (break-proof in /tmp).
+
+*(User decision on T5.8's routed finding; see the handoff log.)*
