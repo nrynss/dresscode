@@ -1,12 +1,6 @@
 import { contrastGate, type ContrastPair } from "@nrynss/chaaya/testing";
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { expect, test } from "vitest";
-import { themeCss } from "./helpers";
-
-const here = path.dirname(fileURLToPath(import.meta.url));
-const srcRoot = path.resolve(here, "../../src");
+import { screenSources, styleBlocks, themeCss } from "./helpers";
 
 /** The colour roles on Chaaya's token contract. The other roles carry radii,
  * fonts, and the focus ring's width, which no pair measures. */
@@ -102,7 +96,7 @@ function parseRules(css: string): CssRule[] {
   return rules;
 }
 
-const colourDeclaration = /^(color|background|background-color|border|border-color|border-[a-z-]+-color|accent-color|outline|outline-color|box-shadow|text-decoration-color)$/;
+const colourDeclaration = /^(color|background|background-color|border|border-color|border-[a-z-]+-color|accent-color|outline|outline-color|box-shadow|text-decoration-color|fill|stroke)$/;
 
 interface Drawn {
   prop: string;
@@ -111,10 +105,13 @@ interface Drawn {
 
 function declarations(css: string): Drawn[] {
   const drawn: Drawn[] = [];
-  const pattern = /[{;]\s*([a-z-]+)\s*:\s*([^;{}]+);/g;
+  // A declaration opens at the start of the text or after `{` or `;`, and
+  // closes before the next `;`, the closing `}`, or the end of the text — the
+  // last declaration of a block may carry no trailing semicolon.
+  const pattern = /(?:^|[{;])\s*([a-z-]+)\s*:\s*([^;{}]+)(?=[;}]|$)/g;
   for (const match of css.matchAll(pattern)) {
-    const prop = match[2];
-    if (colourDeclaration.test(prop)) drawn.push({ prop, value: match[3].trim() });
+    const prop = match[1];
+    if (colourDeclaration.test(prop)) drawn.push({ prop, value: match[2].trim() });
   }
   return drawn;
 }
@@ -127,33 +124,37 @@ function pureRole(value: string): string | undefined {
 }
 
 /** A value draws colour only through theme roles. Words that carry no colour
- * ride along inside the allowed set; anything left must be punctuation or a
- * number, so a raw hex, an rgb call, or a colour name fails here. */
+ * ride along inside the allowed set, and a size rides beside the colour it
+ * qualifies (a border's width), so a number with a unit is stripped too;
+ * anything left must be punctuation or a number, so a raw hex, an rgb call,
+ * or a colour name fails here. */
 function drawsOnlyRoles(value: string): boolean {
   const withoutVars = value.replace(/var\(--[a-z0-9-]+(?:\s*,[^)]*)?\)/g, " ");
   const withoutWords = withoutVars.replace(
     /\b(?:transparent|none|currentColor|inherit|initial|color-mix|in|srgb|auto|solid)\b/g,
     " ",
   );
-  return !/[^%,()\s.0-9-]/.test(withoutWords);
+  const withoutSizes = withoutWords.replace(/\d*\.?\d+(?:px|em|rem|vh|vw|dvh|svh|deg|ms|s|fr|ch|ex)?\b/g, " ");
+  return !/[^%,()\s.0-9-]/.test(withoutSizes);
 }
 
-function styleBlocks(file: string): string[] {
-  const styles: string[] = [];
-  for (const match of readFileSync(file, "utf8").matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) {
-    styles.push(match[1]);
-  }
-  return styles;
+interface SvgPaint {
+  attr: string;
+  value: string;
+  file: string;
 }
 
-function walkSvelte(dir: string): string[] {
-  const found: string[] = [];
-  for (const name of readdirSync(dir)) {
-    const abs = path.join(dir, name);
-    if (statSync(abs).isDirectory()) found.push(...walkSvelte(abs));
-    else if (name.endsWith(".svelte")) found.push(abs);
+/** The svg paint attributes the screens' markup carries: `fill` and `stroke`.
+ * A colour there draws like a colour anywhere else, so it faces the same
+ * allowlist as a CSS declaration. */
+function svgPaints(): SvgPaint[] {
+  const paints: SvgPaint[] = [];
+  for (const { file, text } of screenSources()) {
+    for (const match of text.matchAll(/\b(fill|stroke)\s*=\s*(?:"([^"]*)"|'([^']*)')/g)) {
+      paints.push({ attr: match[1], value: match[2] ?? match[3], file });
+    }
   }
-  return found;
+  return paints;
 }
 
 /** Every colour declaration the app draws outside the theme blocks: the shell's
@@ -162,9 +163,11 @@ function drawnColours(): Drawn[] {
   const elementRules = parseRules(themeCss)
     .filter((rule) => !rule.body.includes("color-scheme"))
     .map((rule) => rule.body);
-  const screens = walkSvelte(path.join(srcRoot, "app")).concat(walkSvelte(path.join(srcRoot, "routes")));
+  const screens = screenSources();
   expect(screens.length, "the screens are found").toBeGreaterThan(5);
-  return [...elementRules, ...screens.flatMap((file) => styleBlocks(file))].flatMap((body) => declarations(body));
+  return [...elementRules, ...screens.flatMap((screen) => styleBlocks(screen.text))].flatMap((body) =>
+    declarations(body),
+  );
 }
 
 test("the stylesheet carries all four theme blocks, so the gate measures light and dark", () => {
@@ -189,7 +192,12 @@ test("the screens draw no colour the theme does not define", () => {
   for (const { value } of drawnColours()) {
     if (!drawsOnlyRoles(value)) raw.push(value);
   }
+  const svgRaw: string[] = [];
+  for (const { attr, value, file } of svgPaints()) {
+    if (!drawsOnlyRoles(value)) svgRaw.push(`${attr}="${value}" in ${file}`);
+  }
   expect(raw, "colour values that are not theme roles").toEqual([]);
+  expect(svgRaw, "svg paint attributes that are not theme roles").toEqual([]);
 });
 
 test("every colour drawn as text or background sits in a measured pair", () => {

@@ -1,6 +1,6 @@
 import { theme } from "@nrynss/chaaya/theme";
 import { a11yGate } from "@nrynss/chaaya/testing";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mount, unmount } from "svelte";
@@ -12,6 +12,9 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 
 /** The stylesheet the contrast gate reads and the mounted screens wear. */
 export const themeCss = readFileSync(path.resolve(here, "../../src/app/theme.css"), "utf8");
+
+/** The app's own source, the root the static guards sweep. */
+export const srcRoot = path.resolve(here, "../../src");
 
 /** The width the gates run at: a small phone. */
 export const phoneWidth = 375;
@@ -127,4 +130,38 @@ export async function openAboutDialog(): Promise<void> {
   expect(trigger, "the about trigger").not.toBeNull();
   (trigger as HTMLElement).click();
   await waitUntil(() => document.querySelector('[role="dialog"]'), "the about dialog");
+}
+
+function walkSvelte(dir: string): string[] {
+  const found: string[] = [];
+  for (const name of readdirSync(dir)) {
+    const abs = path.join(dir, name);
+    if (statSync(abs).isDirectory()) found.push(...walkSvelte(abs));
+    else if (name.endsWith(".svelte")) found.push(abs);
+  }
+  return found;
+}
+
+export interface ScreenSource {
+  /** The path under `src`, for naming a file a guard fails on. */
+  file: string;
+  /** The whole file, markup and style blocks alike. */
+  text: string;
+}
+
+/** Every .svelte screen — the shell's directory and the routes — with its
+ * whole text, so the static guards sweep the same files the mounted gates
+ * judge. */
+export function screenSources(): ScreenSource[] {
+  const files = walkSvelte(path.join(srcRoot, "app")).concat(walkSvelte(path.join(srcRoot, "routes")));
+  return files.map((file) => ({ file: path.relative(srcRoot, file), text: readFileSync(file, "utf8") }));
+}
+
+/** The `<style>` blocks of one screen's text. */
+export function styleBlocks(text: string): string[] {
+  const styles: string[] = [];
+  for (const match of text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)) {
+    styles.push(match[1]);
+  }
+  return styles;
 }
