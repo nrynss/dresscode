@@ -158,7 +158,7 @@ requires:   T5.11
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/app/app.svelte, web/src/app/home.svelte, web/src/routes/occasion/, web/tests/a11y/
-status:     in-review
+status:     done
 ```
 Make the front door (`#/` and `#/occasion`) the Occasion picker itself: five editorial occasion cards (occasion name only on each card), in-place selectable fix chips with custom check badges when an occasion is chosen, the second-visit recall banner when style history is on, a one-tap "Try a sample look" bar for hackathon judges (`GET /api/samples` → `POST /api/samples/{id}/looks`), and a primary CTA leading straight into `#/capture`.
 

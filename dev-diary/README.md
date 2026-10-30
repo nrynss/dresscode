@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.12 in review; T5.11 landed. T2.2 (YouCam client) claimed and in flight — the last client before P3 opens. T0.5 landed with findings that became the landed T0.3a (hair/beard templates). `nryn.dev`/send-domain mail proven; phone checks remain with the user.
+**Current status:** T5.12 landed (`9949451`) — the front door is the occasion picker with one-tap judge samples. T5.13 (vanity mirror capture + arched comparator) dispatches next; T5.14 closes P5B. T2.2 (YouCam client) in flight here; P3 opens when it lands.
 
 ---
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 2 / 5 | T5.11 landed — brand mark, slim shell, button system, Account/History overhaul. T5.12 (front door) next. |
+| P5B | 3 / 5 | T5.12 landed — the front door is the picker, with judge samples. T5.13 (vanity mirror capture + comparator) next. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.12 Front door.** `/` is now the product: five editorial occasion cards immediately interactive, selectable fix chips with custom check indicators, the second-visit recall banner above the fixes when history is on (runtime-only memory words, fetched only when an occasion is selected and the switch is on; a failed or unmet answer leaves the menu without the line), one-tap judge samples from the recorded `/api/samples`, and a primary `Bring the look` into capture. The gate discipline paid before landing: `--line` over `--raised` computes 2.81:1 in dark, so the raised cards take the soft edge and the banner is sunken — and the review endorsed remediating T5.11's `.info-card` to the same sunken recipe (its raised drawing failed dark). Four POST fixtures recorded so all five judge samples work in mock. The slimmed lead sentence was ratified as authored. Accent/accent-soft joined the boundary table (8.81/8.00); the a11y matrix grew to 26 mounted tests over 13 states. Two review rounds; the second re-ran the whole gate on a patched copy at the remediated tip. Landed as `7c9b121`+`4324fcf`+`9949451`, gate green in the worktree and the main checkout. Note for T5.13: the judge flow intentionally never reads the POST response — the render screen follows the recorded story look.
 
 - **Decision: the agent-picked templates are approved.** The user accepted `all_garibaldi` (Garibaldi) for festival-full-beard and `female_crewcut` (Crewcut, keeps the hair colour) for interview-short-hair, without a live render first. Neither has been rendered yet; T3.9 will show how Clef reads them.
 
