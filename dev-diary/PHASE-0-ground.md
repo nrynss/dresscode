@@ -78,7 +78,7 @@ requires:   []
 fixture-ok: yes
 size:       M · frontier
 owns:       testdata/occasions/, docs/occasions.md
-status:     claimed:grok-4.7
+status:     in-review
 ```
 The content the whole product runs on. The agent drafts; **the user signs off.**
 
@@ -91,6 +91,14 @@ The content the whole product runs on. The agent drafts; **the user signs off.**
 Write it as data (`testdata/occasions/*.json`, the schema T1.1 will load) and as prose (`docs/occasions.md`).
 
 **Done when:** every occasion has criteria, a menu and a basket; every fix maps to a YouCam task and a vocabulary change; the user has signed off.
+
+Notes:
+
+- Drafted five occasions in `testdata/occasions/` and the sign-off prose in `docs/occasions.md`. Each file has a `kind` so a loader can tell an occasion from the shared vocabulary and the catalog. Every criterion is a yes/no Clef question plus a suggestion. Interview and funeral share `lip-quiet` with the same question and the same suggestion. Every other Clef line is its own rule. The user has not signed off.
+- The family-function story is two vocabulary changes: kept `family-gold-jhumkas` (`jewellery` jhumkas, `jewellery_colour` gold), dismissed `family-red-lip` (`lip_colour` red). `festival-red-lip` is a different fix, so a dismissal there is not the family one.
+- Render tasks are only ones a Perfect Corp page prints: `cloth-v4`, `2d-vto/earring`, `2d-vto/necklace`, `makeup-vto` (`lip_color` only), `hair-transfer`, `beard-style`, `ai-smile` (`closed_mouth_smile`). Hair fixes ask for `face-attr-analysis` and may use `faceShape` only. Age, gender, and ratios are named as never used. No YouCam call was made.
+- Light is judged and not rendered. The public lighting task is with Creators, outside the qualifying sets. Watches and rings need a wrist. Hat, scarf, shoes, and bag ask for a gender value, which this menu will not send or infer. Nothing removes jewellery or a smile. Hair colour is in the vocabulary and not a fix: one target colour would be a guess, and the hair-colour overview does not print a path.
+- Surprised that the clothes page says both "full body" and "chest upward, shoulders visible". Surprised that `garment_category` is required in the example (`full_body`) but the enum is not listed. Surprised that `hair-type-detection` wants three views, so it cannot run on the one selfie. Surprised that the smile overview names `closed_mouth_smile` and does not print the JSON field. Surprised that the earring page prefers a side view, and the necklace page wants a worn reference. Template ids are not invented; T0.5 lists them.
 
 ---
 

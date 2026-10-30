@@ -1,0 +1,69 @@
+{
+  "kind": "catalog",
+  "products": [
+    {
+      "id": "gold-jhumkas",
+      "category": "earrings",
+      "name": "Gold jhumkas",
+      "fidelity": "exact",
+      "youcam_role": "Reference image for 2d-vto/earring.",
+      "photograph": "One jhumka, clear front, plain background. No logo, no text, no ear, no person. The earring task applies placement parameters only when the reference shows a single earring."
+    },
+    {
+      "id": "gold-chain",
+      "category": "necklaces",
+      "name": "Gold chain",
+      "fidelity": "exact",
+      "youcam_role": "Reference image for 2d-vto/necklace.",
+      "photograph": "A plain gold chain, front view, background removed, no logo. The necklace page asks for a worn necklace. If a product shot is not accepted, the reference is the user's own neck, never another person."
+    },
+    {
+      "id": "lip-red",
+      "category": "lip-colour",
+      "name": "Red lip colour",
+      "fidelity": "approximate",
+      "youcam_role": "Shop photo only. makeup-vto paints a colour; it does not composite this picture.",
+      "photograph": "An unbranded red lip colour, the bullet or a smear on a plain card. No logo, no text, no mouth, no person."
+    },
+    {
+      "id": "lip-nude",
+      "category": "lip-colour",
+      "name": "Nude lip colour",
+      "fidelity": "approximate",
+      "youcam_role": "Shop photo only. makeup-vto paints a colour; it does not composite this picture.",
+      "photograph": "An unbranded nude lip colour, the bullet or a smear on a plain card. No logo, no text, no mouth, no person."
+    },
+    {
+      "id": "shirt-open-collar",
+      "category": "garments",
+      "name": "Open-collar shirt",
+      "fidelity": "exact",
+      "youcam_role": "Reference image for cloth-v4.",
+      "photograph": "One plain shirt, collar open, front product shot, no logo, no text, no person."
+    },
+    {
+      "id": "shirt-buttoned",
+      "category": "garments",
+      "name": "Buttoned plain shirt",
+      "fidelity": "exact",
+      "youcam_role": "Reference image for cloth-v4.",
+      "photograph": "One plain shirt, collar buttoned, front product shot, no logo, no text, no person."
+    },
+    {
+      "id": "top-festive",
+      "category": "garments",
+      "name": "Festive top",
+      "fidelity": "exact",
+      "youcam_role": "Reference image for cloth-v4.",
+      "photograph": "One festive top with a mandarin collar, front product shot, a plain colour or a simple weave. No logo, no text, no person, no brand pattern."
+    },
+    {
+      "id": "shirt-dark-plain",
+      "category": "garments",
+      "name": "Dark plain shirt",
+      "fidelity": "exact",
+      "youcam_role": "Reference image for cloth-v4.",
+      "photograph": "One dark plain shirt, collar buttoned, front product shot, no logo, no text, no person."
+    }
+  ]
+}

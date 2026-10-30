@@ -1,0 +1,238 @@
+{
+  "kind": "occasion",
+  "id": "festival",
+  "name": "Festival",
+  "criteria": [
+    {
+      "id": "festival-garment-festive",
+      "kind": "clothing",
+      "clef": "Is the garment a festive colour or pattern, rather than a plain office shirt?",
+      "suggestion": "The garment reads plain; try a festive top."
+    },
+    {
+      "id": "festival-earring",
+      "kind": "grooming",
+      "clef": "Is a festive earring visible, such as hoops or jhumkas, rather than a bare ear?",
+      "suggestion": "The ear reads bare; try gold jhumkas."
+    },
+    {
+      "id": "festival-necklace",
+      "kind": "grooming",
+      "clef": "Is a necklace visible, rather than a bare neck?",
+      "suggestion": "The neck reads bare; try a gold chain."
+    },
+    {
+      "id": "festival-lip",
+      "kind": "grooming",
+      "clef": "Is the lip a festive colour, red or berry, rather than bare?",
+      "suggestion": "The lip reads bare; try a red lip."
+    },
+    {
+      "id": "festival-hair",
+      "kind": "grooming",
+      "clef": "Is the hair in a finished shape and off the eyes, rather than loose across the face?",
+      "suggestion": "The hair crosses the face; try a finished tie."
+    },
+    {
+      "id": "festival-beard",
+      "kind": "grooming",
+      "clef": "Is facial hair either absent or a full shape with a clean edge, not a patchy or stubbly outline?",
+      "suggestion": "The beard outline is patchy; try a full even shape."
+    },
+    {
+      "id": "festival-expression",
+      "kind": "expression",
+      "clef": "Is the expression open and present, rather than a flat stare?",
+      "suggestion": "The expression reads flat; try a closed-mouth smile."
+    },
+    {
+      "id": "festival-light",
+      "kind": "lighting",
+      "clef": "Is the face lit warmly and evenly, with both eyes visible, rather than left in a dark room?",
+      "suggestion": "The face is lit flat; move into warmer light. No fix here can relight the photo."
+    }
+  ],
+  "biggest_issue": {
+    "question": "Which missed part of this dress code is the biggest issue?",
+    "options": [
+      {"id": "festival-garment-festive", "label": "the garment"},
+      {"id": "festival-earring", "label": "the earring"},
+      {"id": "festival-necklace", "label": "the necklace"},
+      {"id": "festival-lip", "label": "the lip"},
+      {"id": "festival-hair", "label": "the hair"},
+      {"id": "festival-beard", "label": "the facial hair"},
+      {"id": "festival-expression", "label": "the expression"},
+      {"id": "festival-light", "label": "the light"},
+      {"id": "none", "label": "none"},
+      {"id": "cant-tell", "label": "can't tell"}
+    ]
+  },
+  "fixes": [
+    {
+      "id": "festival-festive-top",
+      "opt_in": true,
+      "changes": "Replaces the garment with a festive top and a mandarin collar.",
+      "youcam": {
+        "set": "Fashion",
+        "task": "cloth-v4",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/cloth-v4",
+        "path_verified": true,
+        "public_name": "AI Clothes Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/ai_clothes.md"
+      },
+      "analysis": [],
+      "criteria": ["festival-garment-festive"],
+      "vocabulary": [
+        {"attribute": "garment", "to": "festive-top"},
+        {"attribute": "collar", "to": "mandarin"}
+      ],
+      "products": ["top-festive"],
+      "note": "The only garment_category value in the public request example is full_body. Do not send a guessed category."
+    },
+    {
+      "id": "festival-gold-jhumkas",
+      "opt_in": true,
+      "changes": "Adds gold jhumkas.",
+      "youcam": {
+        "set": "Jewelry & Watch",
+        "task": "2d-vto/earring",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/2d-vto/earring",
+        "path_verified": true,
+        "public_name": "AI Earring Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/description/ai_2d_vto_earring.md"
+      },
+      "analysis": [],
+      "criteria": ["festival-earring"],
+      "vocabulary": [
+        {"attribute": "jewellery", "to": "jhumkas"},
+        {"attribute": "jewellery_colour", "to": "gold"}
+      ],
+      "products": ["gold-jhumkas"],
+      "note": "Same render as the family-function jhumkas, different occasion, so memory does not mix the two."
+    },
+    {
+      "id": "festival-gold-chain",
+      "opt_in": true,
+      "changes": "Adds a gold chain.",
+      "youcam": {
+        "set": "Jewelry & Watch",
+        "task": "2d-vto/necklace",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/2d-vto/necklace",
+        "path_verified": true,
+        "public_name": "AI Necklace Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/description/ai_2d_vto_necklace.md"
+      },
+      "analysis": [],
+      "criteria": ["festival-necklace"],
+      "vocabulary": [
+        {"attribute": "necklace", "to": "chain"},
+        {"attribute": "necklace_colour", "to": "gold"}
+      ],
+      "products": ["gold-chain"],
+      "note": "The page asks for a front-facing selfie with the neck visible, and a worn necklace as the reference."
+    },
+    {
+      "id": "festival-red-lip",
+      "opt_in": true,
+      "changes": "Paints the lip red.",
+      "youcam": {
+        "set": "Beauty",
+        "task": "makeup-vto",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/makeup-vto",
+        "path_verified": true,
+        "public_name": "AI Makeup Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/makeup_vto.md"
+      },
+      "analysis": [],
+      "criteria": ["festival-lip"],
+      "vocabulary": [
+        {"attribute": "lip_colour", "to": "red"}
+      ],
+      "products": ["lip-red"],
+      "note": "Not the family-function red lip. A dismissal here must not be stored as the family-function dismissal. Use category lip_color. Do not change the lip outline."
+    },
+    {
+      "id": "festival-tie-hair",
+      "opt_in": true,
+      "changes": "Renders the hair tied back.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "hair-transfer",
+        "method": "POST",
+        "path": "/s2s/v2.1/task/hair-transfer",
+        "path_verified": true,
+        "public_name": "AI Hairstyle Generator",
+        "doc": "https://docs.perfectcorp.com/reference/ai_hairstyle.md"
+      },
+      "analysis": [
+        {
+          "task": "face-attr-analysis",
+          "method": "POST",
+          "path": "/s2s/v2.0/task/face-attr-analysis",
+          "path_verified": true,
+          "public_name": "AI Face Attributes and Ratio Analyzer",
+          "doc": "https://docs.perfectcorp.com/reference/description/ai_face_analyzer.md",
+          "use_fields": ["faceShape"],
+          "never_use": ["age", "gender", "ratios"]
+        }
+      ],
+      "criteria": ["festival-hair"],
+      "vocabulary": [
+        {"attribute": "hair", "to": "tied-back"}
+      ],
+      "products": [],
+      "note": "Template id comes from the hair-transfer template list. No id is invented here."
+    },
+    {
+      "id": "festival-full-beard",
+      "opt_in": true,
+      "changes": "Renders a full even beard.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "beard-style",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/beard-style",
+        "path_verified": true,
+        "public_name": "AI Beard Style Generator",
+        "doc": "https://docs.perfectcorp.com/reference/description/ai_beard_style.md"
+      },
+      "analysis": [],
+      "criteria": ["festival-beard"],
+      "vocabulary": [
+        {"attribute": "beard", "to": "full"}
+      ],
+      "products": [],
+      "note": "Template id comes from the beard-style template list. Nothing infers who should see this fix."
+    },
+    {
+      "id": "festival-closed-smile",
+      "opt_in": true,
+      "changes": "Renders a closed-mouth smile.",
+      "youcam": {
+        "set": "Skin",
+        "task": "ai-smile",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/ai-smile",
+        "path_verified": true,
+        "public_name": "AI Smile",
+        "doc": "https://docs.perfectcorp.com/reference/ai_smile.md"
+      },
+      "analysis": [],
+      "criteria": ["festival-expression"],
+      "vocabulary": [
+        {"attribute": "expression", "to": "closed-mouth-smile"}
+      ],
+      "products": [],
+      "note": "The toothy style smile_with_teeth_visible is documented and not used. A wide grin is a larger change than this dress code needs."
+    }
+  ],
+  "basket": {
+    "categories": ["garments", "earrings", "necklaces", "lip-colour"],
+    "products": ["top-festive", "gold-jhumkas", "gold-chain", "lip-red"],
+    "template_only": ["hair", "beard", "expression"]
+  }
+}

@@ -1,0 +1,219 @@
+{
+  "kind": "occasion",
+  "id": "interview",
+  "name": "Interview",
+  "criteria": [
+    {
+      "id": "interview-collar-buttoned",
+      "kind": "clothing",
+      "clef": "Is the collar buttoned, rather than open at the neck?",
+      "suggestion": "The collar reads open; try it buttoned."
+    },
+    {
+      "id": "interview-garment-plain",
+      "kind": "clothing",
+      "clef": "Is the garment a plain structured shirt, rather than a pattern, a tee, or festive wear?",
+      "suggestion": "The garment reads casual; try a plain buttoned shirt."
+    },
+    {
+      "id": "interview-hair-close",
+      "kind": "grooming",
+      "clef": "Is the hair off the face and sitting close, rather than across the eyes or standing up?",
+      "suggestion": "The hair crosses the face; try it tied back or cut short."
+    },
+    {
+      "id": "interview-beard-short",
+      "kind": "grooming",
+      "clef": "Is facial hair either absent or a short even shape that stays off the collar, not a long or patchy outline?",
+      "suggestion": "The beard reads untidy; try a short even shape."
+    },
+    {
+      "id": "lip-quiet",
+      "kind": "grooming",
+      "clef": "Is the lip either bare or a quiet nude, not a bright colour?",
+      "suggestion": "The lip reads bright; try a nude."
+    },
+    {
+      "id": "interview-expression-calm",
+      "kind": "expression",
+      "clef": "Is the expression calm, with the mouth relaxed, rather than a flat stare or a wide grin?",
+      "suggestion": "The expression reads tense; try a closed-mouth smile."
+    },
+    {
+      "id": "interview-light-plain",
+      "kind": "lighting",
+      "clef": "Is the light plain and even on both eyes, with no coloured cast and no hard shadow?",
+      "suggestion": "The face is lit flat; face a plain window. No fix here can relight the photo."
+    }
+  ],
+  "biggest_issue": {
+    "question": "Which missed part of this dress code is the biggest issue?",
+    "options": [
+      {"id": "interview-collar-buttoned", "label": "the collar"},
+      {"id": "interview-garment-plain", "label": "the garment"},
+      {"id": "interview-hair-close", "label": "the hair"},
+      {"id": "interview-beard-short", "label": "the facial hair"},
+      {"id": "lip-quiet", "label": "the lip"},
+      {"id": "interview-expression-calm", "label": "the expression"},
+      {"id": "interview-light-plain", "label": "the light"},
+      {"id": "none", "label": "none"},
+      {"id": "cant-tell", "label": "can't tell"}
+    ]
+  },
+  "fixes": [
+    {
+      "id": "interview-buttoned-shirt",
+      "opt_in": true,
+      "changes": "Replaces the garment with a plain shirt, collar buttoned.",
+      "youcam": {
+        "set": "Fashion",
+        "task": "cloth-v4",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/cloth-v4",
+        "path_verified": true,
+        "public_name": "AI Clothes Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/ai_clothes.md"
+      },
+      "analysis": [],
+      "criteria": ["interview-collar-buttoned", "interview-garment-plain"],
+      "vocabulary": [
+        {"attribute": "collar", "to": "buttoned"},
+        {"attribute": "garment", "to": "plain-shirt"}
+      ],
+      "products": ["shirt-buttoned"],
+      "note": "The only garment_category value in the public request example is full_body. Do not send a guessed category."
+    },
+    {
+      "id": "interview-tie-hair",
+      "opt_in": true,
+      "changes": "Renders the hair tied back.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "hair-transfer",
+        "method": "POST",
+        "path": "/s2s/v2.1/task/hair-transfer",
+        "path_verified": true,
+        "public_name": "AI Hairstyle Generator",
+        "doc": "https://docs.perfectcorp.com/reference/ai_hairstyle.md"
+      },
+      "analysis": [
+        {
+          "task": "face-attr-analysis",
+          "method": "POST",
+          "path": "/s2s/v2.0/task/face-attr-analysis",
+          "path_verified": true,
+          "public_name": "AI Face Attributes and Ratio Analyzer",
+          "doc": "https://docs.perfectcorp.com/reference/description/ai_face_analyzer.md",
+          "use_fields": ["faceShape"],
+          "never_use": ["age", "gender", "ratios"]
+        }
+      ],
+      "criteria": ["interview-hair-close"],
+      "vocabulary": [
+        {"attribute": "hair", "to": "tied-back"}
+      ],
+      "products": [],
+      "note": "Template id comes from the hair-transfer template list. No id is invented here."
+    },
+    {
+      "id": "interview-short-hair",
+      "opt_in": true,
+      "changes": "Renders the hair short.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "hair-transfer",
+        "method": "POST",
+        "path": "/s2s/v2.1/task/hair-transfer",
+        "path_verified": true,
+        "public_name": "AI Hairstyle Generator",
+        "doc": "https://docs.perfectcorp.com/reference/ai_hairstyle.md"
+      },
+      "analysis": [
+        {
+          "task": "face-attr-analysis",
+          "method": "POST",
+          "path": "/s2s/v2.0/task/face-attr-analysis",
+          "path_verified": true,
+          "public_name": "AI Face Attributes and Ratio Analyzer",
+          "doc": "https://docs.perfectcorp.com/reference/description/ai_face_analyzer.md",
+          "use_fields": ["faceShape"],
+          "never_use": ["age", "gender", "ratios"]
+        }
+      ],
+      "criteria": ["interview-hair-close"],
+      "vocabulary": [
+        {"attribute": "hair", "to": "short"}
+      ],
+      "products": [],
+      "note": "Separate from the tie-back so memory can tell them apart. Template id is not invented here."
+    },
+    {
+      "id": "interview-short-beard",
+      "opt_in": true,
+      "changes": "Renders a short even beard.",
+      "youcam": {
+        "set": "Hair & Beard",
+        "task": "beard-style",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/beard-style",
+        "path_verified": true,
+        "public_name": "AI Beard Style Generator",
+        "doc": "https://docs.perfectcorp.com/reference/description/ai_beard_style.md"
+      },
+      "analysis": [],
+      "criteria": ["interview-beard-short"],
+      "vocabulary": [
+        {"attribute": "beard", "to": "short"}
+      ],
+      "products": [],
+      "note": "Template id comes from the beard-style template list. Nothing infers who should see this fix."
+    },
+    {
+      "id": "interview-nude-lip",
+      "opt_in": true,
+      "changes": "Paints the lip a quiet nude.",
+      "youcam": {
+        "set": "Beauty",
+        "task": "makeup-vto",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/makeup-vto",
+        "path_verified": true,
+        "public_name": "AI Makeup Virtual Try-On",
+        "doc": "https://docs.perfectcorp.com/reference/makeup_vto.md"
+      },
+      "analysis": [],
+      "criteria": ["lip-quiet"],
+      "vocabulary": [
+        {"attribute": "lip_colour", "to": "nude"}
+      ],
+      "products": ["lip-nude"],
+      "note": "Use category lip_color and one palette. Do not change the lip outline. Do not use skin_smooth."
+    },
+    {
+      "id": "interview-closed-smile",
+      "opt_in": true,
+      "changes": "Renders a closed-mouth smile.",
+      "youcam": {
+        "set": "Skin",
+        "task": "ai-smile",
+        "method": "POST",
+        "path": "/s2s/v2.0/task/ai-smile",
+        "path_verified": true,
+        "public_name": "AI Smile",
+        "doc": "https://docs.perfectcorp.com/reference/ai_smile.md"
+      },
+      "analysis": [],
+      "criteria": ["interview-expression-calm"],
+      "vocabulary": [
+        {"attribute": "expression", "to": "closed-mouth-smile"}
+      ],
+      "products": [],
+      "note": "Style name closed_mouth_smile is documented. The toothy style is not on this menu."
+    }
+  ],
+  "basket": {
+    "categories": ["garments", "lip-colour"],
+    "products": ["shirt-buttoned", "lip-nude"],
+    "template_only": ["hair", "beard", "expression"]
+  }
+}

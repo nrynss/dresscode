@@ -1,0 +1,61 @@
+{
+  "kind": "vocabulary",
+  "id": "look",
+  "attributes": [
+    {
+      "id": "jewellery",
+      "question": "What earring is visible?",
+      "options": ["none", "jhumkas", "studs", "hoops", "drops", "can't tell"]
+    },
+    {
+      "id": "jewellery_colour",
+      "question": "What colour is that earring?",
+      "options": ["none", "gold", "silver", "pearl", "red", "multicolour", "can't tell"]
+    },
+    {
+      "id": "necklace",
+      "question": "What necklace is visible?",
+      "options": ["none", "chain", "pendant", "choker", "can't tell"]
+    },
+    {
+      "id": "necklace_colour",
+      "question": "What colour is that necklace?",
+      "options": ["none", "gold", "silver", "pearl", "black", "can't tell"]
+    },
+    {
+      "id": "lip_colour",
+      "question": "What lip colour is visible?",
+      "options": ["none", "red", "nude", "berry", "brown", "pink", "can't tell"]
+    },
+    {
+      "id": "collar",
+      "question": "How does the collar read?",
+      "options": ["none", "open", "buttoned", "mandarin", "crew", "covered", "can't tell"]
+    },
+    {
+      "id": "hair",
+      "question": "How is the hair arranged?",
+      "options": ["none", "loose", "tied-back", "short", "bun", "fringe", "covered", "can't tell"]
+    },
+    {
+      "id": "hair_colour",
+      "question": "What hair colour is visible?",
+      "options": ["none", "black", "brown", "blonde", "grey", "red", "can't tell"]
+    },
+    {
+      "id": "beard",
+      "question": "What facial hair is visible?",
+      "options": ["none", "short", "full", "mustache", "goatee", "patchy", "can't tell"]
+    },
+    {
+      "id": "expression",
+      "question": "What expression is visible?",
+      "options": ["none", "flat", "closed-mouth-smile", "open-smile", "tense", "can't tell"]
+    },
+    {
+      "id": "garment",
+      "question": "What garment is visible at the neck and shoulders?",
+      "options": ["none", "relaxed-shirt", "plain-shirt", "festive-top", "dark-plain", "tee", "suit", "can't tell"]
+    }
+  ]
+}
