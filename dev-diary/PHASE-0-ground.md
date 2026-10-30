@@ -156,7 +156,7 @@ requires:   T0.3, T0.4
 fixture-ok: no
 size:       S · mid
 owns:       testdata/samples/products/
-status:     not-started
+status:     claimed:claude-opus-5-5
 ```
 Split from T0.4, which made the people. One reference image per catalog entry in docs/occasions.md (Catalog), as the YouCam task for each fix needs it.
 
@@ -193,7 +193,7 @@ requires:   T0.2, T0.3, T0.4
 fixture-ok: no
 size:       M · mid
 owns:       testdata/clef/, docs/clef.md
-status:     not-started
+status:     claimed:claude-opus-5-5
 ```
 Record what Clef returns, and what it costs, on the sample set. Workers AI spend: within the free daily allowance.
 
