@@ -127,3 +127,17 @@ owns:       internal/mail/live_test.go
 status:     claimed:glm-5.3-flash
 ```
 The user receives one sign-in code at their own address. **Done when:** the user confirms it arrived and how long it took.
+
+### T2.5: The memory client survives session expiry
+```yaml
+requires:   T2.3
+fixture-ok: yes
+size:       S · light
+owns:       internal/memory/, testdata/lambo/ (one recorded 404 exchange)
+status:     claimed:glm-5.3-flash
+```
+Lambo expires idle sessions in minutes: a call on a dead `Mcp-Session-Id` gets HTTP `404` with the plain text `Not Found: Session not found`, not a JSON-RPC error. A real user's second visit idles longer than that, so the client must treat that 404 as "initialize the session again, then replay the original call once". A second consecutive 404 is a typed error, never a loop.
+
+**Done when:** a replay test over a recorded 404 exchange shows one re-initialize and the replayed call succeeding; a repeat 404 fails typed; the gate stays offline.
+
+*(Found by the orchestrator on 2026-10-30: `internal/memory/lambo.go` has no 404 handling; two orchestrator sessions expired mid-idle. See feedback.md under Lambo.)*

@@ -138,7 +138,7 @@ requires:   T5.5
 fixture-ok: yes
 size:       S · mid
 owns:       web/src/routes/history/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 The history switch, off by default, with a plain sentence of what is kept and where. The second visit shows what memory did: "Last family function you kept the gold jhumkas." Past looks by occasion.
 
