@@ -20,7 +20,7 @@ requires:   T1.2, T1.5
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/server.go, internal/server/session.go
-status:     not-started
+status:     claimed:grok-4.7
 ```
 The HTTP server on Keel, serving the API and the built app. Keel `identity`: a first visit creates a guest user and a server-side session; the cookie carries only the signed session id; every request resolves it against the rows. `gate` in front of every route that spends.
 

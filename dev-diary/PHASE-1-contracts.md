@@ -124,7 +124,7 @@ requires:   T1.1, T1.4
 fixture-ok: yes
 size:       M · frontier
 owns:       docs/api.md, testdata/api/
-status:     in-review
+status:     done
 ```
 Every route the app calls, written down before either side is built: sign-in (start, verify), session, occasions and menus, opt-in menu, upload (resumable), product intake (photo, link), start a look, the look's event stream (stages and their payloads), the verdict, renders, shop the look, keep/dismiss/bought, history on/off and recall, deletion (photo, look, history, account), samples. Errors in Keel's `wire` envelope with stable codes ("budget refused", "no face in photo", "uploads paused").
 

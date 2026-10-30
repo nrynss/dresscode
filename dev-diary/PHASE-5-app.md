@@ -20,7 +20,7 @@ requires:   T1.5
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/app/, web/src/lib/api/, web/static/manifest.webmanifest
-status:     not-started
+status:     claimed:grok-4.7
 ```
 The app shell, Dresscode's own look on Chaaya's theme roles (light, dark, system), the installable manifest and icons, and Chaaya's API client with its Keel adapter so every `wire` error arrives typed. A mock mode serving `testdata/api/`.
 

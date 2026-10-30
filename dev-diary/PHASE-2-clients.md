@@ -66,7 +66,7 @@ requires:   T1.3, T0.7
 fixture-ok: yes
 size:       M · mid
 owns:       internal/memory/lambo.go
-status:     not-started
+status:     claimed:grok-4.7
 ```
 MCP over streamable HTTP to the Dresscode Lambo server: one session per account, remember a look as text (the occasion, flagged criteria, fixes kept and dismissed, products, the look-in-words line), recall for an occasion, erase a session. Lambo's writes are applied in the background: a remember is confirmed through its receipt before the look reports "remembered". `record_action` does not de-duplicate, so a write is sent once (Keel `outbox` if it must survive a restart).
 
@@ -90,7 +90,7 @@ requires:   T1.4
 fixture-ok: yes
 size:       S · light
 owns:       internal/mail/
-status:     not-started
+status:     claimed:grok-4.7
 ```
 A Keel `identity.Sender` over Resend for sign-in codes only: plain text and a minimal HTML version, the from address from settings, Keel's send limits applied before sending. A recorder implementation for tests.
 
