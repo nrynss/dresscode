@@ -25,7 +25,7 @@ requires:   T5.9
 fixture-ok: yes
 size:       M · mid
 owns:       product.md, docs/occasions.md, testdata/occasions/, testdata/api/, web/vite.config.ts, web/src/lib/api/, web/src/routes/account/privacy.ts, web/src/routes/account/account.test.ts, web/src/routes/occasion/menu.test.ts
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 Clean up the engineering and pipeline jargon at the source (`product.md`, `testdata/occasions/`, `testdata/api/`, and `web/src/lib/api/errors.ts`), wire real sample JPEGs from `testdata/samples/` into mock mode's `/media/{id}` responses so dev mode and screenshots show real photographs instead of broken-image icons, and make recall switch to `recall.json` in mock mode once history is enabled in the session.
 
@@ -63,6 +63,18 @@ What to build:
    - When `mock.ts` serves a matched `/media/{id}` GET request, return the real JPEG bytes with `Content-Type: image/jpeg` and status `200`. Update `mock.test.ts` to assert that `/media/5e1f1e00000000000000000000000001` returns non-empty JPEG bytes (`byteLength > 0`, SOI header `ff d8`).
 
 **Done when:** `./tools/check.sh` passes; `product.md` and `testdata/occasions/` carry the human copy; `/media/*` in mock mode serves real sample JPEGs.
+
+Notes:
+
+- The four `product.md` swaps and the `privacy.ts` readers moved together; `privacy.ts` throws on a missing sentence, so the pair is atomic by construction. `account.test.ts` is the proof: it renders the Account screen out of `product.md`'s own sentences, and it passes unchanged.
+- The `Renders …` swaps landed in the five occasion files and the frozen `testdata/api/occasion.json` envelope — string values only, envelope shapes untouched. The diff holds only `changes` lines: no `clef` question, no `biggest_issue`, no other field. `docs/occasions.md` needed nothing: its fix tables never carried the `Renders …` sentences (the Changes column is already short human labels), so that part of the table was a no-op there. `menu.test.ts` now asserts `Shapes a short, even beard.`
+- `errors.ts`: the three sentences from the table. The `lease_refused` cap-specific branches (`another selfie`, `another render`) stay; the table rewrites only the fallback.
+- Media: a companion virtual module `virtual:dresscode-sample-media` in `vite.config.ts` embeds the three sample JPEGs as base64 and `mock.ts` serves those bytes for a matched GET at the recorded ids, `image/jpeg`, status 200, with the recorded headers (cache-control, accept-ranges) kept. Filenames were verified on disk first: `V04-family-function.jpg`, `V05-family-function.jpg`, `gold-jhumkas.jpg`, exactly as named. The two product ids share the jhumkas photograph. The fourth id (`c0a10cf0…`) is named by the task but appears in no recorded fixture; it is mapped anyway, ready for whichever recording names it later. `mock.test.ts` asserts the selfie id returns non-empty bytes starting `ff d8`, the render and product ids return non-empty `image/jpeg` bodies, and a media miss keeps its recorded 404 body. Because `mock.ts` is dynamically imported only in mock mode, the photographs ride the mock chunk, not the production bundle.
+- Recall: the mock now stores the switch the way the server does — a `PUT /api/history` with a boolean body turns the session's world on or off, and the family-function recall story answers `recall.json` once on, `recall-off.json` fresh or switched back. `mock.test.ts` proves both worlds and the switch-back; the fresh-session default keeps `history.test.ts`'s off pins green.
+- One out-of-owns line, approved by the orchestrator mid-task: `history.test.ts`'s "turning it on persists" test had pinned the old always-off recall story (empty line after the PUT, no pin). It now pins `recall-off.json` explicitly through the mock's documented `preferFixture`, so the test still proves exactly what its comment says — the reader honours the body's own switch over the session's — and its assertion is unchanged; the story-default change is proven in `mock.test.ts`.
+- Two more paths outside owns, both forced and minimal, in `web/src/vite-env.d.ts`: the ambient declaration for the new virtual module (the pattern the fixture module already uses there), and a base64 `toString` on the declared `ReadBytes`, because the gate's typecheck narrows `node:fs` and would not accept the sample loader otherwise.
+- Surprised twice, both TypeScript: TS 5.9's `Uint8Array<ArrayBufferLike>` is not a `Response` body — the lib wants `Uint8Array<ArrayBuffer>`, so the decoder builds over an explicit `ArrayBuffer` — and the narrowed `node:fs` declarations that let the gate skip `@types/node` had no base64 read. Both fixes are declarations, not runtime code.
+- The digit rule held: the only digits in the diff are ids, media paths and the base64 marker. Every swapped sentence is digit-free, and the banned-word scan over the touched `web/src` files is clean.
 
 ---
 
