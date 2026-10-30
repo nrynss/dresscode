@@ -2,7 +2,8 @@
   import { isTerminalStatus, type JobStream } from "@nrynss/chaaya/keel";
   import ErrorNotice from "../../../app/error-notice.svelte";
   import type { ShownError } from "../../../lib/api/types";
-  import { openingSentence, pausedSentence, readingSentence, stageWord, type VerdictCopy } from "./copy";
+  import { renderHash } from "../render/route";
+  import { openingSentence, pausedSentence, readingSentence, stageOrder, stageWord, type VerdictCopy } from "./copy";
   import { followLook, loadVerdict, shownFailure, storyJobId, storyLookId } from "./follow";
 
   let stream = $state<JobStream | undefined>(undefined);
@@ -16,6 +17,10 @@
   const stopped = $derived(
     stream !== undefined && isTerminalStatus(stream.status) && stream.status !== "done" && stream.error === undefined,
   );
+  /** Where the look stands on the path. The look is finished once its job is
+   * done, or once its verdict is on the screen. */
+  const stageIndex = $derived(word === "" ? -1 : stageOrder.indexOf(word));
+  const finished = $derived(stream?.status === "done" || verdict !== null);
 
   $effect(() => {
     const follow = followLook(storyLookId, storyJobId, (opened) => {
@@ -62,9 +67,24 @@
   {/if}
 
   {#if word && inProgress}
-    <p class="stage" role="status">{word}</p>
+    <p class="stage" role="status">{word}.</p>
   {:else if !verdict && !paused && inProgress}
     <p class="hint" role="status">{openingSentence}</p>
+  {/if}
+
+  {#if stream !== undefined}
+    <ol class="stages" aria-label="Where the look is">
+      {#each stageOrder as stage, index (stage)}
+        <li
+          class:done={finished || (stageIndex >= 0 && index < stageIndex)}
+          class:active={inProgress && index === stageIndex}
+          aria-current={inProgress && index === stageIndex ? "step" : undefined}
+        >
+          <span class="mark" aria-hidden="true"></span>
+          <span class="word">{stage}</span>
+        </li>
+      {/each}
+    </ol>
   {/if}
 
   {#if paused}
@@ -84,10 +104,13 @@
         {/each}
       </ul>
     {/if}
-    <h3>A fix</h3>
-    <p>{verdict.fix}</p>
-    <h3>Why</h3>
-    <p>{verdict.why}</p>
+    <div class="hero">
+      <h3>A fix</h3>
+      <p>{verdict.fix}</p>
+      <h3>Why</h3>
+      <p>{verdict.why}</p>
+    </div>
+    <a class="primary-link" href={renderHash}>See the render</a>
   {/if}
 </section>
 
@@ -139,5 +162,148 @@
   ul {
     margin: 0;
     padding-left: 1.1rem;
+  }
+
+  /* The live path: four words, the one in hand awake, the ones behind it
+   * carrying their check, the ones ahead quiet. */
+  .stages {
+    position: relative;
+    display: grid;
+    gap: 0.7rem;
+    margin: 0.25rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .stages li {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: var(--dim);
+    min-height: 1.55rem;
+  }
+
+  .stages li.done,
+  .stages li.active {
+    color: var(--text);
+  }
+
+  .stages li.active {
+    color: var(--accent);
+  }
+
+  .stages li::before {
+    content: "";
+    position: absolute;
+    top: -0.7rem;
+    left: 0.55rem;
+    width: 0;
+    height: 0.7rem;
+    border-left: 1px solid var(--line-soft);
+  }
+
+  .stages li:first-child::before {
+    content: none;
+  }
+
+  .mark {
+    position: relative;
+    flex: none;
+    width: 1.15rem;
+    height: 1.15rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .stages li.done .mark {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .stages li.active .mark {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  .mark::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 0.4rem;
+    height: 0.6rem;
+    margin: auto;
+    border-right: 2px solid var(--on-accent);
+    border-bottom: 2px solid var(--on-accent);
+    transform: rotate(45deg);
+    opacity: 0;
+  }
+
+  .stages li.done .mark::before {
+    opacity: 1;
+  }
+
+  .word {
+    overflow-wrap: break-word;
+  }
+
+  /* The fix is the screen's one hero: its own card, edged in the accent. */
+  .hero {
+    margin-top: 0.75rem;
+    padding: 1rem;
+    background: var(--raised);
+    border: 1px solid var(--line-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-control);
+    min-inline-size: 0;
+  }
+
+  .hero h3 {
+    margin: 0;
+  }
+
+  .hero p {
+    margin: 0.35rem 0 0;
+  }
+
+  .hero p + h3 {
+    margin-top: 0.9rem;
+  }
+
+  .primary-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.9rem;
+    color: var(--on-accent);
+    background: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-control);
+    text-decoration: none;
+    overflow-wrap: break-word;
+  }
+
+  .primary-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .stages li.active .mark {
+      animation: stage-pulse 1.6s ease-in-out infinite;
+    }
+  }
+
+  @keyframes stage-pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 var(--accent-soft);
+    }
+
+    50% {
+      box-shadow: 0 0 0 0.35rem var(--accent-soft);
+    }
   }
 </style>

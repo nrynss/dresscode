@@ -18,6 +18,8 @@ import {
   resumeUpload,
   sendImage,
   shownError,
+  startLook,
+  storyOccasion,
   uploadCaptured,
 } from "./upload";
 
@@ -260,6 +262,49 @@ test("no face, too small, and paused uploads use the client sentences", async ()
   }
 });
 
+test("starting the look posts the occasion, the selfie and the products", async () => {
+  installMock();
+  const inner = globalThis.fetch;
+  const calls: { method: string; path: string; body: string }[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const raw = input instanceof Request ? input.url : input instanceof URL ? input.href : String(input);
+    const url = new URL(raw, "http://dresscode.local");
+    calls.push({
+      method: (init?.method ?? "GET").toUpperCase(),
+      path: url.pathname,
+      body: typeof init?.body === "string" ? init.body : "",
+    });
+    return inner(input, init);
+  }) as typeof fetch;
+
+  const started = await startLook(storyOccasion, "5e1f1e00000000000000000000000001", [
+    "b20d0c70000000000000000000000001",
+  ]);
+  const begin = fixture("look-start.json").body as { look_id: string; job_id: string };
+  expect(started).toEqual({ lookId: begin.look_id, jobId: begin.job_id });
+  expect(calls).toEqual([
+    {
+      method: "POST",
+      path: "/api/looks",
+      body: JSON.stringify({
+        occasion: "family-function",
+        selfie_id: "5e1f1e00000000000000000000000001",
+        product_ids: ["b20d0c70000000000000000000000001"],
+      }),
+    },
+  ]);
+
+  // An answer without both ids is not a started look.
+  pinAnswer("POST", "/api/looks", {
+    file: "look-start-unreadable",
+    method: "POST",
+    path: "/api/looks",
+    status: 202,
+    body: { look_id: begin.look_id },
+  });
+  await expect(startLook("family-function", "5e1f1e00000000000000000000000001", [])).rejects.toThrow();
+});
+
 test("the screen grabs a front-camera frame and keeps a gallery and a phone-camera fallback", () => {
   const source = readFileSync(path.join(here, "capture.svelte"), "utf8");
   const shell = readFileSync(path.join(here, "../../app/shell.svelte"), "utf8");
@@ -276,4 +321,35 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(source.match(/type="file"/g)?.length).toBe(3);
   expect(source).toContain("ErrorNotice");
   expect(source).toContain('aria-label="Sending the photo"');
+
+  // The vanity mirror: an arched portrait frame the spacer carries, with its
+  // idle prompt, and the authored camera failure whatever the session says.
+  const styles = source.slice(source.indexOf("<style>"));
+  expect(source).toContain("The mirror opens here.");
+  expect(source).not.toContain("session.reason");
+  expect(source).toContain("The camera did not open. Use the phone camera below.");
+  expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*border-radius: 999px 999px var\(--radius-panel\) var\(--radius-panel\)/);
+  expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*border: 2px solid var\(--line\)/);
+  expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*background: var\(--sunken\)/);
+  expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*max-width: min\(100%, calc\(68dvh \* 3 \/ 4\)\)/);
+  expect(styles).toMatch(/\.mirror-frame::before\s*\{[^}]*padding-top: 133%/);
+
+  // The pickers wear the button, and the native input hides inside the label.
+  expect(styles).toMatch(/\.file\s*\{[^}]*background: var\(--surface\)/);
+  expect(styles).toMatch(/\.file\s*\{[^}]*border: 1px solid var\(--line\)/);
+  expect(styles).toMatch(/\.file\s*\{[^}]*border-radius: var\(--radius-control\)/);
+  expect(styles).toMatch(/\.file\s*\{[^}]*min-height: 2\.75rem/);
+  expect(styles).toMatch(/\.file input\s*\{[^}]*position: absolute/);
+  expect(styles).toMatch(/\.file input\s*\{[^}]*width: 1px/);
+  expect(styles).toMatch(/\.file input\s*\{[^}]*height: 1px/);
+  expect(styles).toMatch(/\.file input\s*\{[^}]*opacity: 0/);
+  expect(styles).toMatch(/\.file input\s*\{[^}]*overflow: hidden/);
+
+  // The product drawer folds away, and the selfie's CTA starts the look.
+  expect(source).toContain('<details class="product-drawer">');
+  expect(source).toContain("Considering a specific piece?");
+  expect(source).toContain("Check the dress code");
+  expect(source).toContain("startLook(");
+  expect(source).toContain("storyOccasion");
+  expect(source).toContain("verdictHash");
 });

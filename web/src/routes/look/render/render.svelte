@@ -80,14 +80,21 @@
       </ul>
     {/if}
 
-    <h3>A fix</h3>
-    <p>{look.fix}</p>
-    <h3>Why</h3>
-    <p>{look.why}</p>
+    <div class="hero">
+      <h3>A fix</h3>
+      <p>{look.fix}</p>
+      <h3>Why</h3>
+      <p>{look.why}</p>
+    </div>
 
     <div class="verdict">
       {#each lookVerdicts as choice (choice)}
-        <button type="button" disabled={saving} onclick={() => void onVerdict(choice)}>
+        <button
+          type="button"
+          class:primary={(saved ?? "kept") === choice}
+          disabled={saving}
+          onclick={() => void onVerdict(choice)}
+        >
           {verdictWords[choice]}
         </button>
       {/each}
@@ -158,7 +165,43 @@
     padding-left: 1.1rem;
   }
 
-  .verdict,
+  /* The fix is the screen's one hero: its own card, edged in the accent. */
+  .hero {
+    margin-top: 0.75rem;
+    padding: 1rem;
+    background: var(--raised);
+    border: 1px solid var(--line-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-control);
+    min-inline-size: 0;
+  }
+
+  .hero h3 {
+    margin: 0;
+  }
+
+  .hero p {
+    margin: 0.35rem 0 0;
+  }
+
+  .hero p + h3 {
+    margin-top: 0.9rem;
+  }
+
+  /* The look's verdict: three equal segments, the one stored (Keep, until a
+   * choice is stored) carrying the primary fill. */
+  .verdict {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+  }
+
+  .verdict button {
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+  }
+
   .shop {
     display: flex;
     flex-wrap: wrap;

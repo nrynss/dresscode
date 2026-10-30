@@ -34,7 +34,7 @@ export const verdictWords: Record<LookVerdict, string> = {
 export const savedSentences: Record<LookVerdict, string> = {
   kept: "This look is kept.",
   dismissed: "This look is dismissed.",
-  bought: "This look is marked bought.",
+  bought: "You bought this look.",
 };
 
 /** The fidelity words the domain uses. They are words, never a number. */
@@ -45,6 +45,14 @@ export type FidelityLabel = (typeof fidelityLabels)[number];
 export function isFidelityLabel(value: string): value is FidelityLabel {
   return (fidelityLabels as readonly string[]).includes(value);
 }
+
+/** One plain sentence per fidelity word: what the label on a shop product
+ * promises. The sheet opens it beside the label that names it. */
+export const fidelityExplanations: Record<FidelityLabel, string> = {
+  "exact product": "This is the exact piece you brought or the occasion named, tried on directly.",
+  "approximate match": "This piece is a close catalog match for the fix shown in the render.",
+  "visual simulation": "The render shows the effect on your photo, paired with a shopping suggestion.",
+};
 
 /** One shown render: the picture and nothing that could grade it. */
 export interface RenderPicture {

@@ -6,7 +6,7 @@ import { afterEach, expect, test } from "vitest";
 import { humanMessage } from "../../../lib/api/errors";
 import { installMock, pinAnswer } from "../../../lib/api/mock";
 import type { ApiFixture } from "../../../lib/api/types";
-import { openingSentence, pausedSentence, readingSentence, stageWord, verdictLines } from "./copy";
+import { openingSentence, pausedSentence, readingSentence, stageOrder, stageWord, verdictLines } from "./copy";
 import { followLook, loadVerdict, storyJobId, storyLookId, type LookFollow } from "./follow";
 import { verdictHash } from "./route";
 
@@ -101,6 +101,9 @@ test("the stage words are the four look words and nothing else", () => {
   expect(stageWord("delete")).toBe("");
   expect(stageWord(undefined)).toBe("");
   expect([pausedSentence, openingSentence, readingSentence].join(" ")).not.toMatch(/\d/);
+  // The stepper walks the same four words, in order.
+  expect(stageOrder).toEqual(["Checking", "Choosing a fix", "Rendering", "Checking the render"]);
+  expect(stageOrder.join(" ")).not.toMatch(/\d/);
 });
 
 test("hiding the page mid-render pauses the same look, and the verdict has no digit", async () => {
@@ -275,6 +278,27 @@ test("the screen and the shell link show no digit", () => {
   expect(screen).not.toContain("stream.reconnects");
   expect(markup).not.toContain("lookId");
   expect(markup).not.toContain("jobId");
+
+  // The live path: four words, the one in hand named as the step, the hero
+  // carrying the fix, and the finished verdict never a dead end.
+  expect(screen).toContain('<ol class="stages"');
+  expect(screen).toContain("aria-current=");
+  expect(screen).toContain('<div class="hero">');
+  expect(screen).toContain('{verdict.fix}</p>');
+  expect(screen).toContain('<a class="primary-link" href={renderHash}>See the render</a>');
+  expect(staticText).toContain("See the render");
+  expect(markup).toContain("renderHash");
+  const heroStyles = screen.slice(screen.indexOf("<style>"));
+  expect(heroStyles).toMatch(/\.hero\s*\{[^}]*background: var\(--raised\)/);
+  expect(heroStyles).toMatch(/\.hero\s*\{[^}]*border: 1px solid var\(--line-soft\)/);
+  expect(heroStyles).toMatch(/\.hero\s*\{[^}]*border-left: 3px solid var\(--accent\)/);
+  expect(heroStyles).toMatch(/\.hero\s*\{[^}]*border-radius: var\(--radius-control\)/);
+  expect(heroStyles).toMatch(/\.primary-link\s*\{[^}]*color: var\(--on-accent\)/);
+  expect(heroStyles).toMatch(/\.primary-link\s*\{[^}]*background: var\(--accent\)/);
+  // The pulse is motion the reader asked for, never one forced on them.
+  expect(heroStyles).toMatch(
+    /@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?animation: stage-pulse/,
+  );
 
   const shell = readFileSync(path.join(here, "../../../app/app.svelte"), "utf8");
   expect(shell).toContain("verdictHash");

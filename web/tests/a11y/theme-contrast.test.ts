@@ -134,7 +134,7 @@ function parseRules(css: string): CssRule[] {
   return rules;
 }
 
-const colourDeclaration = /^(color|background|background-color|border|border-color|border-[a-z-]+-color|accent-color|outline|outline-color|box-shadow|text-decoration-color|fill|stroke)$/;
+const colourDeclaration = /^(color|background|background-color|border|border-color|border-[a-z-]+|border-[a-z-]+-color|accent-color|outline|outline-color|box-shadow|text-decoration-color|fill|stroke)$/;
 
 interface Drawn {
   prop: string;
@@ -269,7 +269,10 @@ test("every colour drawn as a boundary sits in a measured pair", () => {
   const excused = new Set<string>(softEdges);
   const unmeasured = new Set<string>();
   for (const { prop, value } of drawnColours()) {
-    if (!/^(border|border-color|border-[a-z-]+-color)$/.test(prop)) continue;
+    // A side-specific shorthand draws a boundary the same as the full one:
+    // the hero cards' accent left edge, the swipe divider's line edges, the
+    // stepper's soft connector all name one side.
+    if (!/^border(-[a-z-]+)?(-color)?$/.test(prop)) continue;
     for (const match of value.matchAll(/var\(--([a-z0-9-]+)\)/g)) {
       const role = match[1];
       if (!(colourRoles as readonly string[]).includes(role)) continue;

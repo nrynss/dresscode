@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Dialog } from "bits-ui";
+  import { Dialog, Popover } from "bits-ui";
   import ErrorNotice from "../../../app/error-notice.svelte";
   import type { ShownError } from "../../../lib/api/types";
-  import { shopEmptySentence, shopOpeningSentence, shopSentence, type ShopProduct } from "./copy";
+  import { fidelityExplanations, shopEmptySentence, shopOpeningSentence, shopSentence, type ShopProduct } from "./copy";
   import { loadShop, shownFailure } from "./load";
 
   let { lookId }: { lookId: string } = $props();
@@ -54,7 +54,16 @@
                 <img class="picture" src={product.url} alt={product.name} />
               {/if}
               <h3 class="name">{product.name}</h3>
-              <p class="label">{product.label}</p>
+              <Popover.Root>
+                <Popover.Trigger class="fidelity-trigger">
+                  <span class="label">{product.label}</span>
+                </Popover.Trigger>
+                <Popover.Portal>
+                  <Popover.Content class="fidelity-pop" sideOffset={6} aria-label="What the label means">
+                    <p class="label-copy">{fidelityExplanations[product.label]}</p>
+                  </Popover.Content>
+                </Popover.Portal>
+              </Popover.Root>
             </li>
           {/each}
         </ul>
@@ -141,12 +150,46 @@
   }
 
   .label {
-    margin: 0;
+    display: inline-block;
     color: var(--text);
     background: var(--accent-soft);
     border: 1px solid var(--line-soft);
     border-radius: var(--radius-control);
     padding: 0.15rem 0.6rem;
+    overflow-wrap: break-word;
+    cursor: pointer;
+  }
+
+  /* The label is the popover's trigger, so the button under it steps back and
+   * the chip carries the look. */
+  :global(.fidelity-trigger) {
+    display: block;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  /* The explanation opens beside the label it names, above the sheet. */
+  :global(.fidelity-pop) {
+    z-index: 30;
+    max-width: min(20rem, calc(100vw - 2rem));
+    padding: 0.75rem 0.9rem;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+    box-shadow: 0 0.2rem 0.6rem var(--line-soft);
+  }
+
+  .label-copy {
+    margin: 0;
+    color: var(--text);
     overflow-wrap: break-word;
   }
 

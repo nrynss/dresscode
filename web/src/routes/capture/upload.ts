@@ -41,6 +41,37 @@ export interface UserProduct {
   url?: string;
 }
 
+/** The occasion a fresh look starts on. The picker names five occasions; the
+ * screens follow the one recorded story look, so the look this screen starts
+ * is the story's occasion until the picker hands its choice over. */
+export const storyOccasion = "family-function";
+
+export interface LookStart {
+  lookId: string;
+  jobId: string;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
+  return value as Record<string, unknown>;
+}
+
+/** Start a look: the occasion, the registered selfie, and the products the
+ * user is considering. The answer names the look and the job that follows it.
+ * A body without both is not a started look. */
+export async function startLook(occasion: string, selfieId: string, productIds: readonly string[]): Promise<LookStart> {
+  const body = asRecord(
+    await api<unknown>("/api/looks", {
+      method: "POST",
+      body: JSON.stringify({ occasion, selfie_id: selfieId, product_ids: [...productIds] }),
+    }),
+  );
+  const lookId = typeof body?.look_id === "string" ? body.look_id : "";
+  const jobId = typeof body?.job_id === "string" ? body.job_id : "";
+  if (lookId === "" || jobId === "") throw new Error("The look could not be started.");
+  return { lookId, jobId };
+}
+
 /** Chaaya's open body has no group field. Omitted means selfie, including a product photo. */
 export async function sendImage(bytes: Uint8Array, options: SendOptions): Promise<UploadReceipt> {
   const uploader = new ChunkUploader({

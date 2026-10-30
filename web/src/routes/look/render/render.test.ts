@@ -6,6 +6,7 @@ import { humanMessage } from "../../../lib/api/errors";
 import { installMock, lastFixtureFile, pinAnswer, preferFixture } from "../../../lib/api/mock";
 import { clampedPosition, midPosition, originalPosition, renderPosition } from "./compare";
 import {
+  fidelityExplanations,
   fidelityLabels,
   isFidelityLabel,
   isLookVerdict,
@@ -82,6 +83,19 @@ test("the screen's sentences and words carry no digit", () => {
   expect(lookVerdicts).toEqual(["kept", "dismissed", "bought"]);
   expect(isLookVerdict("kept")).toBe(true);
   expect(isLookVerdict("seen")).toBe(false);
+  // The bought sentence speaks to the reader, not to the record.
+  expect(savedSentences.bought).toBe("You bought this look.");
+  // One plain sentence per fidelity word, in the sheet's own explanation.
+  expect(fidelityExplanations["exact product"]).toBe(
+    "This is the exact piece you brought or the occasion named, tried on directly.",
+  );
+  expect(fidelityExplanations["approximate match"]).toBe(
+    "This piece is a close catalog match for the fix shown in the render.",
+  );
+  expect(fidelityExplanations["visual simulation"]).toBe(
+    "The render shows the effect on your photo, paired with a shopping suggestion.",
+  );
+  expect(Object.values(fidelityExplanations).join(" ")).not.toMatch(/\d/);
   const recorded = [disk("shop.json"), disk("shop-none.json"), disk("shop-simulation.json")];
   for (const file of recorded) {
     for (const product of (file.body as { products: { name: string; fidelity: string }[] }).products) {
@@ -120,9 +134,28 @@ test("the swipe lands on the original in one tap and never shows a figure", () =
   // A tap on the original covers the frame completely: nothing of the render peeks out.
   expect(swipe).toContain('style:clip-path="inset(0 {clip}% 0 0)"');
   expect(swipe).toContain("const clip = $derived(originalPosition - clampedPosition(position));");
+  // The split is visible: a line at the clip, a handle riding it, and the
+  // two corners naming their side.
+  expect(swipe).toContain('style:left="{clampedPosition(position)}%"');
+  expect(swipe).toContain('<span aria-hidden="true">◂ ▸</span>');
+  expect(swipe).toContain(">Original</span>");
+  expect(swipe).toContain(">After the fix</span>");
+  const styles = swipe.slice(swipe.indexOf("<style>"));
+  expect(styles).toMatch(/\.frame\s*\{[^}]*border-radius: 999px 999px var\(--radius-panel\) var\(--radius-panel\)/);
+  expect(styles).toMatch(/\.frame\s*\{[^}]*border: 2px solid var\(--line\)/);
+  expect(styles).toMatch(/\.frame\s*\{[^}]*max-width: min\(100%, calc\(72dvh \* 3 \/ 4\)\)/);
+  expect(styles).toMatch(/\.divider\s*\{[^}]*width: 2px/);
+  expect(styles).toMatch(/\.handle\s*\{[^}]*width: 2\.5rem/);
+  expect(styles).toMatch(/\.handle\s*\{[^}]*border-radius: 999px/);
+  expect(styles).toMatch(/\.badge\s*\{[^}]*background: var\(--surface\)/);
+  expect(styles).toMatch(/\.badge\s*\{[^}]*border: 1px solid var\(--line\)/);
+  // A tap glides; a drag, and any forced-reduction reader, does not wait.
+  expect(styles).toMatch(/@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?transition: clip-path/);
   const text = staticText(swipe);
   expect(text).not.toMatch(/\d/);
   expect(text).toContain("Show the original");
+  expect(text).toContain("Original");
+  expect(text).toContain("After the fix");
 });
 
 test("the sheet lists every product with its label", async () => {
@@ -174,6 +207,12 @@ test("the sheet lists every product with its label", async () => {
   expect(sheet).toContain("{#if product.url}");
   expect(sheet).toContain("{shopSentence}");
   expect(sheet).toContain("Shop the look");
+  // The label opens its own plain explanation, one sentence per fidelity word.
+  expect(sheet).toContain("<Popover.Root>");
+  expect(sheet).toContain('<Popover.Trigger class="fidelity-trigger">');
+  expect(sheet).toContain('<span class="label">{product.label}</span>');
+  expect(sheet).toContain("{fidelityExplanations[product.label]}");
+  expect(sheet).toContain('aria-label="What the label means"');
   const text = staticText(sheet);
   expect(text).not.toMatch(/\d/);
   expect(text).toContain("Shop the look");
@@ -263,6 +302,15 @@ test("the screen shows the render, the actions and the sheet, and no digit", asy
   expect(screen).toContain("{savedSentences[saved]}");
   expect(screen).toContain("{#each lookVerdicts as choice (choice)}");
   expect(screen).toContain("{pendingSentence}");
+  // The fix is the hero; the verdict actions sit in equal segments, the
+  // stored one (Keep, until a choice is stored) carrying the primary fill.
+  expect(screen).toContain('<div class="hero">');
+  expect(screen).toContain("{look.fix}</p>");
+  expect(screen).toContain('class:primary={(saved ?? "kept") === choice}');
+  const styles = screen.slice(screen.indexOf("<style>"));
+  expect(styles).toMatch(/\.hero\s*\{[^}]*background: var\(--raised\)/);
+  expect(styles).toMatch(/\.hero\s*\{[^}]*border-left: 3px solid var\(--accent\)/);
+  expect(styles).toMatch(/\.verdict\s*\{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   const text = staticText(screen);
   expect(text).not.toMatch(/\d/);
   expect(text).toContain("The render");

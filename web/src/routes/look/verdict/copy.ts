@@ -7,6 +7,14 @@ const stageWords: Record<string, string> = {
   check: "Checking the render",
 };
 
+/** The four stages a look walks, in the order the screen shows them. */
+export const stageOrder: readonly string[] = [
+  "Checking",
+  "Choosing a fix",
+  "Rendering",
+  "Checking the render",
+];
+
 export const pausedSentence = "This look waits while Dresscode is in the background.";
 
 export const openingSentence = "Opening this look.";

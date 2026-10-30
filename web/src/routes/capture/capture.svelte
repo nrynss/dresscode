@@ -3,6 +3,7 @@
   import type { ChunkUploader } from "@nrynss/chaaya/keel";
   import ErrorNotice from "../../app/error-notice.svelte";
   import type { ShownError } from "../../lib/api/types";
+  import { verdictHash } from "../look/verdict/route";
   import {
     finishUpload,
     registerLink,
@@ -10,7 +11,9 @@
     registerSelfie,
     resumeUpload,
     shownError,
+    startLook,
     stillOptions,
+    storyOccasion,
     uploadCaptured,
     type NormalisedPhoto,
     type UserProduct,
@@ -21,6 +24,7 @@
   let video = $state<HTMLVideoElement | null>(null);
   let lens = $state<"selfie" | "product" | "">("");
   let busy = $state(false);
+  let starting = $state(false);
   let problem = $state<ShownError | undefined>(undefined);
   let status = $state("");
   let selfie = $state<NormalisedPhoto | undefined>(undefined);
@@ -211,6 +215,29 @@
       busy = false;
     }
   }
+
+  /** The one main action: the look starts, and the verdict screen follows it. */
+  async function checkDressCode(): Promise<void> {
+    const photo = selfie;
+    if (!photo || starting) return;
+    starting = true;
+    problem = undefined;
+    status = "Opening the look.";
+    try {
+      await startLook(
+        storyOccasion,
+        photo.media_id,
+        savedProducts.map((product) => product.id),
+      );
+      status = "";
+      if (typeof window !== "undefined") window.location.hash = verdictHash;
+    } catch (error) {
+      status = "";
+      problem = shownError(error);
+    } finally {
+      starting = false;
+    }
+  }
 </script>
 
 <a class="back" href="#/">Back</a>
@@ -244,15 +271,20 @@
       Open the front camera
     </button>
   </div>
-  <video
-    bind:this={video}
-    class:live={session.phase === "live"}
-    class:mirror={session.facing === "user"}
-    playsinline
-    muted
-    autoplay
-    aria-label="Camera preview"
-  ></video>
+  <div class="mirror-frame">
+    <video
+      bind:this={video}
+      class:live={session.phase === "live"}
+      class:mirror={session.facing === "user"}
+      playsinline
+      muted
+      autoplay
+      aria-label="Camera preview"
+    ></video>
+    {#if session.phase !== "live" && session.phase !== "requesting"}
+      <p class="mirror-prompt">The mirror opens here.</p>
+    {/if}
+  </div>
   {#if session.phase === "requesting"}
     <p class="hint">Opening the camera.</p>
   {/if}
@@ -260,9 +292,7 @@
     <button type="button" class="primary" disabled={busy} onclick={() => void take()}>Take the photo</button>
   {/if}
   {#if session.phase === "denied" || session.phase === "unavailable" || session.phase === "failed"}
-    <p class="hint">
-      {session.reason === "" ? "The camera did not open. Use the phone camera below." : session.reason}
-    </p>
+    <p class="hint">The camera did not open. Use the phone camera below.</p>
   {/if}
   <label class="file">
     Choose a photo
@@ -281,46 +311,52 @@
   </label>
   {#if selfie}
     <p class="hint">The selfie is ready.</p>
+    <button type="button" class="primary" disabled={busy || starting} onclick={() => void checkDressCode()}>
+      Check the dress code
+    </button>
   {/if}
 </section>
 
-<section>
-  <h2>A product</h2>
-  <label class="field">
-    Name
-    <input bind:value={productName} autocomplete="off" />
-  </label>
-  <label class="field">
-    What it is
-    <input bind:value={productKind} autocomplete="off" />
-  </label>
-  <div class="row">
-    <button type="button" disabled={busy} onclick={() => void openLens("product")}>Open the camera</button>
-  </div>
-  <label class="file">
-    Choose a product photo
-    <input type="file" accept="image/*" disabled={busy} onchange={(event) => void onGallery(event, "product")} />
-  </label>
-  <form
-    onsubmit={(event) => {
-      event.preventDefault();
-      void addLink();
-    }}
-  >
+<details class="product-drawer">
+  <summary>Considering a specific piece?</summary>
+  <section>
+    <h2>A product</h2>
     <label class="field">
-      Link
-      <input bind:value={link} autocomplete="off" />
+      Name
+      <input bind:value={productName} autocomplete="off" />
     </label>
-    <button type="submit" disabled={busy}>Add the link</button>
-  </form>
-  {#if savedProducts.length > 0}
-    <ul>
-      {#each savedProducts as product, index (index)}
-        <li>{product.name}</li>
-      {/each}
-    </ul>
-  {/if}
-</section>
+    <label class="field">
+      What it is
+      <input bind:value={productKind} autocomplete="off" />
+    </label>
+    <div class="row">
+      <button type="button" disabled={busy} onclick={() => void openLens("product")}>Open the camera</button>
+    </div>
+    <label class="file">
+      Choose a product photo
+      <input type="file" accept="image/*" disabled={busy} onchange={(event) => void onGallery(event, "product")} />
+    </label>
+    <form
+      onsubmit={(event) => {
+        event.preventDefault();
+        void addLink();
+      }}
+    >
+      <label class="field">
+        Link
+        <input bind:value={link} autocomplete="off" />
+      </label>
+      <button type="submit" disabled={busy}>Add the link</button>
+    </form>
+    {#if savedProducts.length > 0}
+      <ul>
+        {#each savedProducts as product, index (index)}
+          <li>{product.name}</li>
+        {/each}
+      </ul>
+    {/if}
+  </section>
+</details>
 
 <style>
   .back {
@@ -353,8 +389,7 @@
     flex: 1 1 100%;
   }
 
-  .field,
-  .file {
+  .field {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
@@ -370,20 +405,100 @@
     border-radius: var(--radius-control);
   }
 
-  video {
+  /* The arched vanity mirror. A portrait box the spacer carries the height of;
+   * the arch rounds the two top corners fully. */
+  .mirror-frame {
+    position: relative;
     width: 100%;
-    height: 0;
+    max-width: min(100%, calc(68dvh * 3 / 4));
+    margin-inline: auto;
+    border: 2px solid var(--line);
+    border-radius: 999px 999px var(--radius-panel) var(--radius-panel);
     background: var(--sunken);
-    border-radius: var(--radius-control);
+    overflow: hidden;
   }
 
-  video.live {
-    height: auto;
-    max-height: 70dvh;
+  .mirror-frame::before {
+    content: "";
+    display: block;
+    padding-top: 133%;
   }
 
-  video.mirror {
+  .mirror-frame video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .mirror-frame video.mirror {
     transform: scaleX(-1);
+  }
+
+  .mirror-prompt {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    padding: 1.5rem;
+    color: var(--dim);
+    text-align: center;
+    overflow-wrap: break-word;
+  }
+
+  /* The file pickers wear the button, and the native input hides inside. */
+  .file {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.9rem;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+    cursor: pointer;
+    overflow-wrap: break-word;
+  }
+
+  .file:has(input:focus-visible) {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+  }
+
+  .file input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  .product-drawer {
+    margin-top: 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+    background: var(--surface);
+    min-inline-size: 0;
+  }
+
+  .product-drawer summary {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.9rem;
+    cursor: pointer;
+    color: var(--text);
+    overflow-wrap: break-word;
+  }
+
+  .product-drawer section {
+    margin-top: 0;
+    padding: 0 0.9rem 0.9rem;
   }
 
   progress {
@@ -408,5 +523,13 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .file {
+      transition:
+        background-color 0.15s ease,
+        border-color 0.15s ease;
+    }
   }
 </style>
