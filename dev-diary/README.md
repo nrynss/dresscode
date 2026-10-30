@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T2.5 and T2.4b landed — Resend delivery proven to the account address by the quick path; `nryn.dev` verification still open. T0.4 is done, so the probes (T0.5, T0.6) are the critical path; T0.6 is claimed, T0.5 waits on T0.4a. T5.6 is closing its one review finding; T5.8 is the last app task after it.
+**Current status:** T5.6 landed (`87989ec`) — P5 is one task from done (T5.8, in flight). The critical path runs through the probes: T0.6 and T0.4a in flight, T0.5 (YouCam) waits on T0.4a. Resend delivery proven by the quick path; `nryn.dev` verification still open.
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P2 | 5 / 9 | T2.3, T2.3b, T2.4, T2.4b and T2.5 done. T2.1 and T2.2 (and their live siblings) wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
-| P5 | 6 / 8 | T5.6 is ready now that T5.5 landed; T5.8 waits on it. Phone camera and phone install still need you. |
+| P5 | 7 / 8 | Only T5.8 (accessibility gates) is left, and it is in flight. Phone camera and phone install still need you. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
 ### Units and spend
@@ -158,6 +158,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.6 History and the second visit.** The history screen holds the switch (off by default), the API's sentence of what is kept and where, and, with history on, the second visit: the recorded recall sentence verbatim and past looks grouped by occasion. Off, absence is pinned at three levels — no screen's markup anywhere in the app carries a word of memory, the reader refuses any memory member beside a closed switch, and the second-visit read fetches nothing at all. One fixture added: `recall-empty.json`, the contract's empty-memory example at the date occasion. The review found one minor hole (a stray `occasion` beside the closed switch was tolerated); `08eb3b4` refuses it, with a pin proven against the old reader. Second review clean. Landed as `fd8b525` + `87989ec`, gate green in the worktree and the main checkout. No physical phone (the standing unmet-note class). Surprises worth keeping: a Svelte 5 state variable named `state` breaks svelte-check while vitest passes (feedback.md, Svelte); and a seam for a later task — the account screen's history deletion turns the stored switch off server-side, and this screen's session-held value learns of it only on a reload.
 
 - **T2.4b Resend live — landed, done-when met on the user's confirmation.** The live test (`internal/mail/live_test.go` behind the `live` tag; reads `RESEND_API_KEY`/`RESEND_FROM`/`RESEND_TO`, skips without them; one send, no retry; the key cannot reach output on any path — verified path by path in review). The first send from the configured from-address was refused (Resend `403`, no error name; see feedback.md). With the user's approval, the account-owner quick path sent one code from `onboarding@resend.dev` at 2026-10-30T14:33:40Z, accepted in 415 ms; the user confirmed arrival within about a minute — in Gmail's spam (its own deliverability finding, feedback.md). The configured from-domain `nryn.dev` remains unverified: production-sender proof and a spam-free demo wait on the console fix. A review of the test came back clean; landed as `d1e7681` over the T2.5 landing, diary conflict resolved keeping both tasks' notes, gate green in the worktree and the main checkout.
 
