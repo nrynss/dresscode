@@ -52,17 +52,23 @@ requires:   []
 fixture-ok: no
 size:       S · user
 owns:       docs/keys.md, .env.example
-status:     not-started
+status:     done
 ```
 The user confirms each account; an agent writes `docs/keys.md` (where each key lives, by name only) and `.env.example`.
 
-- **YouCam:** key in the keyring (`service youcam … kind api-key`), already proved on the India server. Record the unit balance from the console, and when the event units expire (90 days from redemption).
+- **YouCam:** key in the keyring (`service youcam … kind api-key`), already proved on the India server. The console balance is 1040 credits. They do not expire.
 - **Workers AI:** token in the keyring (`service cloudflare … kind workers-ai`), already proved. Record the account id's variable name.
 - **Resend:** an API key and a verified sending domain or address for sign-in codes. Reprise's settings name `RESEND_API_KEY` and `RESEND_FROM`; decide whether Dresscode gets its own key.
 - **OpenRouter (Jev):** the key is available. Fix selection is Clef. A comparison of Clef and Jev on the same pick requests is still required.
-- **Lambo:** a Lambo v0.8.0 server for Dresscode, separate from the dogfood writer, with Workers AI bge-m3 as its embedder and multi-session serving on.
+- **Lambo:** its own v0.8.0 process on this machine, port 7720, sqlite at `~/lambo-dresscode/dresscode.db`, Workers AI `bge-m3`, multi-session. Not the dogfood server.
 
 **Done when:** `docs/keys.md` lists every key by name and location, no value anywhere; the handoff log records the YouCam balance and the Clef-or-Jev decision.
+
+Notes:
+
+- The values were already in `.env`. This task wrote the names into `docs/keys.md` and `.env.example`.
+- YouCam's console shows 1040 credits, and they do not expire. The earlier "90 days from redemption" does not apply.
+- Dresscode's Lambo is `lambo-dresscode.service`, port 7720, database `~/lambo-dresscode/dresscode.db`. A request without the bearer token is refused. The first start needed `lambo provision` on that new file.
 
 ---
 
@@ -72,7 +78,7 @@ requires:   []
 fixture-ok: yes
 size:       M · frontier
 owns:       testdata/occasions/, docs/occasions.md
-status:     not-started
+status:     claimed:grok-4.7
 ```
 The content the whole product runs on. The agent drafts; **the user signs off.**
 
@@ -151,7 +157,7 @@ requires:   T0.2
 fixture-ok: no
 size:       S · light
 owns:       testdata/lambo/, docs/lambo.md
-status:     not-started
+status:     claimed:grok-4.7
 ```
 Against the Dresscode Lambo server (T0.2), in scratch sessions:
 

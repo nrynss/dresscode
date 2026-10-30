@@ -137,7 +137,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Phase | Tasks complete | Status |
 |---|---|---|
-| P0 | 1 / 7 | T0.1 done. T0.2 and T0.3 are next. |
+| P0 | 2 / 7 | T0.1 and T0.2 done. T0.3 and T0.7 are next. |
 | P1 | 0 / 5 | Waits for T0.3. |
 | P2 | 0 / 4 | Waits for P1. |
 | P3 | 0 / 9 | Waits for P2. |
@@ -149,7 +149,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 | Service | Budget | Spent |
 |---|---|---|
-| YouCam | 1,000 event units; 400 held back for judging | 0 |
+| YouCam | 1040 credits, they do not expire; 400 held back for judging | 0 |
 | Workers AI | Free plan until T6.6; then Workers Paid | 1 embedding (the access check) |
 
 ---
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T0.2 Keys, accounts and settings.** `docs/keys.md` names every key and where it lives. YouCam console balance is 1040 credits and they do not expire. Fix selection is Clef. Dresscode's Lambo is its own process on `127.0.0.1:7720` with its own sqlite file, embedder Workers AI `bge-m3`. The dogfood server is untouched.
 - **Review and remediation from P1.** On P0 the orchestrator checks a result and lands it. From P1 a review agent reads the branch and runs the gate, then a remediation agent fixes what the review found. Those two repeat until a review comes back clean, and only then does the work land.
 - **T0.1 Repository on git footing.** Module `github.com/nrynss/dresscode`, Go 1.27.1, Keel v0.9.0, no toolchain line. `version` prints `dresscode 0.0.0`; `serve` exits without listening, dialing, or reading a key. The app is a Vite and Svelte 5 static page on `@nrynss/chaaya@0.5.0` and `bits-ui@^2`, with eslint, svelte-check, and Vitest. `./tools/check.sh` is the gate, and CI runs it on push to `main` and on pull requests. `.env.example` is a comment until T0.2 names the variables. Surprised: the Chaaya root export is only `packageName`; `@sveltejs/kit` is an optional peer and was not added; pnpm's minimum release age rejects the exact `@nrynss/chaaya@0.5.0` pin, so `web/pnpm-workspace.yaml` excludes that version; `go mod tidy` added no indirect modules because `keel/id` uses only the standard library.
 - **Fix selection is Clef.** Jev on OpenRouter stays available so the two can be compared on the same pick requests. That comparison is still required. Clef remains the picker until it is done.
