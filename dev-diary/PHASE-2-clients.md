@@ -58,7 +58,7 @@ requires:   T1.3, T0.5
 fixture-ok: yes
 size:       L · mid
 owns:       internal/youcam/client.go, internal/youcam/tasks.go, internal/youcam/youcam.go (the analysis field only)
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 v2 REST on `https://yce-api-01.makeupar.com`, the key as a Bearer token. Upload through the File API; create and poll through Keel `providertask` under an idempotency key, so a restart resumes the recorded task and never creates (and pays for) it twice; copy each result into `mediastore` at once (links expire). Units quoted, reserved and settled through `cost`.
 

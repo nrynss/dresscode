@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.11 landed (`5075c93`) — the arched mirror mark, the slim editorial shell, the four-tier button system, and the Account/History overhaul are in. T5.12 (front door with occasion cards and judge samples) dispatches next. T0.5 (YouCam probe) still in flight elsewhere; T2.2 queued behind it.
+**Current status:** T5.12 in review; T5.11 landed. T2.2 (YouCam client) claimed and in flight — the last client before P3 opens. T0.5 landed with findings that became the landed T0.3a (hair/beard templates). `nryn.dev`/send-domain mail proven; phone checks remain with the user.
 
 ---
 
