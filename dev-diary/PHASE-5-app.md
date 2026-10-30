@@ -132,11 +132,19 @@ requires:   T5.1
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/account/
-status:     claimed:grok-4.7
+status:     done
 ```
 Sign in by emailed code (looks kept); delete a photo, a look, history, or the account (fresh code, then progress until every part confirms). What YouCam and Cloudflare receive, said plainly.
 
 **Done when:** account deletion shows progress to the end on mock data; the privacy text matches product.md.
+
+Notes:
+
+- The screen is `web/src/routes/account/`. The shell's Account link is `href="#account"`, and that hash is the only shell change. It shows this route instead of the home slot.
+- Sign-in posts an empty `choice`. A new address upgrades the guest in place, so this device's looks stay. `guest_data_conflict` leaves the same code live. Switch posts `choice` `switch` and tells the user the guest's looks stay on the guest and are not copied. No other choice is sent.
+- Account deletion asks for a fresh code, then `POST /api/account/deletion`. Chaaya's Keel `JobStream` follows that job. The screen lists stage `delete` before `rows_done`, then `rows_done`, then `done`: "Deleting the account.", "Every target is confirmed and the identity rows are gone.", "Every part has confirmed." It does not show a count, a fraction, or the user id. A photo, look, or history deletion uses stage `erase` and the same rule: a sentence, not a count. The recorded stream for the shared deletion job id is the account story, so those three buttons also land on stage `delete` under mock data.
+- The privacy lines are product.md's own sentences, read from that file: what Clef on Cloudflare Workers AI receives, what YouCam receives, and what is never sent. The account lines ("Signing in keeps the guest's looks.", the deletion sentence, and the rest) are taken from the same file. No probability figure is shown. The product's sentence that probabilities are never shown is one of the lines.
+- The session fixture stays a guest after verify. The screen reports the session it read and still states the upgrade rule. No live mail was sent. No photo was used.
 
 ---
 

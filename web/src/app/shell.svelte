@@ -1,6 +1,7 @@
 <script lang="ts">
   import { theme } from "@nrynss/chaaya/theme";
   import type { Snippet } from "svelte";
+  import Account from "../routes/account/account.svelte";
   import Capture from "../routes/capture/capture.svelte";
   import { captureHash, isCaptureHash } from "../routes/capture/route";
   import ThemeControl from "./theme-control.svelte";
@@ -41,11 +42,14 @@
       <p class="tag">See the dress code before they do.</p>
       <a class="bring" href={captureHash}>Bring the look</a>
     </div>
+    <a class="account-link" href="#account">Account</a>
     <ThemeControl />
   </header>
   <main>
     {#if isCaptureHash(route)}
       <Capture />
+    {:else if route === "#account"}
+      <Account />
     {:else}
       {@render children()}
     {/if}
@@ -58,5 +62,12 @@
     align-items: center;
     min-height: 2.75rem;
     color: var(--accent);
+  }
+
+  .account-link {
+    color: var(--text);
+    min-height: 2.75rem;
+    display: inline-flex;
+    align-items: center;
   }
 </style>

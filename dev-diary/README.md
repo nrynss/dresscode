@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P2 | 2 / 4 | T2.3 and T2.4 done. T2.1 and T2.2 wait on the photo probes. |
 | P3 | 0 / 9 | Waits for P2. |
 | P4 | 2 / 7 | T4.1 and T4.2 done. T4.3 and T4.5 are still being written. |
-| P5 | 3 / 8 | T5.3 done except a phone camera. T5.4 is claimed. T5.7 is in review. |
+| P5 | 4 / 8 | T5.4 is being written. Phone camera and phone install still need you. |
 | P6 | 0 / 6 | Waits for P3–P5. |
 
 ### Units and spend
@@ -158,6 +158,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 
 Newest first. One entry per closed task, finding, or split.
 
+- **T5.7 Sign-in and deletion.** The account screen signs in by emailed code. An empty choice upgrades the guest. `switch` moves the device onto an existing account and does not copy the guest's looks. Account deletion follows the mock job to the end with no count on screen. The privacy lines are the product's sentences. A review of `c5739c4` came back clean. The shell keeps both the capture route and the account route.
 - **T5.3 Bring the look.** The capture route takes a selfie or a product. A gallery file uploads and a dropped chunk resumes, both against the mock. A review of `63da8fd` came back clean aside from a physical phone camera, which was not used. A product photo is registered with `POST /api/products`. Chaaya's uploader has no upload group.
 - **T5.2 Occasion and opt-in menu.** The screen lists the five occasions and saves ticks per occasion. A later read returns that occasion's set and not another's. Nothing asks or infers gender. A review of `a890c0b` came back clean and the gate passed.
 - **T4.2 Sign-in by emailed code.** `MountSignIn` serves the two code routes through Keel identity. A new address upgrades the guest in place. An existing account with guest looks returns `guest_data_conflict`, then `choice` `switch` moves the device and leaves both looks where they were. `merge` is `invalid_request`. Tests cover a fresh sign-in, that switch, a wrong code, an expired code, and the send limit. A review of `2abd459` came back clean. No live mail.
