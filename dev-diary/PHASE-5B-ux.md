@@ -25,7 +25,7 @@ requires:   T5.9
 fixture-ok: yes
 size:       M · mid
 owns:       product.md, docs/occasions.md, testdata/occasions/, testdata/api/, web/vite.config.ts, web/src/lib/api/, web/src/routes/account/privacy.ts, web/src/routes/account/account.test.ts, web/src/routes/occasion/menu.test.ts
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Clean up the engineering and pipeline jargon at the source (`product.md`, `testdata/occasions/`, `testdata/api/`, and `web/src/lib/api/errors.ts`), wire real sample JPEGs from `testdata/samples/` into mock mode's `/media/{id}` responses so dev mode and screenshots show real photographs instead of broken-image icons, and make recall switch to `recall.json` in mock mode once history is enabled in the session.
 
