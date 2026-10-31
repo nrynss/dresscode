@@ -335,7 +335,7 @@ requires:   T5.15
 fixture-ok: yes
 size:       S · mid
 owns:       web/src/routes/capture/, web/tests/a11y/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Remove all instructional paragraphs and redundant headings from `#/capture`, move `Open the front camera` and `Take the photo` directly inside the arched vanity mirror viewfinder, and place the two file-input fallbacks side by side in one compact row.
 
