@@ -1,9 +1,10 @@
 // Samples is this file: the five sample looks a judge opens for free.
 // GET /api/samples lists them; POST /api/samples/{id}/looks opens one.
 // An open spends nothing: the sample's selfie is registered into the
-// judge's own mediastore - a repeat open reuses the picture that judge
-// already holds rather than writing the same bytes again - the render its
-// story showed is already a mediastore blob, and the look is the story its
+// judge's own mediastore - a repeat open reuses the selfie that judge
+// already holds rather than writing the same bytes again, while the render
+// its story showed is minted fresh for every look, because a render is the
+// one picture a look deletion erases - and the look is the story its
 // stages recorded - the flags, the pick, the measure answer, the render the
 // check kept, the shop list - so the judge's stream, verdict, renders and
 // shop answer exactly as the recorded fixtures do, with no model ask, no
@@ -20,20 +21,25 @@
 // rows are derived from it here, at open, under the judge's own user id
 // - the id every landed look route scopes its reads by - so the
 // user-scoped reads and account deletion treat an opened sample like any
-// other look. One thing that is NOT true of a single look's deletion, and
-// it is said here rather than left to a comment nobody reads: an open
-// registers no renders row (only the paid path writes one), and the
-// privacy engine builds a look deletion's blob list from renders alone
-// (internal/privacy/jobs.go, inspectLook), so deleting one sample look
-// removes its looks row and zero bytes. Its pictures go with the selfie,
-// through photo deletion by selfie_id, or with the account, which sweeps
-// the owner's media. Writing the renders row here would make the old
-// sentence true and was tried on paper before being refused: the reuse
-// above hands one judge's two opens of one story the SAME render blob,
-// and look deletion erases by id with no check for a second live look
-// naming it, so erasing one would erase the other's picture. Reference
-// counting that erasure is internal/privacy's to write, not this file's.
-// Disclosed beside N8 in dev-diary/PHASE-4-server.md.
+// other look. One look's DELETION is measured here rather than assumed,
+// because the assumption was wrong once: the open itself registers no
+// renders row, but the landed read path materialises one for a sample
+// exactly as for a paid look (looks.go, materialise, reached from every
+// look read the app makes), so a sample look's deletion erases that look's
+// own render blob - the paid answer, and the right one. Nothing else goes
+// with it, because a render is no longer reused: keep mints a fresh render
+// id per look, which is what restores the landed invariant that exactly
+// one live look names one render blob. That invariant is what the erasure
+// rests on, since privacy builds a look deletion's blob list from renders
+// alone (internal/privacy/jobs.go, inspectLook and mediaForLooks) and
+// deleteBlobIDs erases each listed id after an owner check with no
+// reference count (internal/privacy/privacy.go). The selfie IS still
+// reused, on purpose, and that sharing is safe for one reason: a look
+// deletion's list comes from renders alone, so it never names a selfie,
+// and the two routes that do take a selfie - photo deletion, which removes
+// every row naming that selfie_id, and account deletion, which sweeps by
+// owner - remove the looks that name it with it. Disclosed beside N8 in
+// dev-diary/PHASE-4-server.md, under F3.
 //
 // The job is born finished. The contract freezes a sample's job read as
 // "already done" (docs/api.md), and the shipped app reads a look exactly
@@ -772,9 +778,10 @@ func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 	digest := sha256.Sum256(st.selfie.Bytes)
 	hash := hex.EncodeToString(digest[:])
 
-	// The render the story showed, already a blob in the group one
-	// user's renders of one photo join - the unit the render eviction
-	// and the deletions read.
+	// The render the story showed, into the group one user's renders of one
+	// photo join - the unit the render eviction and the deletions read. A
+	// fresh blob per look, never the one an earlier open left: see keep and
+	// shareableGroup.
 	renders := make([]string, len(st.Attempts))
 	for i := range st.Attempts {
 		if !st.Attempts[i].Shown {
@@ -911,23 +918,34 @@ func (sm *sampleRuntime) publish(jobID string, frames []job.Progress) {
 	})
 }
 
-// keep writes one recorded image into the judge's own mediastore, the
-// same store the intake and the runner write, private to its owner.
+// keep writes one recorded image into the judge's own mediastore, the same
+// store the intake and the runner write, private to its owner.
 //
-// A repeat open reuses the picture the owner already holds instead of
-// writing it again. A story's bytes are fixed data, so a second open of
-// the same sample asks for the same pictures, and a copy of a picture
-// this owner already has is a second blob, a second row and a second
-// write of the same bytes for one story: the five recorded stories are
-// 1,649,539 bytes of pictures between them, and without the reuse every
-// repeat open pays that again, with no gate token, no lease seat and no
-// budget reservation on this path to bound it. A picture the search does
-// not settle mints, which is what an open did before and is never wrong,
-// only less frugal.
+// A repeat open reuses the picture the owner already holds IN A GROUP THE
+// RULE BELOW CALLS SHAREABLE, and mints a fresh id everywhere else. The
+// reuse is there because a story's bytes are fixed data: a second open of
+// the same sample asks for the same pictures, and a copy of a picture this
+// owner already has is a second blob, a second row and a second write of
+// the same bytes for one story. What the reuse may NOT do is hand one blob
+// to two live looks, because the erasure side is not reference counted -
+// shareableGroup says which groups are safe to share and why, and the short
+// answer is that a look deletion erases exactly the media its renders name.
+//
+// So the frugality is the selfie and the rows, not the render. The five
+// sample selfies are 1,359,634 bytes between them and a repeat open writes
+// none of them again; the family story's shown render is 289,905 bytes and
+// a repeat open of that one story pays it again, every time. Nothing on
+// this path bounds either - no gate token, no lease seat, no budget
+// reservation - so the per-user cap the composition hand sets (T4.9) is
+// what actually bounds a repeat. A picture the search does not settle mints,
+// which is what an open did before the reuse and is never wrong, only less
+// frugal.
 func (sm *sampleRuntime) keep(ctx context.Context, owner, group string, img systemone.Image) (string, error) {
-	want := sha256.Sum256(img.Bytes)
-	if mediaID, ok := sm.held(ctx, owner, group, int64(len(img.Bytes)), want); ok {
-		return mediaID, nil
+	if shareableGroup(group) {
+		want := sha256.Sum256(img.Bytes)
+		if mediaID, ok := sm.held(ctx, owner, group, int64(len(img.Bytes)), want); ok {
+			return mediaID, nil
+		}
 	}
 	mediaID, err := id.New()
 	if err != nil {
@@ -942,6 +960,30 @@ func (sm *sampleRuntime) keep(ctx context.Context, owner, group string, img syst
 		return "", fmt.Errorf("samples: keep %s: %w", mediaID, err)
 	}
 	return mediaID, nil
+}
+
+// shareableGroup is the safe-group rule behind keep: a picture already held
+// may be handed to a second look ONLY where no deletion can erase it on
+// account of the other look.
+//
+// The selfie group is safe. A look deletion's blob list is exactly `SELECT
+// media_id FROM renders WHERE user_id = ? AND look_id = ?`
+// (internal/privacy/jobs.go, mediaForLooks), so deleting a look never names
+// a selfie; a selfie goes with photo deletion, which removes every row and
+// every look naming that selfie_id, or with account deletion, which sweeps
+// the owner's media and the owner's rows together. Either way the sharers go
+// with the bytes, so no live look is left naming a blob that is gone.
+//
+// A render group is not. Two live looks naming one render blob is a hazard,
+// not a saving: deleteBlobIDs (internal/privacy/privacy.go) erases each id a
+// look deletion lists after one owner check and no reference count, so
+// deleting either look would erase the picture the other one still shows.
+// The paid path cannot reach that shape - every paid render mints its own
+// id - and the sample open does not either. Every render keeps its own blob.
+// Reference counting the erasure instead is internal/privacy's to write, not
+// this file's, and chartered elsewhere (T4.9).
+func shareableGroup(group string) bool {
+	return group == groupSelfie
 }
 
 // keepSearch is how many same-sized pictures of one owner and group a keep

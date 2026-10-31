@@ -11,10 +11,12 @@ package server
 // be of the very picture that read was of, and that picture (V06) is none
 // of the five sample people. TestACachedStoryMeasuresFromItsOwnReading
 // covers the arm on a mount-only story in a temporary directory, so the
-// prose above and the code below agree. A repeat open reuses the pictures
-// the judge already holds (TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld)
-// rather than writing the same bytes again. The tests name where a replay
-// cannot carry the recorded example whole:
+// prose above and the code below agree. A repeat open reuses the selfie the
+// judge already holds and mints a fresh render per look
+// (TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld), and one look's
+// deletion therefore erases its own render and nobody else's
+// (TestASampleLookDeletionTakesOnlyItsOwnRender). The tests name where a
+// replay cannot carry the recorded example whole:
 //
 //   - The ids the fixtures name: the sample open mints its own, and the
 //     look id and the job id are one id, so both fixture ids rename to
@@ -244,10 +246,11 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 			// flagged nothing, paid or sample, and what no recorded ready
 			// fixture carries. Asserted so a later hand cannot swap it for
 			// an object without saying so here as well, and asserted on the
-			// KEY and not only on its type: `fixBody` is a pointer with
-			// `omitempty` (looks.go), so a body that dropped the member
-			// entirely would satisfy "not an object" and the drift this pin
-			// exists to catch would pass. Presence and JSON null, or fail.
+			// KEY and not only on its type: `Fix *fixBody` carries json:"fix"
+			// with no `omitempty` (looks.go), so the server does answer null;
+			// a later hand who adds `omitempty` would drop the member entirely
+			// and this pin refuses that rather than letting the drift pass as
+			// "not an object". Presence and JSON null, or fail.
 			if v, ok := body["fix"]; !ok {
 				t.Fatalf("%s: the ready body carries no fix key at all, want the key present and JSON null", pin.id)
 			} else if v != nil {
@@ -1158,47 +1161,63 @@ func TestARestartInterruptsAnUnfinishedPlaybackRow(t *testing.T) {
 	}
 }
 
-// TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld is the amplification pin.
-// A story's pictures are fixed data, so a second open of one sample asks
-// for bytes the judge already holds, and the open reuses that media id
-// instead of writing a second blob and a second row of the same picture:
-// without the reuse every repeat pays the whole of the set again, 1,649,539
-// bytes across the five, with no gate token and no budget reservation to
-// bound it. The reuse must not hand a look the wrong picture either, so
-// what each look reads is compared with the recorded bytes and not only
-// with an id. The look row still lands once per open, and the list route
-// that answers them has no LIMIT: that growth is the composition hand's,
-// named in the task's Notes.
+// TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld is the amplification
+// pin, and it is a pin on two halves now. A story's pictures are fixed data,
+// so a second open of one sample asks for bytes the judge already holds, and
+// the open reuses the SELFIE instead of writing it again: without that the
+// five sample selfies, 1,359,634 bytes between them, would be written again
+// on every repeat, with no gate token and no budget reservation to bound it.
+// The render is NOT reused: keep mints a fresh id per look, because a look
+// deletion erases exactly the media its renders name, so two live looks
+// naming one render blob would mean deleting one of them erasing the other's
+// picture. The cost of that rule is stated here rather than hidden: family's
+// shown render is 289,905 bytes, so a repeat of this one story grows the
+// judge's pictures by exactly one blob of exactly that size, and T4.9's
+// per-user cap is what bounds repeats. What each look reads is compared with
+// the recorded bytes and not only with an id, since neither half of the rule
+// may hand a look the wrong picture. The look row still lands once per open,
+// and the list route that answers them has no LIMIT: that growth is the
+// composition hand's, named in the task's Notes.
 func TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld(t *testing.T) {
 	t.Parallel()
 	env := newLookEnv(t, earringAnswers(), 8, nil)
 	mountSamples(t, env)
 	user, cookie := bootUser(t, env.handler)
 
+	root := repoRoot(t)
+	selfieRaw := readFile(t, filepath.Join(samplesDir(t), "woman", "V04-family-function.jpg"))
+	renderRaw := readFile(t, filepath.Join(root, "testdata", "youcam", "results", "earring-jhumka-V04.jpg"))
+
 	first, _ := startSample(t, env, cookie, "sample-family", "")
 	held, bytes := ownedMedia(t, env, user)
 	if held != 2 {
 		t.Fatalf("%d pictures held after one open, want the selfie and the shown render", held)
 	}
+	if want := int64(len(selfieRaw)) + int64(len(renderRaw)); bytes != want {
+		t.Fatalf("the first open wrote %d bytes, want the recorded selfie and render together (%d)", bytes, want)
+	}
 	second, _ := startSample(t, env, cookie, "sample-family", "")
-	if again, againBytes := ownedMedia(t, env, user); again != held || againBytes != bytes {
-		t.Fatalf("the second open grew the judge's pictures to %d rows and %d bytes from %d and %d: a repeat of fixed bytes holds them, it does not rewrite them",
-			again, againBytes, held, bytes)
+	again, againBytes := ownedMedia(t, env, user)
+	if again != held+1 {
+		t.Fatalf("the second open grew the judge's pictures to %d rows from %d, want one more: the render is a fresh blob and the selfie is the reused one",
+			again, held)
+	}
+	if grew := againBytes - bytes; grew != int64(len(renderRaw)) {
+		t.Fatalf("the second open wrote %d bytes, want one render of %d: the selfie is reused, not rewritten",
+			grew, len(renderRaw))
 	}
 
 	// Both looks still read their own pictures, and the bytes are the
-	// recorded ones. What this block pins is that a reuse hands back the
-	// picture the story is about, compared byte for byte: it does NOT
-	// reach the two guards inside the search, because the five sample
-	// selfies are five distinct sizes, so no repeat open ever holds a
-	// same-sized stranger, and this env boots one judge, so the shared
-	// selfie group holds one owner. Those two guards - the owner and the
-	// digest - are pinned by name by
+	// recorded ones. What this block pins is that the reuse hands back the
+	// picture the story is about, compared byte for byte, and that each look
+	// names its OWN render: it does NOT reach the two guards inside the
+	// search, because the five sample selfies are five distinct sizes, so no
+	// repeat open ever holds a same-sized stranger, and this env boots one
+	// judge, so the shared selfie group holds one owner. Those two guards -
+	// the owner and the digest - are pinned by name by
 	// TestASampleReuseHandsOutOnlyItsOwnJudgesPicture.
-	root := repoRoot(t)
-	selfieRaw := readFile(t, filepath.Join(samplesDir(t), "woman", "V04-family-function.jpg"))
-	renderRaw := readFile(t, filepath.Join(root, "testdata", "youcam", "results", "earring-jhumka-V04.jpg"))
-	pairs := map[string]bool{}
+	selfies := map[string]bool{}
+	renderIDs := map[string]bool{}
 	for _, lookID := range []string{first, second} {
 		body := bodyOf(t, env.get(t, cookie, "/api/looks/"+lookID))
 		selfieID, _ := body["selfie_id"].(string)
@@ -1213,22 +1232,61 @@ func TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld(t *testing.T) {
 		if got := mediaBytes(t, env, cookie, renderID); string(got) != string(renderRaw) {
 			t.Fatalf("%s: the render it reads is %d bytes, not the recorded result", lookID, len(got))
 		}
-		pairs[selfieID+"|"+renderID] = true
+		selfies[selfieID] = true
+		renderIDs[renderID] = true
 	}
-	if len(pairs) != 1 {
-		t.Fatalf("the two opens named %d picture pairs, want one: the second read the first's media ids", len(pairs))
+	if len(selfies) != 1 {
+		t.Fatalf("the two opens named %d selfies, want one pair of bytes held once: the reuse hands this judge their own picture back", len(selfies))
+	}
+	if len(renderIDs) != 2 {
+		t.Fatalf("the two opens named %d render ids, want two fresh ones: a render blob is named by exactly one live look, or one deletion erases the other's picture",
+			len(renderIDs))
+	}
+
+	// And the table a look deletion erases from agrees with the bodies: the
+	// reads above made materialise register each look's own render, and no
+	// media id there is named by two looks.
+	shared := renderIDsSharedByTwoLooks(t, env, user)
+	if shared != "" {
+		t.Fatalf("the renders table has %s named by two looks: the read path materialises a row for a sample exactly as for a paid look, so a shared render id is a deletion hazard", shared)
 	}
 
 	// Two opens of two different stories hold two selves, not one: the
 	// search is by content, so a second sample brings its own person and
 	// its own bytes.
 	startSample(t, env, cookie, "sample-date", "")
-	if grew, _ := ownedMedia(t, env, user); grew != held+1 {
-		t.Fatalf("%d pictures after a second sample, want the family pair plus the date selfie", grew)
+	if grew, _ := ownedMedia(t, env, user); grew != again+1 {
+		t.Fatalf("%d pictures after a second sample, want the family pair and its reused selfie plus the date selfie: date shows no render, so it brings one new picture", grew)
 	}
 	if spent := env.budget.Spent(); spent != 0 {
 		t.Fatalf("the meter settled %d units, want zero", spent)
 	}
+}
+
+// renderIDsSharedByTwoLooks is a media id the renders table of one user
+// names from two different looks, or "" when none is: the invariant the
+// render reuse used to break, and the shape a look deletion erases by.
+func renderIDsSharedByTwoLooks(t *testing.T, env *lookEnv, user string) string {
+	t.Helper()
+	rows, err := env.srv.db.Reader().QueryContext(t.Context(),
+		`SELECT media_id FROM renders WHERE user_id = ?
+		 GROUP BY media_id HAVING COUNT(DISTINCT look_id) > 1`, user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var mediaID string
+		if err := rows.Scan(&mediaID); err != nil {
+			t.Fatal(err)
+		}
+		out = append(out, mediaID)
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	return strings.Join(out, ",")
 }
 
 // TestASampleReuseHandsOutOnlyItsOwnJudgesPicture pins the two guards the
@@ -1257,17 +1315,21 @@ func TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld(t *testing.T) {
 // (b) The digest. The second judge's own selfie group gains a newest-first
 // decoy of the SAME byte count as the story's selfie and different content.
 // A count is not an identity, so the reuse must read the candidate and
-// refuse it: the repeat open hands back the judge's own picture, never the
-// decoy, and writes nothing. The mutation this refuses is the hash
+// refuse it: the repeat open hands back the judge's own selfie, never the
+// decoy, and rewrites no selfie byte. The mutation this refuses is the hash
 // comparison dropped from `held`: the decoy is the first row the shortlist
-// reads, so a search that trusts its own byte count returns it, and the
-// look would show a face that is not the story's.
+// reads, so a search that trusts its own byte count returns it, and the look
+// would show a face that is not the story's. That open does mint the story's
+// render - one fresh blob per look, which is the safe-group rule, and the
+// only write this case counts - so the pin below reads the selfie half by
+// id and by total minus exactly one render, not by "nothing written".
 func TestASampleReuseHandsOutOnlyItsOwnJudgesPicture(t *testing.T) {
 	t.Parallel()
 	env := newLookEnv(t, earringAnswers(), 8, nil)
 	mountSamples(t, env)
 	ctx := t.Context()
 	selfieRaw := readFile(t, filepath.Join(samplesDir(t), "woman", "V04-family-function.jpg"))
+	renderRaw := readFile(t, filepath.Join(repoRoot(t), "testdata", "youcam", "results", "earring-jhumka-V04.jpg"))
 
 	firstUser, firstCookie := bootUser(t, env.handler)
 	firstLook, _ := startSample(t, env, firstCookie, "sample-family", "")
@@ -1329,9 +1391,13 @@ func TestASampleReuseHandsOutOnlyItsOwnJudgesPicture(t *testing.T) {
 		t.Fatalf("the repeat open handed back %s, want this judge's own selfie %s: a same-sized decoy is the newest row in the group (%s), and a byte count is not an identity",
 			got, secondSelfie, decoyID)
 	}
-	if rows, bytes := ownedMedia(t, env, secondUser); rows != 3 || bytes != sowedBytes {
-		t.Fatalf("the repeat open left %d rows and %d bytes, want the judge's own picture, their render and the decoy (3 rows, %d bytes) and no write",
-			rows, bytes, sowedBytes)
+	// Four rows: this judge's own selfie, their first render, the render this
+	// open minted, and the decoy. The bytes are what they held plus exactly
+	// one render - the selfie is reused, so its 278,400 bytes are not written
+	// a second time, and the decoy is never read as a match.
+	if rows, bytes := ownedMedia(t, env, secondUser); rows != 4 || bytes != sowedBytes+int64(len(renderRaw)) {
+		t.Fatalf("the repeat open left %d rows and %d bytes, want the judge's own picture, their first render, the render it minted and the decoy (4 rows, %d bytes with a reused selfie)",
+			rows, bytes, sowedBytes+int64(len(renderRaw)))
 	}
 	if got := mediaBytes(t, env, secondCookie, lookSelfieID(t, env, secondCookie, thirdLook)); string(got) != string(selfieRaw) {
 		t.Fatalf("the repeated look reads %d bytes, not the recorded picture's %d", len(got), len(selfieRaw))
@@ -1350,6 +1416,145 @@ func lookSelfieID(t *testing.T, env *lookEnv, cookie *http.Cookie, lookID string
 		t.Fatalf("look %s names selfie id %q", lookID, selfieID)
 	}
 	return selfieID
+}
+
+// TestASampleLookDeletionTakesOnlyItsOwnRender is the erasure pin the file
+// header rests on, and it is the shape the render reuse used to break. An
+// open registers no renders row itself, but the app's single read of the look
+// does: looks.go's materialise writes one for a sample exactly as for a paid
+// look, and a look deletion's blob list is exactly the media that look's
+// renders name (internal/privacy/jobs.go, mediaForLooks), which deleteBlobIDs
+// then erases after an owner check and no reference count. So deleting a
+// sample look erases a render blob, and the whole question is whose. One
+// judge opens family twice and reads each look once; the deletion of the first
+// goes through the landed deletion mount; and what the store's index loses is
+// the deleted look's render ALONE. The sibling live look keeps its own render
+// blob, keeps the selfie the two share, still answers its look and still
+// serves both pictures. With the render reused between the two opens this is
+// where a judge loses the picture of a look they never deleted, and the test
+// fails on that assertion. Nothing spends: the meter stays zero through the
+// whole thing.
+func TestASampleLookDeletionTakesOnlyItsOwnRender(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	env.mountDeletion(t)
+	user, cookie := bootUser(t, env.handler)
+
+	first, _ := startSample(t, env, cookie, "sample-family", "")
+	second, _ := startSample(t, env, cookie, "sample-family", "")
+	// The app's one read per look, which is also what materialises the renders
+	// row a look deletion erases from.
+	for _, lookID := range []string{first, second} {
+		if code := env.get(t, cookie, "/api/looks/"+lookID).Code; code != http.StatusOK {
+			t.Fatalf("the sample look %s read %d", lookID, code)
+		}
+	}
+	render := map[string]string{}
+	for _, lookID := range []string{first, second} {
+		var mediaID string
+		if err := env.srv.db.Reader().QueryRowContext(t.Context(),
+			`SELECT media_id FROM renders WHERE user_id = ? AND look_id = ?`, user, lookID).Scan(&mediaID); err != nil {
+			t.Fatalf("the read of the sample look %s registered no renders row: %v", lookID, err)
+		}
+		render[lookID] = mediaID
+	}
+	if render[first] == render[second] {
+		t.Errorf("both live looks name the render %s: one deletion erases the other's picture", render[first])
+	}
+	selfieID := lookSelfieID(t, env, cookie, second)
+
+	// The seam the erase works on is the mediastore's blob index, which the
+	// production mount hands privacy as it is: every picture this judge holds,
+	// by owner.
+	ids, err := env.srv.db.Reader().QueryContext(t.Context(),
+		`SELECT id FROM media WHERE owner = ?`, user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	held := 0
+	for ids.Next() {
+		var mediaID string
+		if err := ids.Scan(&mediaID); err != nil {
+			t.Fatal(err)
+		}
+		env.blobs.add(mediaID, user)
+		held++
+	}
+	ids.Close()
+	if err := ids.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if held != 3 {
+		t.Errorf("this judge holds %d pictures after two family opens, want the reused selfie and the two renders", held)
+	}
+
+	rec := do(t, env.handler, http.MethodPost, "/api/looks/"+first+"/deletion", cookie, nil, nil)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("look deletion %d %s", rec.Code, rec.Body.String())
+	}
+	var started struct {
+		JobID string `json:"job_id"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &started); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, "the look deletion finished", func() bool {
+		return bodyOf(t, env.get(t, cookie, "/api/jobs/"+started.JobID))["status"] == "done"
+	})
+
+	index := blobIndex(t, env)
+	if _, gone := index[render[first]]; gone {
+		t.Errorf("the deletion of %s left its own render %s in the store", first, render[first])
+	}
+	for _, live := range []struct{ what, id string }{
+		{"the sibling look's render", render[second]},
+		{"the selfie the two looks share", selfieID},
+	} {
+		if _, gone := index[live.id]; !gone {
+			t.Errorf("the deletion of %s erased %s %s: a look deletes the bytes it alone names",
+				first, live.what, live.id)
+		}
+	}
+
+	// The judge who never asked for the sibling to go can still see it: the
+	// look answers, and every picture it names is served with the recorded
+	// bytes.
+	if code := env.get(t, cookie, "/api/looks/"+first).Code; code == http.StatusOK {
+		t.Fatalf("the deleted look %s still answers 200", first)
+	}
+	body := bodyOf(t, env.get(t, cookie, "/api/looks/"+second))
+	shown, _ := body["shown_render"].(map[string]any)
+	if shown == nil || shown["media_id"] != render[second] {
+		t.Fatalf("the sibling look lost its own render: %v", body)
+	}
+	root := repoRoot(t)
+	if got := mediaBytes(t, env, cookie, render[second]); string(got) !=
+		string(readFile(t, filepath.Join(root, "testdata", "youcam", "results", "earring-jhumka-V04.jpg"))) {
+		t.Fatalf("the live look reads %d bytes for its render, not the recorded result", len(got))
+	}
+	if got := mediaBytes(t, env, cookie, selfieID); string(got) !=
+		string(readFile(t, filepath.Join(samplesDir(t), "woman", "V04-family-function.jpg"))) {
+		t.Fatalf("the live look reads %d bytes for its selfie, not the recorded picture", len(got))
+	}
+	if spent := env.budget.Spent(); spent != 0 {
+		t.Fatalf("the meter settled %d units, want zero", spent)
+	}
+}
+
+// blobIndex is what the mediastore seam still holds, by id: the list privacy
+// erases from, read back after a deletion job finished.
+func blobIndex(t *testing.T, env *lookEnv) map[string]bool {
+	t.Helper()
+	blobs, err := env.blobs.Blobs(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	out := make(map[string]bool, len(blobs))
+	for _, blob := range blobs {
+		out[blob.ID] = true
+	}
+	return out
 }
 
 // TestASampleMountNamesTheRootsWhenAPictureIsMissing pins the fault a
