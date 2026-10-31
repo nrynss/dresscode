@@ -89,7 +89,7 @@ requires:   T3.6, T4.1
 fixture-ok: yes
 size:       M · mid
 owns:       internal/server/looks.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Start a look (occasion, photo, products), its event stream, the verdict, renders, shop the look, keep / dismiss / bought, history on/off. Each paid start goes through the judge's `lease` and the budgets; a refusal is a typed error the app can show.
 
