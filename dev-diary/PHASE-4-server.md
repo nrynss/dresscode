@@ -186,7 +186,7 @@ Review: CLEAN, no must-fix. Both **Done when** clauses proved at the real thing 
 
 ### T4.8: The server binary ★
 ```yaml
-requires:   T4.4, T4.5, T4.6, T4.7
+requires:   T4.4, T4.5, T4.6, T4.7, T4.9
 fixture-ok: yes
 size:       M · mid
 owns:       cmd/dresscode/, internal/config/, internal/server/server.go
@@ -207,6 +207,7 @@ What to build:
 Notes:
 
 - Chartered from the P4 reviews, not from a plan: `MountSamples` being called only by tests, the meters and `UnitsLeft` unwired, and the second-root layout requirement are all written down in T4.6's and T4.7's Notes. This is where that debt is paid.
+- It also now requires T4.9, ordered deliberately. This task is the one that makes erasure *reachable* — the deletion mount has no production caller until it lands — and T4.9 says what an erase must cover. Composing the mounts before that coverage exists builds a binary that answers a deletion request it cannot finish, which is the exact promise this product is sold on. The reference count in T4.9's item 3 is the store-level rule that makes sharing safe at all; a binary that exposes the deletion route without it is a hazard with a listener on it.
 
 ---
 
