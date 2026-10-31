@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.19 landed (`792d0a0`) — the sign-in copy is the user's dictated one line ("Sign in to keep your looks."), the no-Google line removed from product.md at the source, the readers moved atomically, the who-sees-what table untouched. T5.16 (capture declutter) in review; T5.17/T5.18 follow (T5.18 owns the product.md shade-match sync). T3.7 (Shop the look) in flight. **Product decisions pending for the user:** the words fixture tension (phrase table vs regenerate), nude-lip renders unrecorded — and the colour-tones conflict now has a landing path via T5.18's product.md sync.
+**Current status:** T3.7 landed (`bdda7cd`) — the shop stage is wired into the run. T3.8 (Remember and recall ★) dispatches next; T3.9 (evaluation) closes P3. T5.16 (capture declutter) in review. **Product decisions pending for the user:** the words fixture tension (phrase table vs regenerate), nude-lip renders unrecorded, colour-tones (lands via T5.18's product.md sync).
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P0 | 8 / 8 | Done. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 7 / 9 | T2.2 landed. Only the live siblings (T2.1b, T2.2b) remain — they need the user present for live runs. |
-| P3 | 6 / 9 | T3.6 (the fallback chain) landed — the look is one Keel job: judge → pick → measure → render → check → runner-up once → suggestion alone, resumable, with the `[judge]`/`[check]` settings landed (absent sections are load errors). T3.7 (Shop the look) dispatches next; T4.4 wires the config→pipeline mapping. |
+| P3 | 7 / 9 | T3.7 (Shop the look) landed — every product labelled exact/approximate/simulation, kept products first, the shop stage wired into the run (media join = T4.4's named deferral). T3.8 (Remember and recall ★) dispatches next; then T3.9 evaluation closes P3. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
 | P5B | 7 / 9 | T5.19 landed — the sign-in copy is the user's dictated one line, the no-Google line removed at the source. T5.16 (capture declutter) in review; T5.17 and T5.18 follow. |
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T3.7 Shop the look.** `internal/pipeline/shop.go`: `Shop(occ, fix, brought, catalog, recall)` labels every product for the chosen fix — exact product (the user's own bytes, or the catalog product the flow composites), approximate match (the painted colour), visual simulation (the suggestion itself, category from the basket) — with all three rules in the doc comment, data-driven from the catalog's fidelity field, the interior shooting notes never travelling. Kept products rank first through the fix's own products mapping; the empty case is a shorter list, never an invented product; refusals name the violation. Remediation landed the run wiring (granted): `stageShop`, `Deps.Catalog` + `ProductRecord` (validate refuses nil record and empty catalog by name), `Look.Products`, `finish` on all six clean returns, and the which-fix-shops rule stated and pinned — **shop for the shown fix when one is shown, else the picked fix** (the runner-up-discarded path shops the pick, per the recorded suggestion fixture naming gold-jhumkas). Media join = decision (b): the frame carries Shop's entries as-is, the server enriches at serve time — T4.4's named deferral. Two review rounds; the second CLEAN on the wiring delta. Landed as `f8253e0`+`bdda7cd`, gate green in the worktree and the main checkout, race clean. For T3.8: `Recall.Kept` drives shop's ranking; dismissal plays no shop role — a dismissed fix can never be picked, so it never reaches shop.
 
 - **T5.19 Account sign-in copy — one line (user-dictated).** product.md lost the no-Google bullet and gained `Sign in to keep your looks.`; privacy.ts's readers moved atomically; the sign-in section renders the single sentence sourced from product.md. The test pins turned out generic (they follow the readers) and needed no edit; the who-sees-what table never referenced the removed line; docs/api.md's `No Google sign-in | no such path` route-table row remains, still true (it documents an explicitly non-existent route). One review finding accepted by ruling: flow.ts's doc comment uses the present-tense "upgrades this guest in place" — the project's term of art for the verify semantic, accurate, engineering-facing; the Done-when's sweep clause is read as user-visible copy and the diary corrected to say so. Review found everything else CLEAN. Landed as `792d0a0`, gate green in the worktree and the main checkout.
 
