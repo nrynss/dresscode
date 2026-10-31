@@ -104,7 +104,7 @@ requires:   T2.2, T3.3
 fixture-ok: yes
 size:       M · mid
 owns:       internal/pipeline/render.go
-status:     in-review
+status:     done
 ```
 The YouCam try-on for the fix, with the product the user brought or one from the basket, through the YouCam client (idempotent, copied into mediastore). Quote before running; a refused budget ends the step with the suggestion intact.
 
@@ -133,7 +133,7 @@ requires:   T2.1, T3.4
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/pipeline/check.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 One Clef request with the original and the render: change made, same person, criterion met (`noul`), and one `choice` per look attribute. Join the winning attribute options into the look-in-words line ("gold jhumkas, red lip, open collar"), leaving out "none" and "can't tell". Failing change-made or same-person discards the render, whatever else it scored.
 
