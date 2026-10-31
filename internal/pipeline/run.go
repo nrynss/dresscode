@@ -1,11 +1,11 @@
 // Run is this file: one look as one Keel job. The stages the landed
-// files each own - judge, pick, measure, render, check - run here in the
-// order docs/api.md freezes: judge, pick, measure, render, check, and,
-// when the first check is not shown, render and check once more for the
-// runner-up. Each stage publishes its event on the job's stream in the
-// contract's shape, and nothing else rides an event: a probability, an
-// analysis value, and a discarded render's media id have no field to
-// travel in.
+// files each own - judge, pick, measure, render, check, shop - run here
+// in the order docs/api.md freezes: judge, pick, measure, render, check,
+// and, when the first check is not shown, render and check once more for
+// the runner-up, then shop, which always runs last. Each stage publishes
+// its event on the job's stream in the contract's shape, and nothing
+// else rides an event: a probability, an analysis value, and a discarded
+// render's media id have no field to travel in.
 //
 // A look that is interrupted resumes under the job kind below. The
 // resume machinery is Keel's: the kind is idempotent, the replacement
@@ -49,6 +49,7 @@ const (
 	stageMeasure = "measure"
 	stageRender  = "render"
 	stageCheck   = "check"
+	stageShop    = "shop"
 
 	attemptFix      = "fix"
 	attemptRunnerUp = "runner_up"
@@ -152,6 +153,20 @@ type Deps struct {
 	Occasions func(id string) (*domain.Occasion, bool)
 	// Pictures reads the kept pictures a look names.
 	Pictures Pictures
+	// Catalog is the occasions directory's catalog.json as domain.Load
+	// read it, the same load the occasion itself came from. Shop labels
+	// the list against it. An empty catalog is refused: a look would
+	// render first and then be held hostage at the last step, shopping
+	// against nothing.
+	Catalog []domain.Product
+	// ProductRecord reads a product the user brought back as its intake
+	// record - the domain.Product the server kept when the item was
+	// added, its name and category and origin. Only the shop stage's
+	// finish reads it, and only when the fix being shopped composites
+	// product photos and the user brought an item; nothing else invokes
+	// it. The record, not the request's shell, is what shops: a resumed
+	// attempt carries only the id.
+	ProductRecord func(ctx context.Context, user, id string) (*domain.Product, error)
 }
 
 func (d Deps) validate() error {
@@ -176,8 +191,14 @@ func (d Deps) validate() error {
 	if d.Pictures == nil {
 		return errors.New("run: no pictures")
 	}
+	if d.ProductRecord == nil {
+		return errors.New("run: no product record")
+	}
 	if d.CheckModel == "" {
 		return errors.New("run: no check model")
+	}
+	if len(d.Catalog) == 0 {
+		return errors.New("run: no catalog")
 	}
 	return nil
 }
@@ -249,9 +270,10 @@ func (r Request) validate() error {
 
 // Look is what one run finished with: the judge's flags and biggest
 // issue, the pick's two fixes, and the render that was shown, with its
-// check and the look in words. It is the job's result data, the value
-// the server persists as the look's outcome. A look with no shown render
-// stands on its suggestions, and SuggestionOnly says so.
+// check and the look in words, and the shop list the look ends on. It is
+// the job's result data, the value the server persists as the look's
+// outcome. A look with no shown render stands on its suggestions, and
+// SuggestionOnly says so.
 type Look struct {
 	Flags          []domain.Criterion `json:"flags"`
 	Issue          Issue              `json:"issue"`
@@ -260,6 +282,12 @@ type Look struct {
 	Shown          *domain.Render     `json:"shown,omitempty"`
 	Words          string             `json:"words,omitempty"`
 	SuggestionOnly bool               `json:"suggestion_only"`
+	// Products is the shop list, the same array the shop stage
+	// published. The entries are Shop's own - id, category, name,
+	// fidelity, origin, no media: the contract's media_id and url are
+	// the server's join, added when the frame and the shop path are
+	// served.
+	Products []domain.Product `json:"products,omitempty"`
 }
 
 // Start runs the look as a job and returns the job id at once. The
@@ -361,7 +389,10 @@ func runJob(ctx context.Context, deps Deps, req Request, progress func(job.Progr
 // Every stage publishes its event, and the events carry what the
 // contract's table says and nothing more. The look fails only when a
 // stage cannot honestly finish; a render the budget refuses is not such
-// a failure - the suggestion stands and the look completes.
+// a failure - the suggestion stands and the look completes. Every clean
+// path ends at the shop stage: finish runs Shop for the fix the look
+// ends on - the shown fix when one is shown, else the picked fix - and
+// publishes the products last, so `done` follows shop.
 func Run(ctx context.Context, deps Deps, req Request, progress func(job.Progress)) (Look, error) {
 	if err := deps.validate(); err != nil {
 		return Look{}, err
@@ -432,9 +463,9 @@ func Run(ctx context.Context, deps Deps, req Request, progress func(job.Progress
 	if choice.Fix == nil {
 		// Nothing was flagged, or nothing was a candidate: the look
 		// stands on its suggestions, and there is no fix to measure,
-		// render or check.
+		// render, check or shop.
 		look.SuggestionOnly = true
-		return look, nil
+		return finish(ctx, deps, req, occ, nil, look, progress)
 	}
 
 	// Measure. Only the chosen fix's analyses run, once per user, photo
@@ -466,16 +497,16 @@ func Run(ctx context.Context, deps Deps, req Request, progress func(job.Progress
 		shown.FixID = choice.Fix.ID
 		look.Shown = shown
 		look.Words = words
-		return look, nil
+		return finish(ctx, deps, req, occ, choice.Fix, look, progress)
 	}
 	if refused {
 		look.SuggestionOnly = true
-		return look, nil
+		return finish(ctx, deps, req, occ, choice.Fix, look, progress)
 	}
 
 	if choice.RunnerUp == nil {
 		look.SuggestionOnly = true
-		return look, nil
+		return finish(ctx, deps, req, occ, choice.Fix, look, progress)
 	}
 	shown, words, refused, rerr = attempt(ctx, deps, photo, occ, choice.RunnerUp, req, flagged, attemptRunnerUp, progress)
 	if rerr != nil {
@@ -485,9 +516,55 @@ func Run(ctx context.Context, deps Deps, req Request, progress func(job.Progress
 		shown.FixID = choice.RunnerUp.ID
 		look.Shown = shown
 		look.Words = words
-		return look, nil
+		return finish(ctx, deps, req, occ, choice.RunnerUp, look, progress)
 	}
 	look.SuggestionOnly = true
+	return finish(ctx, deps, req, occ, choice.Fix, look, progress)
+}
+
+// finish is the shop stage's wiring, every clean path out of Run's last
+// step: shop always runs after whatever the chain showed, `done`
+// follows it, and the refusal arm shops as the contract says - the
+// suggestion stands, shop still runs.
+//
+// The which-fix-shops rule: shop for the shown fix when one is shown,
+// else the picked fix - the look is what is on the face. The runner-up
+// shown therefore shops the runner-up; every path that ends without a
+// render on the face - the pick declined, the render was refused, the
+// check discarded, and no runner-up there was - shops the pick's fix.
+// The fix argument is that decision, made by the caller at each return.
+//
+// When the fix's render composites a product photo and the user brought
+// an item, the item is resolved to its intake record before Shop sees
+// it, so the entry carries the record's own name and category and not
+// the request's id-only shell - the shape a resumed attempt carries.
+// Nothing is brought, nothing is resolved.
+//
+// The list is Shop's, published as the shop stage's frame and carried
+// on the look. This wiring adds no media: the contract's media_id and
+// url on a shop entry are the server's join - no seam here names a
+// product photo's media id, and an id nothing registered is never
+// invented - so the frame carries Shop's entries as they are and the
+// server enriches it when it serves the stream and the shop path.
+//
+// A Shop refusal is the wiring bug its doc names - two loads mixed, a
+// record gone - named loudly: the look fails, it is not silently
+// stripped of its products.
+func finish(ctx context.Context, deps Deps, req Request, occ *domain.Occasion, fix *domain.Fix, look Look, progress func(job.Progress)) (Look, error) {
+	var brought *domain.Product
+	if fix != nil && needProduct(fix) && req.Brought != nil {
+		record, err := deps.ProductRecord(ctx, req.Photo.User, req.Brought.ID)
+		if err != nil {
+			return look, fmt.Errorf("run: the brought product %s: %w", req.Brought.ID, err)
+		}
+		brought = record
+	}
+	products, err := Shop(occ, fix, brought, deps.Catalog, req.Recall)
+	if err != nil {
+		return look, fmt.Errorf("run: shop: %w", err)
+	}
+	look.Products = products
+	emit(progress, stageShop, shopEvent{Products: products})
 	return look, nil
 }
 
@@ -671,7 +748,12 @@ func emit(progress func(job.Progress), stage string, detail any) {
 // the analysis was skipped or whether it was cached, never a value;
 // render names the fix and the attempt, and a refusal names its code;
 // check names the fix and whether the render was shown, and a shown
-// render alone carries its media id and the look in words.
+// render alone carries its media id and the look in words; shop carries
+// the products, the same array as shop the look - Shop's entries, no
+// media id and no url, the server's join added when it serves.
+type shopEvent struct {
+	Products []domain.Product `json:"products"`
+}
 type judgeEvent struct {
 	Flags []judgeFlag `json:"flags"`
 }

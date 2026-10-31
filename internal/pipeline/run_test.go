@@ -3,11 +3,12 @@ package pipeline
 // The run tests prove the two done-when clauses at the level of the
 // whole look. The stage events are pinned shape for shape against the
 // recorded API fixtures (testdata/api/job-events.json and its
-// alternates), the fallback paths are pinned event for event, and a look
-// killed mid-render is restarted the way a restart really happens - a
-// second job runner over the same store, whose open interrupts the dead
-// attempt and resumes the kind - and finishes having created the one
-// YouCam task.
+// alternates), the shop frame against the recorded one with the
+// server's media join left out, the fallback paths are pinned event for
+// event, and a look killed mid-render is restarted the way a restart
+// really happens - a second job runner over the same store, whose open
+// interrupts the dead attempt and resumes the kind - and finishes
+// having created the one YouCam task.
 //
 // No test dials a provider and no unit moves outside the fake ledger.
 // The renders and the analysis replay the recorded YouCam flows through
@@ -523,15 +524,17 @@ func newEarringStory(t *testing.T, rep *youcam.Replay, units cost.Price, checks 
 		Basket:   &Product{ID: "gold-jhumkas", Image: product},
 	}
 	story.deps = Deps{
-		Clef:       rig.clef,
-		Runner:     rig.runner,
-		Cache:      rig.cache,
-		Vocab:      loadVocabulary(t),
-		Thresholds: Thresholds{Met: readingAt},
-		Lines:      checkReading,
-		CheckModel: systemone.ModelClef,
-		Occasions:  story.occSrc.resolve,
-		Pictures:   rig.pics,
+		Clef:          rig.clef,
+		Runner:        rig.runner,
+		Cache:         rig.cache,
+		Vocab:         loadVocabulary(t),
+		Thresholds:    Thresholds{Met: readingAt},
+		Lines:         checkReading,
+		CheckModel:    systemone.ModelClef,
+		Occasions:     story.occSrc.resolve,
+		Pictures:      rig.pics,
+		Catalog:       loadCatalog(t),
+		ProductRecord: noIntakeRecords,
 	}
 	rig.pics.named["selfie-1"] = photo
 	rig.clef.judge = map[string]float64{
@@ -652,6 +655,60 @@ func sorted(in []string) []string {
 	return out
 }
 
+// noIntakeRecords is the ProductRecord a story with nothing brought
+// carries. The wiring reads an intake record only when the fix being
+// shopped composites product photos and the user brought an item, so a
+// run that reaches for one here is a wiring bug, and the read fails the
+// look loudly - the silent drop the review closed runs both ways.
+func noIntakeRecords(_ context.Context, _, id string) (*domain.Product, error) {
+	return nil, fmt.Errorf("noIntakeRecords: an intake record was read for %q", id)
+}
+
+// assertShopFrame pins one published shop event against a recorded
+// fixture's shop frame: the same single products key, and each entry the
+// recorded entry minus the server's media join. The contract's media_id
+// and url on a shop entry are the server's - no seam here names a
+// product photo's media id, and the wiring does not invent one - so the
+// frame carries Shop's entries as they are and the server enriches it
+// when it serves the stream (T4.4's wiring). The keys and values the
+// pipeline owns are pinned exactly against the recording. The decoded
+// entries come back for the caller's own reads.
+func assertShopFrame(t *testing.T, fixtureName string, p job.Progress) []domain.Product {
+	t.Helper()
+	fixture := frameOf(t, readContract(t, fixtureName), stageShop)
+	assertShape(t, stageShop, fixture, detail(t, p))
+	var got shopEvent
+	if err := json.Unmarshal(p.Detail, &got); err != nil {
+		t.Fatalf("%s event detail: %v", stageShop, err)
+	}
+	recorded, ok := fixture["products"].([]any)
+	if !ok {
+		t.Fatalf("the %s frame carries no products array", stageShop)
+	}
+	want := make([]map[string]any, 0, len(recorded))
+	for i, entry := range recorded {
+		m, ok := entry.(map[string]any)
+		if !ok {
+			t.Fatalf("the %s frame's product %d is not an object", stageShop, i)
+		}
+		delete(m, "media_id")
+		delete(m, "url")
+		want = append(want, m)
+	}
+	raw, err := json.Marshal(got.Products)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var shaped []map[string]any
+	if err := json.Unmarshal(raw, &shaped); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(want, shaped) {
+		t.Fatalf("%s products %v, want the recorded frame's %v without the server's media join", stageShop, shaped, want)
+	}
+	return got.Products
+}
+
 // stagesOf reads the stage names off a run's events, in order.
 func stagesOf(t *testing.T, events *eventLog) []string {
 	t.Helper()
@@ -666,11 +723,12 @@ func stagesOf(t *testing.T, events *eventLog) []string {
 }
 
 // TestTheLookRunsTheContractStages is the happy story, pinned against
-// the recorded stream: judge, pick, measure, render, check, each detail
-// the contract's shape - the flags worded as the data words them, the
-// two fix ids, the skipped measure, the render attempt, and the shown
-// render with its media id and the look in words. The books carry the
-// one render settle, and the look comes back shown.
+// the recorded stream: judge, pick, measure, render, check, shop, each
+// detail the contract's shape - the flags worded as the data words them,
+// the two fix ids, the skipped measure, the render attempt, and the
+// shown render with its media id and the look in words, then the shop
+// frame with the shown fix's product. The books carry the one render
+// settle, and the look comes back shown.
 func TestTheLookRunsTheContractStages(t *testing.T) {
 	t.Parallel()
 	rep := openRenderReplay(t)
@@ -690,9 +748,9 @@ func TestTheLookRunsTheContractStages(t *testing.T) {
 		t.Fatalf("run: %v", err)
 	}
 
-	// The stage order is the contract's order.
+	// The stage order is the contract's order, shop last.
 	got := stagesOf(t, story.rig.events)
-	want := []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck}
+	want := []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageShop}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("stages %v, want %v", got, want)
 	}
@@ -772,6 +830,18 @@ func TestTheLookRunsTheContractStages(t *testing.T) {
 	}
 	if len(look.Shown.MediaID) != 32 {
 		t.Fatalf("media id %q is not an id-shaped name", look.Shown.MediaID)
+	}
+
+	// shop: the recorded frame 6, the entries the pipeline owns of it -
+	// the shown fix's product, exact, the catalog's. The which-fix-shops
+	// rule's shown arm: the jhumkas render is what is on the face, and
+	// the jhumkas are what shops.
+	products := assertShopFrame(t, "job-events.json", events[5])
+	if len(products) != 1 || products[0].ID != "gold-jhumkas" || products[0].Fidelity != domain.ExactProduct {
+		t.Fatalf("shop %+v, want the shown fix's gold-jhumkas exact", products)
+	}
+	if !reflect.DeepEqual(look.Products, products) {
+		t.Fatalf("look products %+v, want the shop frame's %+v", look.Products, products)
 	}
 
 	// The books: one render, settled once, against the render key.
@@ -858,8 +928,9 @@ func TestThePickCarriesTheRecallWhenHistoryIsOn(t *testing.T) {
 // TestBothChecksFailAndTheSuggestionStands is the fallback's last arm:
 // the first check discards, the runner-up renders once and is checked
 // once, and that discards too. The stream then reads exactly like the
-// recorded suggestion story, the look carries no render, and each of the
-// two renders settled its own quote on its own key.
+// recorded suggestion story - shop included, which names the picked
+// fix's product, nothing being on the face - the look carries no render,
+// and each of the two renders settled its own quote on its own key.
 func TestBothChecksFailAndTheSuggestionStands(t *testing.T) {
 	t.Parallel()
 	rep := openRenderReplay(t)
@@ -881,10 +952,10 @@ func TestBothChecksFailAndTheSuggestionStands(t *testing.T) {
 	}
 
 	// The stage order is the contract's fallback order: the render and
-	// check stages once more for the runner-up, and no shop - shop is
-	// T3.7's stage, appended to this chain when it lands.
+	// check stages once more for the runner-up, then shop, which runs
+	// after whatever the chain showed.
 	got := stagesOf(t, story.rig.events)
-	want := []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageRender, stageCheck}
+	want := []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageRender, stageCheck, stageShop}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("stages %v, want %v", got, want)
 	}
@@ -921,6 +992,18 @@ func TestBothChecksFailAndTheSuggestionStands(t *testing.T) {
 		t.Fatalf("check fixes %q and %q, want each render checked against its own fix", checks[0].Fix, checks[1].Fix)
 	}
 
+	// shop: the recorded suggestion stream's own frame. Nothing was
+	// shown, so the picked fix shops - the fixture names gold-jhumkas,
+	// not the runner-up's top-festive - the which-fix-shops rule's word
+	// in the data's own voice.
+	products := assertShopFrame(t, "job-events-suggestion.json", story.rig.events.all()[7])
+	if len(products) != 1 || products[0].ID != "gold-jhumkas" {
+		t.Fatalf("shop %+v, want the picked fix's gold-jhumkas", products)
+	}
+	if !reflect.DeepEqual(look.Products, products) {
+		t.Fatalf("look products %+v, want the shop frame's %+v", look.Products, products)
+	}
+
 	// The look stands on its suggestions alone.
 	if !look.SuggestionOnly || look.Shown != nil || look.Words != "" {
 		t.Fatalf("look %+v, want the suggestion-only look", look)
@@ -952,7 +1035,10 @@ func TestBothChecksFailAndTheSuggestionStands(t *testing.T) {
 // TestTheRunnerUpIsShownWhenItPasses is the fallback's middle arm: the
 // first check discards, the runner-up's check shows, and the look then
 // talks about the runner-up's render while keeping the first pick as the
-// fix.
+// fix. It is also the which-fix-shops rule's shown arm, pinned: the shop
+// frame names the runner-up's fix - the lip is what is on the face - and
+// the user's brought item stays off the lip's list, its intake record
+// unread, the lip compositing no product photo.
 func TestTheRunnerUpIsShownWhenItPasses(t *testing.T) {
 	t.Parallel()
 	rep := openRenderReplay(t)
@@ -968,13 +1054,18 @@ func TestTheRunnerUpIsShownWhenItPasses(t *testing.T) {
 		choice: "family-gold-jhumkas",
 		probs:  map[string]float64{"family-red-lip": 0.4},
 	}}
+	// Something brought: the fix's render composites it, but the fix's
+	// render is discarded and the shown runner-up is a paint flow, so
+	// the shop stage never shops for it. The story's ProductRecord
+	// fails the look if the wiring reads one anyway.
+	story.req.Brought = &Product{ID: "b20d0c70000000000000000000000001", Image: recordedImage(t, rep, v04Product)}
 
 	look, err := Run(t.Context(), story.deps, story.req, story.rig.events.publish)
 	if err != nil {
 		t.Fatalf("run: %v", err)
 	}
 	events := story.rig.events.all()
-	if got, want := stagesOf(t, story.rig.events), []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageRender, stageCheck}; !reflect.DeepEqual(got, want) {
+	if got, want := stagesOf(t, story.rig.events), []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageRender, stageCheck, stageShop}; !reflect.DeepEqual(got, want) {
 		t.Fatalf("stages %v, want %v", got, want)
 	}
 
@@ -1015,12 +1106,119 @@ func TestTheRunnerUpIsShownWhenItPasses(t *testing.T) {
 	if want := recordedRenderBytes(t, rep, "lip-red-fetch"); !reflect.DeepEqual(kept.Bytes, want) {
 		t.Fatalf("the shown render is %d bytes, want the lip render's %d", len(kept.Bytes), len(want))
 	}
+
+	// The which-fix-shops rule, shown arm: the shop frame names the
+	// shown runner-up's own product - the lip the face wears, approximate
+	// match - not the jhumkas fix the pick chose first, and not the item
+	// the user brought, the lip compositing no product photo. This story
+	// matches no recorded stream, so the want is the data's own entry;
+	// the recorded frame's shape is pinned where a story does match one.
+	var shop shopEvent
+	if err := json.Unmarshal(events[7].Detail, &shop); err != nil {
+		t.Fatal(err)
+	}
+	wantLip := []domain.Product{{
+		ID:       "lip-red",
+		Category: "lip-colour",
+		Name:     "Red lip colour",
+		Fidelity: domain.ApproximateMatch,
+		Origin:   domain.OriginCatalog,
+	}}
+	if !reflect.DeepEqual(shop.Products, wantLip) {
+		t.Fatalf("shop %+v, want the shown runner-up's %v", shop.Products, wantLip)
+	}
+	if !reflect.DeepEqual(look.Products, shop.Products) {
+		t.Fatalf("look products %+v, want the shop frame's %+v", look.Products, shop.Products)
+	}
+}
+
+// TestTheBroughtItemIsShoppedFromItsIntakeRecord pins the shop wiring's
+// record read: when the fix the look ends on composites product photos
+// and the user brought an item, finish resolves that item to its intake
+// record before Shop sees it, so her own entry carries the record's name
+// and category - not the empty shell the request's picture-only product
+// would give - and ranks first, exact, hers, the catalog's jhumkas
+// behind it. The read is the one the wiring makes: once, for the
+// brought id, the user named with it.
+func TestTheBroughtItemIsShoppedFromItsIntakeRecord(t *testing.T) {
+	t.Parallel()
+	rep := openRenderReplay(t)
+	slots := []string{
+		recordedSlotID(t, rep, v04Selfie),
+		recordedSlotID(t, rep, v04Product),
+	}
+	shown := checkAnswer{change: 0.99, same: 0.99, met: 0.99}
+	story := newEarringStory(t, rep, 1, []checkAnswer{shown}, nil, slots...)
+	story.rig.clef.picks = []pickAnswer{{
+		choice: "family-gold-jhumkas",
+		probs:  map[string]float64{"family-red-lip": 0.4},
+	}}
+
+	const ownID = "b20d0c70000000000000000000000001"
+	// The intake record the server kept when the item was brought: the
+	// id, its name and category, exact product, origin user - the shape
+	// api.md's intake row freezes.
+	record := &domain.Product{
+		ID:       ownID,
+		Category: "earrings",
+		Name:     "Her own jhumkas",
+		Fidelity: domain.ExactProduct,
+		Origin:   domain.OriginUser,
+	}
+	var reads []string
+	var readMu sync.Mutex
+	story.deps.ProductRecord = func(_ context.Context, user, id string) (*domain.Product, error) {
+		readMu.Lock()
+		defer readMu.Unlock()
+		reads = append(reads, user+"/"+id)
+		return record, nil
+	}
+	// The request carries the item as the render needs it - id and
+	// picture, no words. The record is where the shop's words come from.
+	story.req.Brought = &Product{ID: ownID, Image: recordedImage(t, rep, v04Product)}
+
+	look, err := Run(t.Context(), story.deps, story.req, story.rig.events.publish)
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	events := story.rig.events.all()
+	if got, want := stagesOf(t, story.rig.events), []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageShop}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("stages %v, want %v", got, want)
+	}
+
+	// One record read, for the brought id, the user named with it.
+	readMu.Lock()
+	gotReads := append([]string(nil), reads...)
+	readMu.Unlock()
+	if len(gotReads) != 1 || gotReads[0] != "user-1/"+ownID {
+		t.Fatalf("intake record reads %v, want one read of the brought id", gotReads)
+	}
+
+	// Her item first, exact, hers, wearing the record's own name and
+	// category; the catalog's jhumkas behind it, exact, the catalog's.
+	// The frame's shape is the recorded shop frame's.
+	assertShape(t, stageShop, frameOf(t, readContract(t, "job-events.json"), stageShop), detail(t, events[5]))
+	wantProducts := []domain.Product{
+		{ID: ownID, Category: "earrings", Name: "Her own jhumkas", Fidelity: domain.ExactProduct, Origin: domain.OriginUser},
+		{ID: "gold-jhumkas", Category: "earrings", Name: "Gold jhumkas", Fidelity: domain.ExactProduct, Origin: domain.OriginCatalog},
+	}
+	var shop shopEvent
+	if err := json.Unmarshal(events[5].Detail, &shop); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(shop.Products, wantProducts) {
+		t.Fatalf("shop %+v, want the record's own item first and the catalog's %v", shop.Products, wantProducts)
+	}
+	if !reflect.DeepEqual(look.Products, shop.Products) {
+		t.Fatalf("look products %+v, want the shop frame's %+v", look.Products, shop.Products)
+	}
 }
 
 // TestABudgetRefusalTakesTheSuggestionAlone pins the refusal arm: the
 // render the budget refused publishes its code and its message and no
 // media id, the runner-up is not tried, and the look finishes with the
-// suggestion and empty books.
+// suggestion and empty books. Shop still runs - the contract's word for
+// the refusal arm - and it shops the picked fix.
 func TestABudgetRefusalTakesTheSuggestionAlone(t *testing.T) {
 	t.Parallel()
 	rep := openRenderReplay(t)
@@ -1035,10 +1233,11 @@ func TestABudgetRefusalTakesTheSuggestionAlone(t *testing.T) {
 		t.Fatalf("run: %v", err)
 	}
 
-	// The stream ends at the refused render: judge, pick, measure,
-	// render - no check of a render that never was, and no runner-up.
+	// The stream ends at the refused render and the shop after it:
+	// judge, pick, measure, render, shop - no check of a render that
+	// never was, and no runner-up.
 	got := stagesOf(t, story.rig.events)
-	want := []string{stageJudge, stagePick, stageMeasure, stageRender}
+	want := []string{stageJudge, stagePick, stageMeasure, stageRender, stageShop}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("stages %v, want %v", got, want)
 	}
@@ -1051,6 +1250,16 @@ func TestABudgetRefusalTakesTheSuggestionAlone(t *testing.T) {
 	}
 	if renderGot.Code != codeBudgetRefused || renderGot.Message != messageBudgetRefused {
 		t.Fatalf("refusal %q %q, want %s with the contract's message", renderGot.Code, renderGot.Message, codeBudgetRefused)
+	}
+
+	// The refusal shops the picked fix: nothing was shown, and the pick
+	// is what the suggestion talks about.
+	products := assertShopFrame(t, "job-events.json", story.rig.events.all()[4])
+	if len(products) != 1 || products[0].ID != "gold-jhumkas" {
+		t.Fatalf("shop %+v, want the picked fix's gold-jhumkas", products)
+	}
+	if !reflect.DeepEqual(look.Products, products) {
+		t.Fatalf("look products %+v, want the shop frame's %+v", look.Products, products)
 	}
 
 	if !look.SuggestionOnly || look.Shown != nil {
@@ -1072,12 +1281,14 @@ func TestABudgetRefusalTakesTheSuggestionAlone(t *testing.T) {
 
 // TestThePickDecliningEndsAtTheSuggestion pins the suggestion-only arm
 // the fixtures do not record: a judge that flags and a pick whose answer
-// is none. The stream is the contract's judge frame and pick frame and
-// nothing after - a declined pick has no measure, render or check to
-// speak of - the look stands on its suggestions with no fix named, and
-// the provider is never reached: no upload, no create, no poll, no
-// fetch, zero spend. The one pick ask pins the decline to the model's
-// answer, not to an empty menu.
+// is none. The stream is the contract's judge frame and pick frame, and
+// then the shop stage - the contract's order runs it after every arm -
+// whose frame is the empty products array, a declined pick having no fix
+// to shop for. No measure, render or check frame after a declined pick,
+// the look stands on its suggestions with no fix named, and the provider
+// is never reached: no upload, no create, no poll, no fetch, zero spend.
+// The one pick ask pins the decline to the model's answer, not to an
+// empty menu.
 func TestThePickDecliningEndsAtTheSuggestion(t *testing.T) {
 	t.Parallel()
 	rep := openRenderReplay(t)
@@ -1149,15 +1360,17 @@ func TestThePickDecliningEndsAtTheSuggestion(t *testing.T) {
 	}
 	src := occasionSource(occasions)
 	deps := Deps{
-		Clef:       clef,
-		Runner:     runner,
-		Cache:      newMemCache(),
-		Vocab:      loadVocabulary(t),
-		Thresholds: Thresholds{Met: readingAt},
-		Lines:      checkReading,
-		CheckModel: systemone.ModelClef,
-		Occasions:  src.resolve,
-		Pictures:   pics,
+		Clef:          clef,
+		Runner:        runner,
+		Cache:         newMemCache(),
+		Vocab:         loadVocabulary(t),
+		Thresholds:    Thresholds{Met: readingAt},
+		Lines:         checkReading,
+		CheckModel:    systemone.ModelClef,
+		Occasions:     src.resolve,
+		Pictures:      pics,
+		Catalog:       loadCatalog(t),
+		ProductRecord: noIntakeRecords,
 	}
 	req := Request{
 		Photo:    Photo{User: "user-1", Hash: "hash-v04", Image: photo},
@@ -1172,10 +1385,11 @@ func TestThePickDecliningEndsAtTheSuggestion(t *testing.T) {
 		t.Fatalf("run: %v", err)
 	}
 
-	// The stream is judge, pick, done: the two frames the contract holds
-	// before a fix is measured, and nothing after them.
+	// The stream is judge, pick, shop: the two frames the contract holds
+	// before a fix is measured, and the shop stage that runs after every
+	// arm - empty here, nothing having been picked to shop for.
 	got := stagesOf(t, events)
-	want := []string{stageJudge, stagePick}
+	want := []string{stageJudge, stagePick, stageShop}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("stages %v, want %v", got, want)
 	}
@@ -1190,6 +1404,19 @@ func TestThePickDecliningEndsAtTheSuggestion(t *testing.T) {
 	}
 	if pickGot.Fix != "" || pickGot.RunnerUp != "" || pickGot.Recall != "" {
 		t.Fatalf("pick %+v, want the decline's two empty ids and no recall", pickGot)
+	}
+
+	// The shop stage ran, and a declined pick shops nothing: the frame
+	// is the empty products array, byte for byte - the shorter list, the
+	// honest one, nothing invented to fill it.
+	if published[2].Stage != stageShop {
+		t.Fatalf("stage %q, want %q after the declined pick", published[2].Stage, stageShop)
+	}
+	if string(published[2].Detail) != `{"products":[]}` {
+		t.Fatalf("shop detail %s, want the empty products array", published[2].Detail)
+	}
+	if len(look.Products) != 0 {
+		t.Fatalf("look products %+v, want none after a declined pick", look.Products)
 	}
 
 	// The look stands on its suggestions: the flags and the issue stay,
@@ -1264,15 +1491,17 @@ func TestTheMeasureStageSaysWhatTheAnalysisDid(t *testing.T) {
 	}
 	src := occasionSource(occasions)
 	deps := Deps{
-		Clef:       rig.clef,
-		Runner:     rig.runner,
-		Cache:      rig.cache,
-		Vocab:      loadVocabulary(t),
-		Thresholds: Thresholds{Met: readingAt},
-		Lines:      checkReading,
-		CheckModel: systemone.ModelClef,
-		Occasions:  src.resolve,
-		Pictures:   rig.pics,
+		Clef:          rig.clef,
+		Runner:        rig.runner,
+		Cache:         rig.cache,
+		Vocab:         loadVocabulary(t),
+		Thresholds:    Thresholds{Met: readingAt},
+		Lines:         checkReading,
+		CheckModel:    systemone.ModelClef,
+		Occasions:     src.resolve,
+		Pictures:      rig.pics,
+		Catalog:       loadCatalog(t),
+		ProductRecord: noIntakeRecords,
 	}
 	req := Request{
 		Photo:    Photo{User: "user-1", Hash: "hash-v06", Image: photo},
@@ -1286,15 +1515,23 @@ func TestTheMeasureStageSaysWhatTheAnalysisDid(t *testing.T) {
 		t.Fatalf("first run: %v", err)
 	}
 	events := rig.events.all()
-	want := []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck}
+	want := []string{stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageShop}
 	if got := stagesOf(t, rig.events); !reflect.DeepEqual(got, want) {
 		t.Fatalf("stages %v, want %v", got, want)
 	}
 	if string(events[2].Detail) != `{"cached":false}` {
 		t.Fatalf("measure detail %s, want the contract's cached-false frame", events[2].Detail)
 	}
+	// The shown fix has nothing to photograph: the shop frame is the one
+	// suggestion, the fix under the basket's hair category.
+	if want := `{"products":[{"id":"family-tie-hair","category":"hair","name":"Ties the hair back.","fidelity":"visual simulation","origin":"catalog"}]}`; string(events[5].Detail) != want {
+		t.Fatalf("shop detail %s, want the hair suggestion", events[5].Detail)
+	}
 	if first.Shown == nil || first.Shown.FixID != "family-tie-hair" {
 		t.Fatalf("look %+v, want the tied hair shown", first)
+	}
+	if len(first.Products) != 1 || first.Products[0].ID != "family-tie-hair" {
+		t.Fatalf("look products %+v, want the hair suggestion", first.Products)
 	}
 	if rig.cache.count() != 1 {
 		t.Fatalf("%d cache rows, want the one analysis row", rig.cache.count())
@@ -1313,14 +1550,14 @@ func TestTheMeasureStageSaysWhatTheAnalysisDid(t *testing.T) {
 	events = rig.events.all()
 	gotStages := stagesOf(t, rig.events)
 	wantStages := []string{
-		stageJudge, stagePick, stageMeasure, stageRender, stageCheck,
-		stageJudge, stagePick, stageMeasure, stageRender, stageCheck,
+		stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageShop,
+		stageJudge, stagePick, stageMeasure, stageRender, stageCheck, stageShop,
 	}
 	if !reflect.DeepEqual(gotStages, wantStages) {
 		t.Fatalf("stages %v, want two runs of %v", gotStages, wantStages)
 	}
-	if string(events[7].Detail) != `{"cached":true}` {
-		t.Fatalf("second measure detail %s, want the contract's cached-true frame", events[7].Detail)
+	if string(events[8].Detail) != `{"cached":true}` {
+		t.Fatalf("second measure detail %s, want the contract's cached-true frame", events[8].Detail)
 	}
 	state := rig.clef.lastPickState(t)
 	if state.Attributes["face_shape"] != "Oval" {
@@ -1455,15 +1692,17 @@ func TestAKilledLookResumesAndNeverPaysTwice(t *testing.T) {
 
 	newDeps := func(runner *youcam.Runner) Deps {
 		return Deps{
-			Clef:       clef,
-			Runner:     runner,
-			Cache:      cache,
-			Vocab:      loadVocabulary(t),
-			Thresholds: Thresholds{Met: readingAt},
-			Lines:      checkReading,
-			CheckModel: systemone.ModelClef,
-			Occasions:  src.resolve,
-			Pictures:   pics,
+			Clef:          clef,
+			Runner:        runner,
+			Cache:         cache,
+			Vocab:         loadVocabulary(t),
+			Thresholds:    Thresholds{Met: readingAt},
+			Lines:         checkReading,
+			CheckModel:    systemone.ModelClef,
+			Occasions:     src.resolve,
+			Pictures:      pics,
+			Catalog:       loadCatalog(t),
+			ProductRecord: noIntakeRecords,
 		}
 	}
 	broker := stream.New(stream.Config{})
@@ -1538,6 +1777,11 @@ func TestAKilledLookResumesAndNeverPaysTwice(t *testing.T) {
 	}
 	if look.SuggestionOnly || look.Words == "" {
 		t.Fatalf("replacement look %+v, want the words", look)
+	}
+	// The replacement shops too: the shown fix's product rides the look
+	// the restart finished, resume and all.
+	if len(look.Products) != 1 || look.Products[0].ID != "gold-jhumkas" || look.Products[0].Fidelity != domain.ExactProduct {
+		t.Fatalf("replacement products %+v, want the shown fix's gold-jhumkas exact", look.Products)
 	}
 
 	// The chain: exactly one attempt replacement, and the record of the
@@ -1683,15 +1927,17 @@ func TestRunRefusesAnUnusableLook(t *testing.T) {
 	rig.clef.checks = []checkAnswer{{change: 0.9, same: 0.9, met: 0.9}}
 	src := occasionSource(occasions)
 	whole := Deps{
-		Clef:       rig.clef,
-		Runner:     rig.runner,
-		Cache:      rig.cache,
-		Vocab:      loadVocabulary(t),
-		Thresholds: Thresholds{Met: readingAt},
-		Lines:      checkReading,
-		CheckModel: systemone.ModelClef,
-		Occasions:  src.resolve,
-		Pictures:   rig.pics,
+		Clef:          rig.clef,
+		Runner:        rig.runner,
+		Cache:         rig.cache,
+		Vocab:         loadVocabulary(t),
+		Thresholds:    Thresholds{Met: readingAt},
+		Lines:         checkReading,
+		CheckModel:    systemone.ModelClef,
+		Occasions:     src.resolve,
+		Pictures:      rig.pics,
+		Catalog:       loadCatalog(t),
+		ProductRecord: noIntakeRecords,
 	}
 	req := Request{
 		Photo:    Photo{User: "user-1", Hash: "hash-v04", Image: photo},
@@ -1718,7 +1964,9 @@ func TestRunRefusesAnUnusableLook(t *testing.T) {
 		{"no vocabulary", "no look vocabulary", broken(func(d *Deps, _ *Request) { d.Vocab = nil })},
 		{"no occasions", "no occasions", broken(func(d *Deps, _ *Request) { d.Occasions = nil })},
 		{"no pictures", "no pictures", broken(func(d *Deps, _ *Request) { d.Pictures = nil })},
+		{"no product record", "no product record", broken(func(d *Deps, _ *Request) { d.ProductRecord = nil })},
 		{"no check model", "no check model", broken(func(d *Deps, _ *Request) { d.CheckModel = "" })},
+		{"no catalog", "no catalog", broken(func(d *Deps, _ *Request) { d.Catalog = nil })},
 		{"an unknown occasion", `no occasion "no-such"`, broken(func(_ *Deps, r *Request) { r.Occasion = "no-such" })},
 		{"no user", "no user", broken(func(_ *Deps, r *Request) { r.Photo.User = "" })},
 		{"no hash", "no photo hash", broken(func(_ *Deps, r *Request) { r.Photo.Hash = "" })},
@@ -1758,15 +2006,17 @@ func TestKindRefusesARecordItCannotRebuild(t *testing.T) {
 	occasions := loadOccasions(t)
 	src := occasionSource(occasions)
 	deps := Deps{
-		Clef:       rig.clef,
-		Runner:     rig.runner,
-		Cache:      rig.cache,
-		Vocab:      loadVocabulary(t),
-		Thresholds: Thresholds{Met: readingAt},
-		Lines:      checkReading,
-		CheckModel: systemone.ModelClef,
-		Occasions:  src.resolve,
-		Pictures:   rig.pics,
+		Clef:          rig.clef,
+		Runner:        rig.runner,
+		Cache:         rig.cache,
+		Vocab:         loadVocabulary(t),
+		Thresholds:    Thresholds{Met: readingAt},
+		Lines:         checkReading,
+		CheckModel:    systemone.ModelClef,
+		Occasions:     src.resolve,
+		Pictures:      rig.pics,
+		Catalog:       loadCatalog(t),
+		ProductRecord: noIntakeRecords,
 	}
 	snaps := newMemSnaps()
 	kind := Kind(deps, snaps)
@@ -1835,15 +2085,17 @@ func TestStartRefusesALookItCannotName(t *testing.T) {
 	photo := recordedImage(t, rep, v04Selfie)
 	rig := newRunRig(t, rep, 5)
 	deps := Deps{
-		Clef:       rig.clef,
-		Runner:     rig.runner,
-		Cache:      rig.cache,
-		Vocab:      loadVocabulary(t),
-		Thresholds: Thresholds{Met: readingAt},
-		Lines:      checkReading,
-		CheckModel: systemone.ModelClef,
-		Occasions:  src.resolve,
-		Pictures:   rig.pics,
+		Clef:          rig.clef,
+		Runner:        rig.runner,
+		Cache:         rig.cache,
+		Vocab:         loadVocabulary(t),
+		Thresholds:    Thresholds{Met: readingAt},
+		Lines:         checkReading,
+		CheckModel:    systemone.ModelClef,
+		Occasions:     src.resolve,
+		Pictures:      rig.pics,
+		Catalog:       loadCatalog(t),
+		ProductRecord: noIntakeRecords,
 	}
 	rig.pics.named["selfie-1"] = photo
 	req := Request{
@@ -1963,15 +2215,17 @@ func TestStartKeepsTheSnapshotPastACancel(t *testing.T) {
 	rig.clef.picks = []pickAnswer{{choice: "none"}}
 	src := occasionSource(occasions)
 	deps := Deps{
-		Clef:       rig.clef,
-		Runner:     rig.runner,
-		Cache:      rig.cache,
-		Vocab:      loadVocabulary(t),
-		Thresholds: Thresholds{Met: readingAt},
-		Lines:      checkReading,
-		CheckModel: systemone.ModelClef,
-		Occasions:  src.resolve,
-		Pictures:   rig.pics,
+		Clef:          rig.clef,
+		Runner:        rig.runner,
+		Cache:         rig.cache,
+		Vocab:         loadVocabulary(t),
+		Thresholds:    Thresholds{Met: readingAt},
+		Lines:         checkReading,
+		CheckModel:    systemone.ModelClef,
+		Occasions:     src.resolve,
+		Pictures:      rig.pics,
+		Catalog:       loadCatalog(t),
+		ProductRecord: noIntakeRecords,
 	}
 	req := Request{
 		Photo:    Photo{User: "user-1", Hash: "hash-v04", Image: photo},

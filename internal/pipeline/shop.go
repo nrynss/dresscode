@@ -85,7 +85,9 @@ var simulationCategories = map[string]string{
 // catalog holds no product for, whose task's template-only category this
 // occasion's basket does not offer, shops nothing either: the basket is
 // the data's own word for what this occasion's shop carries, and the
-// list is simply shorter. Nothing is invented to fill it.
+// list is simply shorter. So does a fix whose task no template-only
+// category is recorded for at all - the suggestion has no category to
+// wear, on this basket or any other. Nothing is invented to fill it.
 //
 // Refused, not shortened: an ask without an occasion, a brought item
 // without an id on a fix that would list it, and a fix naming a product
