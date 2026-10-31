@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.13 landed (`a043780`) — the mirror journey is complete in code, and dev mode shows the real photographs. T5.14 (visual verification + closing screenshots) dispatches next and finishes P5B. T3.1 (Judge) is in review; T3.2 follows it.
+**Current status:** T3.1 (Judge) landed (`b115ec8`) — **the pipeline has begun**. T3.2 (Pick a fix) dispatches next. T5.13 landed; T5.14 (visual verification, P5B's last task) is in flight. Config thresholds defer to T3.6 (owns will extend; absent `[judge]` section must error at load).
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P0 | 8 / 8 | Done. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 7 / 9 | T2.2 landed. Only the live siblings (T2.1b, T2.2b) remain — they need the user present for live runs. |
-| P3 | 0 / 9 | Waits for P2. |
+| P3 | 1 / 9 | **The pipeline has begun** — T3.1 (Judge) landed. T3.2 (Pick a fix) dispatches next. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
 | P5B | 4 / 5 | T5.13 landed — the vanity mirror, stepper, hero cards, arched comparator and fidelity popovers. T5.14 (visual verification) closes the phase. |
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T3.1 Judge — the pipeline's first task.** `internal/pipeline/judge.go`: one Clef request — the photo, a two-field state, one `noul` question per criterion in the data's wording, the `biggest_issue` choice — and probabilities become flags at thresholds passed as an argument (placeholders until T3.9 measures them; NaN and stale overrides refused loudly). Output is `Judgement{Flags []domain.Criterion, Issue}`: flagged criteria carried whole with the data's suggestion, the biggest issue with its label, no probability anywhere — they steer and die here. The no-YouCam promise is structural: the state has no field for an analysis, the package cannot name the YouCam client, and the test proves judge's whole request equals the recorded probe request on all 37 samples (the probe docs/clef.md records as sending none). An empty photo is refused before any call — Clef answers imageless requests confidently, and that answer must not be trusted. Thirteen of 273 cells disagree with the samples README at 0.5 (T3.9 owns moving the lines). Two review rounds; the reviewer recomputed the flag rule from seven raw recordings and reconciled all 273 answers; remediation pinned the no-photo ordering and corrected a count. Landed as `94a9a9b`+`b115ec8`, gate green in the worktree and the main checkout. For T3.6: the `[judge]` settings section (shape proposed in the task notes) lands there — its owns extend to internal/config/settings.go, and an absent section must error at load, never degrade to all-met. For T3.2: you inherit `Judgement`; `Issue.ID` can name a criterion the flags do not hold.
 
 - **T5.13 Vanity mirror capture, stepper and hero cards, arched comparator, fidelity popovers.** Capture carries the arched mirror viewfinder (padding spacer — never `aspect-ratio`), button-styled pickers, the collapsible product drawer, authored camera-failure copy, and a `Check the dress code` CTA that starts the look. Verdict carries the 4-step live stepper, the Fix hero card, and a `See the render` CTA. Render carries the arched comparator with a visible split line, drag handle and Original/After chips, fidelity popovers, `You bought this look.`, and the segmented verdict bar. The review's four minor findings were diary-class and ratified at remediation (`{word}.` recorded, two new strings added to the canonical table, the divider note corrected to two 1px hairlines, drag-glide accepted). Two orchestrator grants closed real gaps: the picker's saved occasion now flows into `startLook` (story fallback for fresh judges, pinned by test — a judge picking Interview gets Interview), and a Vite dev middleware serves the sample photographs at `/media/*` so `pnpm dev` shows real pictures (T5.10's goal, which `<img>` loads bypassing the fetch patch had left unmet in dev). The remediation also closed T5.9's disclosed blind spot for real: the boundary sweep now collects side-specific borders, and it caught the hero cards the old sweep couldn't see. Two review rounds; the second CLEAN with no findings. Landed as `05da1db`+`a043780`, gate green in the worktree and the main checkout, 54 unit + 34 a11y tests.
 
