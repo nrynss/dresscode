@@ -369,7 +369,7 @@ The state read is not double-wrapped. The stream is. The app's Keel parser accep
 
 The order is judge, pick, measure, render, check, and, when the first check is not shown, render and check once more for the runner-up. Shop is last. `done` follows shop. A discarded render is never given a media id, so the phone cannot show it.
 
-`no_face_in_photo` ends the job with `error` during `judge` when the photo path did not already refuse it. There is no verdict.
+Every stage frame is published when that step finishes, so `stage` on the job names the last step that finished, not the one running. `no_face_in_photo` ends the job with `error` when the photo path did not already refuse it: the judge is a model ask with no face detector, so the refusal comes from the provider step that ran, and `stage` is the step before it. The recorded example reads `measure`, because the smile fix names no analysis and the render refused before it landed. There is no verdict.
 
 A budget refusal or `renders_paused` on `render` does not fail the job. The suggestion stands, shop still runs, and `done` still arrives.
 

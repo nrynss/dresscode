@@ -59,11 +59,21 @@ func TestExampleLoads(t *testing.T) {
 	if got.Flags.FreshUploadsOff || got.Flags.RendersOff || got.Flags.SamplesOnly {
 		t.Fatalf("flags %+v, want the open position", got.Flags)
 	}
-	if got.Judge.Met != 0.5 || got.Judge.PerCriterion != nil {
-		t.Fatalf("judge %+v, want the placeholder met line and no overrides", got.Judge)
+	if got.Judge.Met != 0.628 || len(got.Judge.PerCriterion) != 4 {
+		t.Fatalf("judge %+v, want the evaluation's met line and its four overrides", got.Judge)
 	}
-	if got.Check != (Check{ChangeMade: 0.5, SamePerson: 0.5, CriterionMet: 0.5, Model: "clef"}) {
-		t.Fatalf("check %+v, want the placeholder lines on clef", got.Check)
+	for id, want := range map[string]float64{
+		"family-expression-present": 0.5466,
+		"family-garment-festive":    0.2394,
+		"interview-collar-buttoned": 0.11395,
+		"interview-expression-calm": 0.36925,
+	} {
+		if got.Judge.PerCriterion[id] != want {
+			t.Fatalf("override %s = %v, want %v", id, got.Judge.PerCriterion[id], want)
+		}
+	}
+	if got.Check != (Check{ChangeMade: 0.50085, SamePerson: 0.48355, CriterionMet: 0.50315, Model: "clef"}) {
+		t.Fatalf("check %+v, want the evaluation's lines on clef", got.Check)
 	}
 
 	secrets := []struct {
@@ -245,30 +255,6 @@ func TestJudgingShareCannotExceedUnits(t *testing.T) {
 	}
 }
 
-// The two sections the settings file must carry. An absent section is a
-// load error: the zero value of a threshold is a silent answer (a met
-// line of zero flags nothing; a check line of zero passes every gate),
-// so a missing section may never degrade to it.
-const (
-	judgeSection = `[judge]
-# The lines that turn Clef's read into flags. A criterion flags when its
-# yes-probability sits under its line. per_criterion names a line per
-# criterion id; absent, every criterion reads met.
-# Placeholder value until the evaluation measures it.
-met = 0.5
-
-`
-	checkSection = `[check]
-# The lines that turn the render check's probabilities into facts, and
-# the model the check runs on.
-# Placeholder values until the evaluation measures them.
-change_made = 0.5
-same_person = 0.5
-criterion_met = 0.5
-model = "clef"
-`
-)
-
 // loadVariant writes one variant of the example and loads it. The
 // Variant is the example with replace applied once.
 func loadVariant(t *testing.T, replace func(text string) string) (Settings, error) {
@@ -277,8 +263,12 @@ func loadVariant(t *testing.T, replace func(text string) string) (Settings, erro
 	if err != nil {
 		t.Fatal(err)
 	}
+	text := replace(string(data))
+	if text == string(data) {
+		t.Fatal("the variant changed nothing: its anchor is not in the example")
+	}
 	path := filepath.Join(t.TempDir(), "dresscode.toml")
-	if err := os.WriteFile(path, []byte(replace(string(data))), 0o600); err != nil {
+	if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	got, _, err := Load(t.Context(), Options{
@@ -291,13 +281,30 @@ func loadVariant(t *testing.T, replace func(text string) string) (Settings, erro
 	return got, err
 }
 
-// cut drops one whole section from the example.
+// cut drops one whole section from the example: from its header line to
+// the next header, so a sub-table goes with its parent and an edit to the
+// section's comments does not move the anchor.
 func cut(section string) func(string) string {
 	return func(text string) string {
-		if !strings.Contains(text, section) {
+		lines := strings.Split(text, "\n")
+		start := -1
+		for i, line := range lines {
+			if strings.TrimSpace(line) == section {
+				start = i
+				break
+			}
+		}
+		if start < 0 {
 			return text
 		}
-		return strings.Replace(text, section, "", 1)
+		end := len(lines)
+		for i := start + 1; i < len(lines); i++ {
+			if strings.HasPrefix(lines[i], "[") {
+				end = i
+				break
+			}
+		}
+		return strings.Join(append(lines[:start:start], lines[end:]...), "\n")
 	}
 }
 
@@ -314,7 +321,9 @@ func swap(from, to string) func(string) string {
 // TestAnAbsentSectionIsALoadError pins the ruling: a settings file with
 // no [judge] or no [check] section fails the load naming the key, and an
 // explicit zero is the same refusal, because zero is the value the file
-// never meant.
+// never meant. A zero threshold is a silent answer - a met line of zero
+// flags nothing, a check line of zero passes every gate - so a missing
+// section may never degrade to it.
 func TestAnAbsentSectionIsALoadError(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -322,11 +331,11 @@ func TestAnAbsentSectionIsALoadError(t *testing.T) {
 		key  string
 		mod  func(string) string
 	}{
-		{"no judge section", "judge.met", cut(judgeSection)},
+		{"no judge section", "judge.met", cut("[judge]")},
 		// The walk reports the section's first unsupplied required key,
 		// so the cut check section is pinned on its prefix.
-		{"no check section", "check.", cut(checkSection)},
-		{"a met line of zero", "judge.met", swap("met = 0.5", "met = 0.0")},
+		{"no check section", "check.", cut("[check]")},
+		{"a met line of zero", "judge.met", swap("met = 0.628", "met = 0.0")},
 		{"no check model", "check.model", swap(`model = "clef"`, "model = ''")},
 	}
 	for _, tc := range cases {
@@ -353,18 +362,18 @@ func TestJudgeAndCheckLinesRefused(t *testing.T) {
 		want string
 		mod  func(string) string
 	}{
-		{"met nan", "judge: met", swap("met = 0.5", "met = nan")},
-		{"met inf", "judge: met", swap("met = 0.5", "met = inf")},
-		{"met under zero", "judge: met", swap("met = 0.5", "met = -0.1")},
-		{"met over one", "judge: met", swap("met = 0.5", "met = 1.5")},
-		{"an override that is not a line", "family-earring-festive", swap(
-			"met = 0.5",
-			"met = 0.5\nper_criterion = { family-earring-festive = nan }",
+		{"met nan", "judge: met", swap("met = 0.628", "met = nan")},
+		{"met inf", "judge: met", swap("met = 0.628", "met = inf")},
+		{"met under zero", "judge: met", swap("met = 0.628", "met = -0.1")},
+		{"met over one", "judge: met", swap("met = 0.628", "met = 1.5")},
+		{"an override that is not a line", "family-expression-present", swap(
+			"family-expression-present = 0.5466",
+			"family-expression-present = nan",
 		)},
-		{"change made nan", "check: change_made", swap("change_made = 0.5", "change_made = nan")},
-		{"same person inf", "check: same_person", swap("same_person = 0.5", "same_person = inf")},
-		{"criterion met under zero", "check: criterion_met", swap("criterion_met = 0.5", "criterion_met = -1")},
-		{"criterion met over one", "check: criterion_met", swap("criterion_met = 0.5", "criterion_met = 2")},
+		{"change made nan", "check: change_made", swap("change_made = 0.50085", "change_made = nan")},
+		{"same person inf", "check: same_person", swap("same_person = 0.48355", "same_person = inf")},
+		{"criterion met under zero", "check: criterion_met", swap("criterion_met = 0.50315", "criterion_met = -1")},
+		{"criterion met over one", "check: criterion_met", swap("criterion_met = 0.50315", "criterion_met = 2")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -380,20 +389,22 @@ func TestJudgeAndCheckLinesRefused(t *testing.T) {
 	}
 }
 
-// TestAnOverrideAndItsModelLoad pins the valid shape the example leaves
-// out: a per_criterion table and both model names load with their values.
+// TestAnOverrideAndItsModelLoad pins the spellings the example does not
+// use: an inline per_criterion table in place of the example's sub-table,
+// and the flash model. The example's own four overrides are pinned by
+// TestExampleLoads.
 func TestAnOverrideAndItsModelLoad(t *testing.T) {
 	t.Parallel()
-	t.Run("a per criterion override", func(t *testing.T) {
-		got, err := loadVariant(t, swap(
-			"met = 0.5",
-			"met = 0.5\n\n[judge.per_criterion]\nfamily-earring-festive = 0.35",
-		))
+	t.Run("an inline per criterion table", func(t *testing.T) {
+		got, err := loadVariant(t, func(text string) string {
+			without := cut("[judge.per_criterion]")(text)
+			return swap("met = 0.628", "met = 0.628\nper_criterion = { family-earring-festive = 0.35 }")(without)
+		})
 		if err != nil {
 			t.Fatalf("load: %v", err)
 		}
-		if got.Judge.Met != 0.5 || got.Judge.PerCriterion["family-earring-festive"] != 0.35 {
-			t.Fatalf("judge %+v, want the placeholder met and the override", got.Judge)
+		if got.Judge.Met != 0.628 || len(got.Judge.PerCriterion) != 1 || got.Judge.PerCriterion["family-earring-festive"] != 0.35 {
+			t.Fatalf("judge %+v, want the example's met and the one inline override", got.Judge)
 		}
 	})
 

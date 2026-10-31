@@ -760,6 +760,7 @@ func seedUser(t *testing.T, db *sqlite.DB, user string, history int) {
 	exec(`INSERT INTO history_switch (user_id, enabled) VALUES (?, ?)`, user, history)
 	exec(`INSERT INTO analysis_cache (user_id, photo_hash, task, face_shape)
 		VALUES (?, ?, 'face-attr-analysis', 'oval')`, user, user+"-hash")
+	exec(`INSERT INTO look_snapshots (root_id, user_id, snapshot) VALUES (?, ?, '{}')`, look, user)
 }
 
 func mustSession(t *testing.T, account string) string {

@@ -71,8 +71,8 @@ type Settings struct {
 
 // Judge holds the lines that turn Clef's probabilities into the judge's
 // flags. A criterion flags when its yes-probability sits under its line.
-// The values are placeholders until the evaluation measures them, so the
-// numbers live here, in the file, never in the pipeline.
+// The values are the evaluation's (docs/evaluation.md), so the numbers
+// live here, in the file, never in the pipeline.
 type Judge struct {
 	// Met is the met line for a criterion with no override. Required:
 	// an absent section must fail the load rather than read as zero,

@@ -10,7 +10,7 @@
     "job_id": "10b0000000000000000000000000000e",
     "root_id": "10b0000000000000000000000000000e",
     "status": "error",
-    "stage": "judge",
+    "stage": "measure",
     "error": {
       "code": "no_face_in_photo",
       "message": "no face in photo"

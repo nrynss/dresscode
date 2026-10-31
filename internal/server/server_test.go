@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -250,13 +251,24 @@ func TestGateTrustsForwardedHeadersOnlyFromAProxy(t *testing.T) {
 	}
 }
 
+// The server hands this clock to the upload sweeper, which reads it from
+// its own goroutine while a test advances it.
 type movedClock struct {
+	mu sync.Mutex
 	at time.Time
 }
 
-func (c *movedClock) now() time.Time { return c.at }
+func (c *movedClock) now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.at
+}
 
-func (c *movedClock) advance(d time.Duration) { c.at = c.at.Add(d) }
+func (c *movedClock) advance(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.at = c.at.Add(d)
+}
 
 func openTest(t *testing.T, tweak func(*server.Config)) (*server.Server, string) {
 	t.Helper()

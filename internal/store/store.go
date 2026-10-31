@@ -1,11 +1,11 @@
 // Package store is Dresscode's SQLite schema.
 //
 // The schema is looks, renders and their checks, the analysis cache, products
-// and their labels, the opt-in menu, and the history switch. Migrate applies
-// it through Keel sqlite under SchemaNamespace, so the ledger does not collide
-// with identity or any other Keel store on the same file. Identity's own
-// tables are not created here, and nothing here references them: a fresh file
-// migrates before identity does.
+// and their labels, the opt-in menu, the history switch, and the snapshot a
+// restarted look rebuilds from. Migrate applies it through Keel sqlite under
+// SchemaNamespace, so the ledger does not collide with identity or any other
+// Keel store on the same file. Identity's own tables are not created here, and
+// nothing here references them: a fresh file migrates before identity does.
 //
 // Every row a user owns carries UserIDColumn. UserTables is the list deletion
 // walks. Foreign keys cascade, so deleting one user's rows from each table
@@ -34,6 +34,7 @@ const (
 	TableHistorySwitch         = "history_switch"
 	TableLookFlags             = "look_flags"
 	TableLookProducts          = "look_products"
+	TableLookSnapshots         = "look_snapshots"
 	TableLooks                 = "looks"
 	TableOptIns                = "opt_ins"
 	TableProducts              = "products"
@@ -51,6 +52,7 @@ var userTables = []string{
 	TableHistorySwitch,
 	TableLookFlags,
 	TableLookProducts,
+	TableLookSnapshots,
 	TableLooks,
 	TableOptIns,
 	TableProducts,

@@ -22,6 +22,7 @@ var migrationFiles = []string{
 	"0004_products.sql",
 	"0005_opt_in.sql",
 	"0006_history.sql",
+	"0007_look_snapshots.sql",
 }
 
 // userTables is every table that holds a user's rows. The test lists them
@@ -31,6 +32,7 @@ var userTables = []string{
 	"history_switch",
 	"look_flags",
 	"look_products",
+	"look_snapshots",
 	"looks",
 	"opt_ins",
 	"products",
@@ -335,6 +337,8 @@ func seedUser(t *testing.T, db *sqlite.DB, user string, history int) {
 	exec(`INSERT INTO analysis_cache (user_id, photo_hash, task, face_shape)
 		VALUES (?, ?, 'face-attr-analysis', 'oval')`,
 		user, user+"-hash")
+	exec(`INSERT INTO look_snapshots (root_id, user_id, snapshot) VALUES (?, ?, '{}')`,
+		look, user)
 }
 
 func deleteUser(t *testing.T, db *sqlite.DB, user string, tables []string) {

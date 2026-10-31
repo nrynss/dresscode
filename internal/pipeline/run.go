@@ -55,12 +55,14 @@ const (
 	attemptRunnerUp = "runner_up"
 )
 
-// The wire codes a look's failure and refusal carry. The budget refusal
-// is not a failure: the suggestion stands and the look finishes. The
-// message is the phrase the contract's error fixture carries.
+// The wire codes a look's failure and refusal carry. Neither refusal is
+// a failure: the suggestion stands and the look finishes. The messages
+// are the phrases the contract's fixtures carry.
 const (
 	codeBudgetRefused    = "budget_refused"
 	messageBudgetRefused = "budget refused"
+	codeRendersPaused    = "renders_paused"
+	messageRendersPaused = "renders paused"
 	codeNoFaceInPhoto    = "no_face_in_photo"
 )
 
@@ -167,6 +169,12 @@ type Deps struct {
 	// it. The record, not the request's shell, is what shops: a resumed
 	// attempt carries only the id.
 	ProductRecord func(ctx context.Context, user, id string) (*domain.Product, error)
+	// RendersPaused reports the operator's renders switch at the moment a
+	// render would run. Nil means renders are allowed. It is read once per
+	// attempt, so a switch flipped mid-look holds the runner-up too. A
+	// paused render is a refusal, not a failure: the stage publishes its
+	// code, no unit is quoted, and the suggestion stands.
+	RendersPaused func(ctx context.Context) bool
 }
 
 func (d Deps) validate() error {
@@ -574,11 +582,21 @@ func finish(ctx context.Context, deps Deps, req Request, occ *domain.Occasion, f
 // refusal ends the pass with a refusal event and no render, and the
 // refused return says the chain ends here: the runner-up's trigger is a
 // failed check, not a refused budget, because the budget that refused
-// this render refuses the next. Any other render fault, and a check
-// that cannot finish, fail the look. A discarded render is not an
-// error: the pass ends with no render and no refusal, and the caller
-// falls back.
+// this render refuses the next. The operator's renders switch refuses
+// the same way, before a byte is read or a unit quoted. Any other render
+// fault, and a check that cannot finish, fail the look. A discarded
+// render is not an error: the pass ends with no render and no refusal,
+// and the caller falls back.
 func attempt(ctx context.Context, deps Deps, photo Photo, occ *domain.Occasion, fix *domain.Fix, req Request, flagged map[string]bool, name string, progress func(job.Progress)) (*domain.Render, string, bool, error) {
+	if deps.RendersPaused != nil && deps.RendersPaused(ctx) {
+		emit(progress, stageRender, renderEvent{
+			Fix:     fix.ID,
+			Attempt: name,
+			Code:    codeRendersPaused,
+			Message: messageRendersPaused,
+		})
+		return nil, "", true, nil
+	}
 	brought, basket := req.Brought, req.Basket
 	if needProduct(fix) {
 		var err error
