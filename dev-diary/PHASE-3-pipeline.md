@@ -104,7 +104,7 @@ requires:   T2.2, T3.3
 fixture-ok: yes
 size:       M · mid
 owns:       internal/pipeline/render.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 The YouCam try-on for the fix, with the product the user brought or one from the basket, through the YouCam client (idempotent, copied into mediastore). Quote before running; a refused budget ends the step with the suggestion intact.
 
