@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T5.16 landed (`d21f358`) — capture leads with the in-mirror CTAs. T5.17 (unified look) claims next and closes the serial UI chain to T5.18. T3.7 (Shop the look) landed — T3.8 (Remember and recall ★) dispatches next; T3.9 closes P3.
+**Current status:** T3.8 landed (`f55b515`) — the second-visit story proven end to end on the recorded Lambo exchanges: the kept fix offered first, the dismissed one off the wire entirely. Only **T3.9 (the evaluation ★)** remains in P3 — it sets the real thresholds from measurement and closes the phase. T4.4 then wires the app (including T3.8's two call sites: look-start recall; verdict-handler remember). T5.16 (capture declutter) in review. **Product decision accumulating for the user:** the phrase-table question — three user-facing wordings (T3.5's look line, T3.7's simulation name, T3.8's remembered sentences) are composed mechanically from ids; a `phrase` field in the occasions data (T0.3's pattern) would let the demo speak prettier prose everywhere at once. Decide at leisure.
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P0 | 8 / 8 | Done. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 7 / 9 | T2.2 landed. Only the live siblings (T2.1b, T2.2b) remain — they need the user present for live runs. |
-| P3 | 7 / 9 | T3.7 (Shop the look) landed — every product labelled exact/approximate/simulation, kept products first, the shop stage wired into the run (media join = T4.4's named deferral). T3.8 (Remember and recall ★) dispatches next; then T3.9 evaluation closes P3. |
+| P3 | 8 / 9 | T3.8 (Remember and recall ★) landed — the second-visit story proven end to end on the recorded Lambo exchanges. Only T3.9 (the evaluation ★, frontier) remains — it closes P3 and sets the real thresholds. T4.4 then wires the app (including T3.8's two call sites). |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
 | P5B | 8 / 9 | T5.16 landed — the capture screen leads with the in-mirror camera CTAs and the 2-column fallback row. Only T5.17 (unified look) and T5.18 (History/Account + shade-match sync) remain. |
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T3.8 Remember and recall ★.** `internal/pipeline/memory.go`: `Remember(ctx, client, session, occ, facts...)` composes one observation sentence per verdict fact — "Family function kept the gold jhumkas." — and sends one Lambo write, receipt-confirmed applied before it returns; `RecallFor` queries by the lowercased occasion name and builds the pick's `Recall` (line + kept/dismissed ids). The composed sentences byte-match the recorded probe sentences; the contract sentence composes in the occasion's MENU order, never the hit order (on the recording the dismissed fix outranks the kept one — a rank-ordered sentence would flip the story). With history off: nine refusal pins plus a counted first-visit run at 0 writes / 0 reads. Failure posture: a failed recall is a first visit; a failed remember leaves the verdict standing. **run.go deliberately untouched** — the run never sees the verdict, the snapshot already round-trips Recall, and the invocation points (look-start recall; verdict-handler remember with `remembered = err == nil`) are T4.4's, with the proposed diffs in the task notes — T4.4 must land both or the story stays stage-level. Review CLEAN, no findings, the causality control and both rulings verified. Landed as `1a8da7d`+`f55b515`, gate green in the worktree and the main checkout, race clean. Third instance of the display-phrase data gap flagged for the user's phrase-table decision.
 
 - **T5.16 Capture declutter.** Capture now leads with the arched mirror: the prompt and `Open the front camera` sit inside the arch, `Take the photo` overlays its bottom centre when live, `Check the dress code` follows with the ready hint, and the two file fallbacks share one 2-column row. The lead, the visible h2 (section aria-label instead), the camera hint, and the drawer's redundant h2 are gone; every landed T5.13 pin survives and new structural pins cover the in-mirror controls, the overlay anchor, and the picker order. Review CLEAN, no findings (noted: the review ran in place at the branch tip because the orchestrator never created its dedicated worktree — process slip on the orchestrator, read-only, harmless). Landed as `d21f358`, gate green in the worktree and the main checkout. Known behaviour, unchanged: picking a gallery selfie while the camera is live leaves both the take overlay and the ready CTA visible (pre-existing, not a regression).
 
