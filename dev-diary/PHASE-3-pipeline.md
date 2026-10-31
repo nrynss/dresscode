@@ -49,7 +49,7 @@ requires:   T2.1, T3.1
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/pipeline/pick.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 One System One request on text only: flagged criteria, occasion, the user's opt-in menu, the allowlisted attributes (only those the cached analysis already holds), and recall if history is on. Output: fix and runner-up, both from the opt-in menu. A dismissed fix in recall is never offered first.
 
