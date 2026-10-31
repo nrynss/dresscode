@@ -3,7 +3,7 @@ package pipeline
 // Measure is this file: the YouCam analyses the chosen fix names, and no
 // other work. Pick hands over the fix carried whole; this file reads that
 // fix's own analysis list and runs exactly what it names, once per user,
-// photo and task, through the T2.2 runner. Render (T3.4) reads the values
+// photo and task, through the T2.2 runner. Pick reads the values
 // it returns; the run (T3.6) inherits the mapping tables below unchanged.
 
 import (
@@ -174,7 +174,7 @@ func runFaceAttributes(ctx context.Context, runner *youcam.Runner, job analysisJ
 // same photo reads the cache and spends nothing.
 //
 // The returned allowlist holds only what this fix's analyses yielded. It
-// is the value the pick request may carry on a later look and the render
+// is the value the pick request may carry on a later look and the pick
 // step reads; an attribute the analysis did not produce stays empty, and
 // no probability, score, age, gender or ratio has a way into it.
 //
