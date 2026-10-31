@@ -9,14 +9,20 @@ import type { OccasionDetail, OccasionFix, OccasionSummary } from "./types";
  * session already saved. A full reload asks again. */
 const remembered = new Map<string, string[]>();
 
-/** The occasion whose fixes the user last saved this session. The next look
- * starts on it; before any save, the caller keeps its own occasion. A write
- * that fails keeps what was saved before. */
+/** The occasion the picker is working on this session: recorded the moment it
+ * is chosen, and re-recorded by a write of its fixes. The next look starts on
+ * it; before any choice, the caller keeps its own occasion. A write that
+ * fails keeps what was chosen. */
 let kept = "";
 
-/** The occasion the picker last saved, or "" before any save this session. */
+/** The occasion the picker set active, or "" before any choice this session. */
 export function keptOccasion(): string {
   return kept;
+}
+
+/** Record the occasion the picker has in hand, the moment it is chosen. */
+export function keepOccasion(id: string): void {
+  kept = id;
 }
 
 export function resetOccasionMenu(): void {
@@ -112,6 +118,39 @@ async function putJson(path: string, body: unknown, signal?: AbortSignal): Promi
     body: JSON.stringify(body),
     ...(signal ? { signal } : {}),
   });
+}
+
+/** The compact pill label per fix. Keyed by the fix's whole id where the
+ * occasion changes the wording, and by the id's tail where every occasion
+ * shares it. The words of a kept fix ride along by name only in this module,
+ * never in a screen's own markup. */
+const chipLabels: Readonly<Record<string, string>> = {
+  "date-nude-lip": "Even nude lip",
+  "interview-nude-lip": "Quiet nude lip",
+  "funeral-nude-lip": "Quiet nude lip",
+  "date-open-collar": "Open-collar shirt",
+  "interview-buttoned-shirt": "Buttoned shirt",
+  "funeral-dark-shirt": "Dark buttoned shirt",
+  "interview-short-hair": "Short, neat hair",
+  "funeral-short-beard": "Short, close beard",
+  "festival-full-beard": "Full, even beard",
+  "gold-jhumkas": "Gold jhumkas",
+  "gold-chain": "Gold chain",
+  "red-lip": "Red lip",
+  "festive-top": "Festive mandarin top",
+  "tie-hair": "Hair tied back",
+  "short-beard": "Short, even beard",
+  "closed-smile": "Calm smile",
+};
+
+/** The compact pill label for one fix: the exact id where the occasion names
+ * the wording, else the id's tail, else the recorded sentence. `changes`
+ * stays the sentence on the wire either way. */
+export function fixChipLabel(fix: OccasionFix): string {
+  const exact = chipLabels[fix.id];
+  if (exact !== undefined) return exact;
+  const tail = fix.id.slice(fix.id.indexOf("-") + 1);
+  return chipLabels[tail] ?? fix.changes;
 }
 
 /** The five occasions, in the order the API returns. */

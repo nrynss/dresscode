@@ -3,7 +3,8 @@ import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
 import { installMock, pinAnswer, preferFixture } from "../../lib/api/mock";
 import type { ApiFixture } from "../../lib/api/types";
-import { listOccasions, readOccasion, readOptIn, readRecallLine, resetOccasionMenu, writeOptIn } from "./menu";
+import { fixChipLabel, listOccasions, readOccasion, readOptIn, readRecallLine, resetOccasionMenu, writeOptIn } from "./menu";
+import type { OccasionFix } from "./types";
 
 interface Call {
   method: string;
@@ -135,6 +136,66 @@ test("the past-visit line answers the session's switch and refuses what is not r
   // An occasion the story has not met answers not_found, which the screen
   // reads as no line for now rather than a broken menu.
   await expect(readRecallLine("interview")).rejects.toMatchObject({ code: "not_found" });
+});
+
+test("every recorded fix carries its compact pill label", async () => {
+  installMock();
+  const expected: Record<string, string> = {
+    "date-open-collar": "Open-collar shirt",
+    "date-tie-hair": "Hair tied back",
+    "date-short-beard": "Short, even beard",
+    "date-nude-lip": "Even nude lip",
+    "date-closed-smile": "Calm smile",
+    "family-gold-jhumkas": "Gold jhumkas",
+    "family-red-lip": "Red lip",
+    "family-festive-top": "Festive mandarin top",
+    "family-tie-hair": "Hair tied back",
+    "family-short-beard": "Short, even beard",
+    "family-closed-smile": "Calm smile",
+    "interview-buttoned-shirt": "Buttoned shirt",
+    "interview-tie-hair": "Hair tied back",
+    "interview-short-hair": "Short, neat hair",
+    "interview-short-beard": "Short, even beard",
+    "interview-nude-lip": "Quiet nude lip",
+    "interview-closed-smile": "Calm smile",
+    "festival-festive-top": "Festive mandarin top",
+    "festival-gold-jhumkas": "Gold jhumkas",
+    "festival-gold-chain": "Gold chain",
+    "festival-red-lip": "Red lip",
+    "festival-tie-hair": "Hair tied back",
+    "festival-full-beard": "Full, even beard",
+    "festival-closed-smile": "Calm smile",
+    "funeral-dark-shirt": "Dark buttoned shirt",
+    "funeral-nude-lip": "Quiet nude lip",
+    "funeral-tie-hair": "Hair tied back",
+    "funeral-short-beard": "Short, close beard",
+  };
+
+  // Every fix the recorded menu carries maps to its pill label through the
+  // recorded envelope, the way the screen reads it.
+  const family = await readOccasion("family-function");
+  expect(family.fixes.map((fix) => fixChipLabel(fix))).toEqual(
+    family.fixes.map((fix) => expected[fix.id]),
+  );
+
+  // Every fix the product files record maps too, and no label carries a
+  // digit or a banned grading word.
+  const banned = /\b(score|probability|percent|gender|attractiveness|ratio)\b/i;
+  const dir = fileURLToPath(new URL("../../../../testdata/occasions/", import.meta.url));
+  for (const file of ["date.json", "family-function.json", "interview.json", "festival.json", "funeral.json"]) {
+    const body = JSON.parse(readFileSync(`${dir}${file}`, "utf8")) as { fixes: { id: string; changes: string }[] };
+    for (const fix of body.fixes) {
+      const pill: OccasionFix = { id: fix.id, changes: fix.changes, criteria: [] };
+      expect(fixChipLabel(pill), fix.id).toBe(expected[fix.id]);
+      expect(expected[fix.id]).not.toMatch(/\d/);
+      expect(expected[fix.id]).not.toMatch(banned);
+    }
+  }
+
+  // A fix the table has not met falls back to the recorded sentence.
+  expect(fixChipLabel({ id: "gala-new-piece", changes: "Adds something new.", criteria: [] })).toBe(
+    "Adds something new.",
+  );
 });
 
 test("the occasion screen does not grade a person", () => {

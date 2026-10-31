@@ -1,6 +1,7 @@
 import { test } from "vitest";
 import { preferFixture } from "../../src/lib/api/mock";
 import { resetHistory, writeHistory } from "../../src/routes/history/flow";
+import { resetOccasionMenu } from "../../src/routes/occasion/menu";
 import {
   gate,
   mountApp,
@@ -9,10 +10,13 @@ import {
   openFixMenu,
   openFidelityExplanation,
   openProductDrawer,
+  openSampleDrawer,
   openSecondVisit,
   openShopSheet,
+  toggleFixPill,
   useMock,
   waitUntil,
+  watchWrites,
   withText,
   type Mode,
 } from "./helpers";
@@ -32,14 +36,14 @@ interface ScreenState {
  * themes at the phone width. */
 const states: ScreenState[] = [
   {
-    name: "the home screen with the session read",
+    name: "the home screen with the lead",
     hash: "",
-    ready: () => withText("p", "You are here as a guest."),
+    ready: () => withText("p", "See the dress code before they do."),
   },
   {
     name: "the home screen with the about dialog open",
     hash: "",
-    ready: () => withText("p", "You are here as a guest."),
+    ready: () => withText("p", "See the dress code before they do."),
     open: openAboutDialog,
   },
   {
@@ -53,10 +57,29 @@ const states: ScreenState[] = [
     hash: "",
     ready: () => withText("label", "Family function"),
     open: async () => {
-      // The section's hint is static markup; the one-tap buttons are the
-      // honest marker that the samples list has come back.
+      // The drawer hides the judge buttons until asked; open it so the gate
+      // judges the buttons a reader who wants a sample sees, then the fix
+      // menu beside them.
+      await openSampleDrawer();
       await waitUntil(() => document.querySelector(".sample-row button"), "the sample buttons");
       await openFixMenu();
+      // The tick auto-saves, and the decluttered screen draws no confirmation:
+      // the write itself is the proof, on the wire.
+      const writes = watchWrites();
+      toggleFixPill("Hair tied back");
+      await waitUntil(
+        () =>
+          writes.writes.find(
+            (call) =>
+              call.method === "PUT" &&
+              call.path === "/api/occasions/family-function/opt-in" &&
+              JSON.stringify(call.body) === JSON.stringify({ ticked: ["family-tie-hair"] }),
+          ) ?? null,
+        "the auto-save write",
+      );
+      writes.stop();
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      resetOccasionMenu();
     },
   },
   {

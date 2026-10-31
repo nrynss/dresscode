@@ -76,19 +76,19 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem 1rem;
+    gap: 0.25rem 0.65rem;
   }
 
   .brand {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.3rem;
     color: var(--text);
     text-decoration: none;
   }
 
   .wordmark {
-    font-size: 1.35rem;
+    font-size: 1rem;
     font-weight: 600;
     letter-spacing: -0.02em;
     line-height: 1;
@@ -98,13 +98,15 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.25rem 0.9rem;
+    gap: 0.25rem 0.65rem;
+    font-size: 0.95rem;
   }
 
   .shell-nav a {
     display: inline-flex;
     align-items: center;
     min-height: 2.75rem;
+    letter-spacing: -0.02em;
     color: var(--dim);
     text-decoration: none;
   }

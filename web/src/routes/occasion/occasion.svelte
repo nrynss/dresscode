@@ -2,7 +2,7 @@
   import { ApiError } from "@nrynss/chaaya/keel";
   import ErrorNotice from "../../app/error-notice.svelte";
   import { readHistory } from "../history/flow";
-  import { listOccasions, readOccasion, readOptIn, readRecallLine, writeOptIn } from "./menu";
+  import { fixChipLabel, keepOccasion, listOccasions, readOccasion, readOptIn, readRecallLine, writeOptIn } from "./menu";
   import type { OccasionDetail, OccasionSummary } from "./types";
 
   /** Standalone carries the way back and the screen heading's own route; the
@@ -17,10 +17,9 @@
   let line = $state("");
   let listProblem = $state<ApiError | null>(null);
   let problem = $state<ApiError | null>(null);
+  let writeProblem = $state<ApiError | null>(null);
   let openingList = $state(true);
   let openingMenu = $state(false);
-  let saving = $state(false);
-  let savedNote = $state("");
   let alive = true;
 
   $effect(() => {
@@ -41,35 +40,52 @@
   }
 
   function select(id: string): void {
-    if (saving || selected === id) return;
+    if (selected === id) return;
     selected = id;
+    keepOccasion(id);
   }
+
+  /** The ticks answer a tap at once, and the set on screen travels to the
+   * server behind the scenes. A write already in flight finishes, then the
+   * newest set goes in its turn, so the taps land in the order they were
+   * made. A write that fails is reported and stays reported until one
+   * succeeds. */
+  let writing = false;
+  let rewrite = false;
 
   function toggle(id: string): void {
-    if (saving) return;
-    savedNote = "";
     if (ticked.includes(id)) ticked = ticked.filter((item) => item !== id);
     else ticked = [...ticked, id];
+    if (writing) {
+      rewrite = true;
+      return;
+    }
+    writing = true;
+    void drainWrites();
   }
 
-  async function save(): Promise<void> {
-    const id = selected;
-    const menu = detail;
-    if (id === "" || menu === null || saving) return;
-    const chosen = menu.fixes.map((fix) => fix.id).filter((fixId) => ticked.includes(fixId));
-    saving = true;
-    problem = null;
-    savedNote = "";
+
+  async function drainWrites(): Promise<void> {
     try {
-      const stored = await writeOptIn(id, chosen);
-      if (!alive || selected !== id) return;
-      ticked = [...stored];
-      savedNote = `Saved for ${menu.name}.`;
-    } catch (error: unknown) {
-      if (!alive || selected !== id) return;
-      problem = asApiError(error);
+      for (;;) {
+        rewrite = false;
+        const id = selected;
+        const menu = detail;
+        if (id === "" || menu === null) return;
+        const chosen = menu.fixes.map((fix) => fix.id).filter((fixId) => ticked.includes(fixId));
+        try {
+          await writeOptIn(id, chosen);
+        } catch (error: unknown) {
+          if (alive && selected === id) writeProblem = asApiError(error);
+          return;
+        }
+        if (!alive) return;
+        if (selected !== id && selected !== "") keepOccasion(selected);
+        writeProblem = null;
+        if (!rewrite) return;
+      }
     } finally {
-      if (alive && selected === id) saving = false;
+      writing = false;
     }
   }
 
@@ -114,9 +130,9 @@
     const control = new AbortController();
     openingMenu = true;
     problem = null;
+    writeProblem = null;
     detail = null;
     ticked = [];
-    savedNote = "";
     Promise.all([readOccasion(id, control.signal), readOptIn(id, control.signal)]).then(
       ([nextDetail, nextTicked]) => {
         if (control.signal.aborted || !alive) return;
@@ -153,15 +169,10 @@
   });
 </script>
 
-<section class="occasion" aria-labelledby="occasion-heading">
+<section class="occasion">
   {#if standalone}
     <button type="button" class="back" onclick={back}>Back</button>
   {/if}
-  <h2 id="occasion-heading">Occasion</h2>
-  <p class="hint">
-    Pick an occasion. Then tick the fixes you are open to. Nothing is ticked until you say so, and that choice stays
-    with the occasion.
-  </p>
 
   {#if listProblem}
     <ErrorNotice error={listProblem} />
@@ -170,7 +181,7 @@
   {:else if occasions.length === 0}
     <p class="hint">No occasions are available.</p>
   {:else}
-    <fieldset class="cards" disabled={saving}>
+    <fieldset class="cards">
       <legend>Choose an occasion</legend>
       {#each occasions as occasion (occasion.id)}
         <label>
@@ -196,25 +207,20 @@
       {#if line !== ""}
         <p class="banner" role="status">{line}</p>
       {/if}
-      <fieldset class="menu" disabled={saving}>
+      <fieldset class="menu">
         <legend>Fixes you are open to</legend>
         {#each detail.fixes as fix (fix.id)}
           <label>
             <input type="checkbox" checked={ticked.includes(fix.id)} onchange={() => toggle(fix.id)} />
             <span class="tick" aria-hidden="true"></span>
-            {fix.changes}
+            {fixChipLabel(fix)}
           </label>
         {/each}
       </fieldset>
-      <div class="row">
-        <button type="button" class="primary" disabled={saving} onclick={() => void save()}>
-          {saving ? "Saving." : "Save"}
-        </button>
-        <a class="btn-primary bring" href="#/capture">Bring the look</a>
-      </div>
-      {#if savedNote !== ""}
-        <p class="saved" role="status">{savedNote}</p>
+      {#if writeProblem}
+        <ErrorNotice error={writeProblem} />
       {/if}
+      <a class="btn-primary bring" href="#/capture">Bring the look</a>
     {/if}
   {/if}
 </section>
@@ -224,13 +230,6 @@
     margin-top: 1.25rem;
     max-width: 100%;
     min-inline-size: 0;
-  }
-
-  .occasion h2 {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
   }
 
   .hint {
@@ -245,7 +244,7 @@
   }
 
   /* Both menus rest on a quiet eyebrow legend above them, so the cards and
-   * chips carry no boxed fieldset of their own. */
+   * pills carry no boxed fieldset of their own. */
   fieldset.cards,
   fieldset.menu {
     position: relative;
@@ -308,24 +307,25 @@
     outline-offset: 2px;
   }
 
-  /* Selectable fix chips, with a custom check indicator in place of the
-   * native box. */
+  /* Compact fix pills in a wrapping row. Every colour they draw sits in a
+   * pair the contrast table measures: the pill's own text on the surface and
+   * on the soft accent fill, the line and the accent against them. */
   fieldset.menu {
-    display: grid;
-    gap: 0.6rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   fieldset.menu label {
     position: relative;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    min-height: 2.75rem;
-    padding: 0.6rem 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.25rem;
+    padding: 0.3rem 0.75rem;
     background: var(--surface);
     border: 1px solid var(--line);
-    border-radius: var(--radius-control);
-    overflow-wrap: break-word;
+    border-radius: 999px;
     cursor: pointer;
   }
 
@@ -342,9 +342,8 @@
   .tick {
     position: relative;
     flex: none;
-    width: 1.15rem;
-    height: 1.15rem;
-    margin-top: 0.2rem;
+    width: 1rem;
+    height: 1rem;
     border: 1px solid var(--line);
     border-radius: 999px;
   }
@@ -358,8 +357,8 @@
     content: "";
     position: absolute;
     inset: 0;
-    width: 0.4rem;
-    height: 0.6rem;
+    width: 0.35rem;
+    height: 0.55rem;
     margin: auto;
     border-right: 2px solid var(--on-accent);
     border-bottom: 2px solid var(--on-accent);
@@ -381,18 +380,11 @@
     overflow-wrap: break-word;
   }
 
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    align-items: center;
-    margin-top: 1rem;
-  }
-
   a.bring {
     display: inline-flex;
     align-items: center;
     min-height: 2.75rem;
+    margin-top: 1rem;
     padding: 0.45rem 0.9rem;
     border: 1px solid var(--accent);
     border-radius: var(--radius-control);
@@ -402,11 +394,6 @@
   a.bring:hover {
     text-decoration: underline;
     text-underline-offset: 0.2em;
-  }
-
-  .saved {
-    margin: 0.75rem 0 0;
-    color: var(--ok);
   }
 
   @media (prefers-reduced-motion: no-preference) {

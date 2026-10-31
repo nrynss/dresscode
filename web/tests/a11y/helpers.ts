@@ -98,6 +98,51 @@ export async function openFixMenu(): Promise<void> {
   await waitUntil(() => withText("legend", "Fixes you are open to"), "the fix menu");
 }
 
+/** Open the front door's sample-look drawer, so the judge buttons face the
+ * gate the way a reader who wants a sample sees them. */
+export async function openSampleDrawer(): Promise<void> {
+  const summary = withText("summary", "Try a sample look");
+  expect(summary, "the sample drawer summary").not.toBeNull();
+  (summary as HTMLElement).click();
+  await waitUntil(() => document.querySelector("details.samples[open]"), "the sample drawer opens");
+}
+
+/** Tick one fix pill by its compact label: the input's own change event is
+ * the tap the picker's auto-save answers. */
+export function toggleFixPill(label: string): void {
+  const input = firstInputOf(label);
+  input.click();
+}
+
+export interface WriteCall {
+  method: string;
+  path: string;
+  body: unknown;
+}
+
+/** Watch the writes the screens send while the gate runs. The decluttered
+ * picker no longer draws a confirmation, so its auto-save is proven on the
+ * wire, not by a marker on the page. */
+export function watchWrites(): { writes: WriteCall[]; stop: () => void } {
+  const writes: WriteCall[] = [];
+  const inner = globalThis.fetch;
+  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+    const raw = input instanceof Request ? input.url : input instanceof URL ? input.href : String(input);
+    const url = new URL(raw, "http://dresscode.local");
+    let body: unknown;
+    if (typeof init?.body === "string" && init.body !== "") body = JSON.parse(init.body) as unknown;
+    if (method !== "GET") writes.push({ method, path: url.pathname + url.search, body });
+    return inner(input, init);
+  }) as typeof fetch;
+  return {
+    writes,
+    stop() {
+      globalThis.fetch = inner;
+    },
+  };
+}
+
 /** Open the shop-the-look bottom sheet. */
 export async function openShopSheet(): Promise<void> {
   const trigger = withText("button", "Shop the look");

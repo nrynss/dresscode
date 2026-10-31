@@ -1,5 +1,6 @@
 <script lang="ts">
   import { ApiError } from "@nrynss/chaaya/keel";
+  import { Dialog } from "bits-ui";
   import { api } from "../lib/api/client";
   import History from "../routes/history/history.svelte";
   import Occasion from "../routes/occasion/occasion.svelte";
@@ -129,9 +130,11 @@
     <!-- The occasions are the front door: the cards sit directly on the home
       screen, so picking one needs no extra click. -->
     <Occasion standalone={false} />
-    <section class="samples" aria-labelledby="samples-heading">
-      <h3 id="samples-heading">Sample looks</h3>
-      <p class="hint">Open a sample selfie to see a finished look right away.</p>
+    <!-- The judge samples fold away: the drawer opens only for a reader who
+      wants one, and the buttons are the honest marker that the list came
+      back. -->
+    <details class="samples disclosure">
+      <summary>Try a sample look</summary>
       {#if sampleProblem}
         <ErrorNotice error={sampleProblem} />
       {:else if openingSamples}
@@ -145,36 +148,51 @@
           {/each}
         </div>
       {/if}
-    </section>
+    </details>
     <div class="quiet-row">
       <a href={verdictHash}>See the verdict</a>
       <a href={renderHash}>See the render</a>
       <a href={historyHash}>Style history</a>
+      <Dialog.Root>
+        <Dialog.Trigger class="ghost">About</Dialog.Trigger>
+        <Dialog.Portal>
+          <Dialog.Overlay class="dresscode-overlay" />
+          <Dialog.Content class="dresscode-panel">
+            <Dialog.Title class="dresscode-title">Dresscode</Dialog.Title>
+            <Dialog.Description class="dresscode-copy">
+              A private look at the dress code, before anyone else sees the photo. Dresscode suggests a fix. It does
+              not grade the photo.
+            </Dialog.Description>
+            <Dialog.Close class="primary">Close</Dialog.Close>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </div>
   {/if}
 </Shell>
 
 <style>
+  /* The judge samples fold into a boxed drawer, closed until asked. */
   .samples {
     margin-top: 2rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+    background: var(--surface);
+    min-inline-size: 0;
   }
 
-  .samples h3 {
-    margin: 0;
-    font-size: 1.15rem;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-  }
-
-  .hint {
-    margin: 0.4rem 0 0;
-    color: var(--dim);
-    max-width: 36rem;
+  .samples summary {
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.9rem;
+    cursor: pointer;
+    color: var(--text);
     overflow-wrap: break-word;
   }
 
   .quiet {
-    margin: 0.5rem 0 0;
+    margin: 0 0.9rem 0.9rem;
     color: var(--dim);
     overflow-wrap: break-word;
   }
@@ -183,12 +201,13 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
-    margin-top: 0.75rem;
+    padding: 0.1rem 0.9rem 0.9rem;
   }
 
   .quiet-row {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.25rem 1.25rem;
     margin-top: 2.5rem;
     padding-top: 0.5rem;
