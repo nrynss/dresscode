@@ -153,7 +153,7 @@ requires:   T4.4, T3.9
 fixture-ok: yes
 size:       S · mid
 owns:       internal/server/samples.go, testdata/samples/cached/
-status:     claimed:glm-5.3-flash
+status:     claimed:qoder (fourth review round)
 ```
 The sample selfies with their analysis, judgements and renders already cached, so opening a sample spends nothing. A judge can still take a fresh selfie within the lease.
 

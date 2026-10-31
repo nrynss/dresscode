@@ -592,7 +592,7 @@ requires:   T5.18, T5.19
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/app/, web/src/routes/capture/upload.test.ts, web/src/routes/look/verdict/verdict.test.ts, web/src/routes/look/render/render.test.ts, web/tests/a11y/
-status:     not-started
+status:     claimed:qoder
 ```
 Eliminate the "blog / newspaper" feel caused by setting Georgia serif on every button, pill, nav link, and disclosure, and replace the top/bottom text-link bars with a native mobile app shell: a Fixed Bottom Tab Bar with 4 SVG icon + label tabs (`Occasion`, `Mirror`, `History`, `Account`), a Top App Bar with a circular `←` icon back button and `About` dialog trigger, and a global bordered `.disclosure` accordion card recipe in `theme.css`.
 
