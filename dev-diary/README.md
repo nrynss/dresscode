@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** **P3 is COMPLETE** (`344ff16`) — judge, pick, measure, render, check, fallback, shop, memory, and the evaluation that set every threshold from measurement. **T4.4 (the look routes) dispatches next**: the app wiring (config→pipeline mapping, T3.8's two call sites, the shop frame's server-side media join per T3.7 decision (b)) plus the measured settings diff from T3.9's report. T5.16 (capture declutter) in review; T5.17/T5.18 close P5B after it.
+**Current status:** T4.4 landed (`1772c57`) — every look route answers on replays; the app is wired to the finished pipeline with the measured thresholds. T4.6 and T4.7 (the last two P4 tasks) dispatch now. T5.16 in review; T5.17/T5.18 close P5B. **P3 and most of P4 done — P6 ship is the only phase left after them.**
 
 ---
 
@@ -143,7 +143,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 7 / 9 | T2.2 landed. Only the live siblings (T2.1b, T2.2b) remain — they need the user present for live runs. |
 | P3 | **9 / 9 — COMPLETE** | T3.9 (the evaluation ★) landed — every threshold measured from its curve (260/273 at 0.5 → 269/273 at chosen), every known-bad render rejected, stability zero flips, `model = "clef"` chosen on vocabulary (19/22 vs 17/22). The numbers live in docs/evaluation.md; the measured settings diff awaits T4.4's wiring. **The pipeline is built.** |
-| P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
+| P4 | 5 / 7 | T4.4 (the look routes) landed — the app wires to the finished pipeline. Only T4.6 (judge samples) and T4.7 (budgets/flags) remain; both dispatch now. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
 | P5B | 8 / 9 | T5.16 landed — the capture screen leads with the in-mirror camera CTAs and the 2-column fallback row. Only T5.17 (unified look) and T5.18 (History/Account + shade-match sync) remain. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
