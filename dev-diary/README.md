@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** **P5B is complete** (`0403b53`) — the UX overhaul landed end to end with its gates. **P3 is running**: T3.1 landed, T3.2 (Pick a fix) in flight, then T3.3 Measure → T3.4 Render → T3.5 Check → T3.6 fallback+config → T3.7 shop → T3.8 memory → T3.9 evaluation. T4.4 wires it to the app after T3.6.
+**Current status:** **P5B is complete** (`0403b53`) — the UX overhaul landed end to end with its gates. **P3 is running**: T3.1 and T3.2 (Judge, Pick a fix) landed; T3.3 (Measure) dispatches next, then T3.4 Render → T3.5 Check → T3.6 fallback+config → T3.7 shop → T3.8 memory → T3.9 evaluation. T4.4 wires it to the app after T3.6.
 
 ---
 
@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P0 | 8 / 8 | Done. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 7 / 9 | T2.2 landed. Only the live siblings (T2.1b, T2.2b) remain — they need the user present for live runs. |
-| P3 | 1 / 9 | **The pipeline has begun** — T3.1 (Judge) landed. T3.2 (Pick a fix) dispatches next. |
+| P3 | 2 / 9 | T3.2 (Pick a fix) landed. T3.3 (Measure) dispatches next. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
 | P5B | 5 / 5 | **Complete.** The overhaul landed: front door, mirror journey, comparator, brand mark, editorial shell, button system, Account/History upgrades, and the a11y matrix covering all 15 states. Before/after screenshots await the user's review (`/tmp/ui-explore/` vs `/tmp/ui-explore-after/`). |
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T3.2 Pick a fix.** `internal/pipeline/pick.go`: one System One request ON TEXT ONLY — flagged criteria, occasion, the user's opt-in menu, the allowlisted attributes (only those the cached analysis holds), recall when history is on. Output: `Choice{Fix, RunnerUp *domain.Fix}`, both from the opt-in menu — the candidate set is ticked ∩ menu built before the request, so an off-menu fix is unrepresentable; the answer lookup refuses anything outside. A dismissed fix in recall is excluded ENTIRELY (never first, never runner-up) — product.md's fallback chain renders the runner-up on a failed check, so a first-place-only bar would put the dismissed fix on the user's face one hop later; kept-first stays with the model via the verbatim recall line. The judgement's biggest issue is deliberately not sent (the who-sees-what row doesn't list it, and an issue can name a criterion the flags don't hold). Vacuous asks refuse before any call with zero requests. No pick recordings exist (docs/clef.md says so); the replay pin proves the construction flows the real key machinery, and the first pick recording is a later task's spend decision. Remediation (review: dead helper, dead error return, and the domain reservation granted) extended `internal/domain` to refuse fix ids `none`/`cant-tell` — pinned with a negative control. Two review rounds; the second CLEAN. Landed as `6ed397d`+`26036fa`, gate green in the worktree and the main checkout, race clean. For T3.3: you inherit `Choice` (menu entries carried whole — no second lookup needed) and the candidates construction.
 
 - **T5.14 Visual verification — P5B is complete.** The a11y matrix grew from 13 to 15 states (30 mounted gate runs): the front door now waits for the loaded judge-sample buttons, capture gates the open product drawer, and render gates an open fidelity-popover explanation — both new states break-proven (stripping the popover's aria-label fails exactly those two tests, both themes). The closing screenshots live in `/tmp/ui-explore-after/` (47 renders + INDEX.md, light/dark/wide) against the before set at `/tmp/ui-explore/` — real photographs this time, via the media middleware; the comparator's dvh cap visibly fixes the before set's tallest-frame finding. No genuine screen failure on any landed surface; both disclosed deviations (the stepper's mid-flight state is a replay race, viewport-only screenshots) judged acceptable. Review CLEAN, break re-done independently. Landed as `0403b53`, gate green in the worktree and the main checkout, 54 unit + 38 a11y tests. **The overhaul is done; P3 carries the work from here.**
 
