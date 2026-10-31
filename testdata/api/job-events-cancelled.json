@@ -7,5 +7,5 @@
     "cache-control": "no-store",
     "x-accel-buffering": "no"
   },
-  "body": "event: progress\nid: 1\ndata: {\"job_id\":\"10b0000000000000000000000000000c\",\"stage\":\"judge\"}\n\nevent: cancelled\nid: 2\ndata: {\"job_id\":\"10b0000000000000000000000000000c\",\"status\":\"cancelled\"}\n\n"
+  "body": "event: progress\nid: 1\ndata: {\"job_id\":\"10b0000000000000000000000000000c\",\"stage\":\"judge\",\"detail\":{\"flags\":[{\"id\":\"family-earring-festive\",\"suggestion\":\"The ear reads plain; try gold jhumkas.\"},{\"id\":\"family-lip-colour\",\"suggestion\":\"The lip reads bare; try a red lip.\"}]}}\n\nevent: cancelled\nid: 2\ndata: {\"job_id\":\"10b0000000000000000000000000000c\",\"status\":\"cancelled\"}\n\n"
 }

@@ -282,9 +282,10 @@ func loadVariant(t *testing.T, replace func(text string) string) (Settings, erro
 }
 
 // cut drops one whole section from the example: from its header line to
-// the next header, so a sub-table goes with its parent and an edit to the
-// section's comments does not move the anchor.
+// the next header that is not its sub-table, so a sub-table goes with its
+// parent and an edit to the section's comments does not move the anchor.
 func cut(section string) func(string) string {
+	subTable := strings.TrimSuffix(section, "]") + "."
 	return func(text string) string {
 		lines := strings.Split(text, "\n")
 		start := -1
@@ -299,7 +300,8 @@ func cut(section string) func(string) string {
 		}
 		end := len(lines)
 		for i := start + 1; i < len(lines); i++ {
-			if strings.HasPrefix(lines[i], "[") {
+			header := strings.TrimSpace(lines[i])
+			if strings.HasPrefix(header, "[") && !strings.HasPrefix(header, subTable) {
 				end = i
 				break
 			}

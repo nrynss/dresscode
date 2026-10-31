@@ -67,6 +67,7 @@ type DeletionConfig struct {
 }
 
 type deletionRuntime struct {
+	srv    *Server
 	eng    *privacy.Engine
 	svc    *identity.Service
 	runner *job.Runner
@@ -83,6 +84,10 @@ var (
 // middleware with one that can erase, using the same database and the
 // same signing key. Call it before the process listens. A second call
 // refuses, because the routes are already registered.
+//
+// The job read and stream are shared with MountLooks and dispatched by
+// the job's kind (jobs.go), so either mount may come first. This runtime
+// recovers only its own kinds: the two share one jobs table.
 func (s *Server) MountDeletion(ctx context.Context, cfg DeletionConfig) error {
 	if s == nil || s.db == nil || s.mux == nil {
 		return fmt.Errorf("server: deletion: nil server")
@@ -148,7 +153,7 @@ func (s *Server) MountDeletion(ctx context.Context, cfg DeletionConfig) error {
 	broker := stream.New(stream.Config{})
 	runner, err := job.Open(ctx, job.Config{
 		Broker: broker,
-		Store:  jobStore,
+		Store:  kindStore{Store: jobStore, kinds: kinds},
 		Kinds:  kinds,
 		Log:    log,
 		Now:    now,
@@ -159,17 +164,22 @@ func (s *Server) MountDeletion(ctx context.Context, cfg DeletionConfig) error {
 	if err := svc.BindRunner(runner); err != nil {
 		return fmt.Errorf("server: deletion: %w", err)
 	}
-	rt := &deletionRuntime{eng: eng, svc: svc, runner: runner, broker: broker}
+	rt := &deletionRuntime{srv: s, eng: eng, svc: svc, runner: runner, broker: broker}
 	s.mux.Handle(RouteDeleteAccount, svc.DeleteHandler())
 	s.mux.Handle(RouteDeletePhoto, http.HandlerFunc(rt.deletePhoto))
 	s.mux.Handle(RouteDeleteLook, http.HandlerFunc(rt.deleteLook))
 	s.mux.Handle(RouteDeleteHistory, http.HandlerFunc(rt.deleteHistory))
-	s.mux.Handle(RouteJob, http.HandlerFunc(rt.serveJob))
-	s.mux.Handle(RouteJobEvents, http.HandlerFunc(rt.serveJobEvents))
+	s.mountJobRoutes()
 	s.handler = svc.Middleware(s.mux)
 	s.identity = svc
 	deletionBy[s] = rt
 	return nil
+}
+
+func (s *Server) deletionOf() *deletionRuntime {
+	deletionMu.Lock()
+	defer deletionMu.Unlock()
+	return deletionBy[s]
 }
 
 func (rt *deletionRuntime) deletePhoto(w http.ResponseWriter, r *http.Request) {

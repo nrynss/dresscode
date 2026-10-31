@@ -32,6 +32,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
+	"embed"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -191,12 +192,9 @@ var (
 )
 
 // MountLooks attaches the look routes, the history routes, and the job
-// read and stream for look jobs. Call it before the process listens,
-// and before MountDeletion: the job routes are registered once, and
-// this file's job handlers serve deletion jobs through the deletion
-// runtime's own broker and runner when both mounts share a process, so
-// the deletion mount must be the one that finds the routes taken.
-// A second call refuses.
+// read and stream for look jobs. Call it before the process listens.
+// The job pair is shared with MountDeletion and dispatched by the job's
+// kind (jobs.go), so either mount may come first. A second call refuses.
 //
 // The mount replaces the spending route's admission answer with the
 // start handler, so the gate stands in front of a real look.
@@ -290,10 +288,11 @@ func (s *Server) MountLooks(ctx context.Context, cfg LooksConfig) error {
 	if err != nil {
 		return fmt.Errorf("server: looks: %w", err)
 	}
+	kinds := map[string]job.Kind{pipeline.KindName: lookKind(rt)}
 	runner, err := job.Open(ctx, job.Config{
 		Broker: rt.broker,
-		Store:  jobStore,
-		Kinds:  map[string]job.Kind{pipeline.KindName: lookKind(rt)},
+		Store:  kindStore{Store: jobStore, kinds: kinds},
+		Kinds:  kinds,
 		Log:    log,
 		Now:    now,
 	})
@@ -310,13 +309,7 @@ func (s *Server) MountLooks(ctx context.Context, cfg LooksConfig) error {
 	s.mux.Handle(routeHistory, http.HandlerFunc(rt.serveHistoryGet))
 	s.mux.Handle(routeHistoryPut, http.HandlerFunc(rt.serveHistoryPut))
 	s.mux.Handle(routeRecall, http.HandlerFunc(rt.serveRecall))
-	deletionMu.Lock()
-	_, taken := deletionBy[s]
-	deletionMu.Unlock()
-	if !taken {
-		s.mux.Handle(RouteJob, http.HandlerFunc(rt.serveJob))
-		s.mux.Handle(RouteJobEvents, http.HandlerFunc(rt.serveJobEvents))
-	}
+	s.mountJobRoutes()
 	if err := s.SetSpendHandler(RouteLook, http.HandlerFunc(rt.serveStart)); err != nil {
 		return fmt.Errorf("server: looks: %w", err)
 	}
@@ -639,6 +632,18 @@ func (rt *lookRuntime) judgeLease(w http.ResponseWriter, r *http.Request) bool {
 	return false
 }
 
+// releaseJudgeSeat hands back the counters one start took. Only a start
+// that delivered nothing calls it: the look was never recorded, so the
+// session spent no seat. The lease is a count, so giving it back is the
+// same arithmetic that took it.
+func (rt *lookRuntime) releaseJudgeSeat(ctx context.Context, sessionID string) {
+	if _, err := rt.srv.db.Writer().ExecContext(ctx,
+		`UPDATE judge_sessions SET fresh_selfies = fresh_selfies - 1, renders = renders - 2
+		 WHERE session_id = ?`, sessionID); err != nil {
+		rt.log.Error("server: looks: hand back the judge seat", "err", err.Error())
+	}
+}
+
 // budgetAdmits is the budget check: the look's estimate is the units its
 // opted-in menu could spend, two renders and the heaviest analysis
 // load. Nothing is held here; the runner's own quotes are the enforced
@@ -747,10 +752,19 @@ func (rt *lookRuntime) startLook(w http.ResponseWriter, r *http.Request, occ *do
 		return
 	}
 	if err != nil {
-		// The job runs, but neither the look row nor the snapshot landed:
-		// there is no look to read and none to resume. The id is not
-		// handed out, because every route would answer not_found for it.
+		// Neither the look row nor the snapshot landed: there is no look
+		// to read and none to resume. The job is cancelled so no paid step
+		// runs for it, the seat is handed back because this start
+		// delivered nothing, and the id is not given out, because every
+		// route would answer not_found for it.
 		rt.log.Error("server: looks: keep the look", "job_id", jobID, "err", err.Error())
+		clean := context.WithoutCancel(ctx)
+		if cerr := rt.jobs.Cancel(jobID); cerr != nil && !errors.Is(cerr, job.ErrUnknownJob) {
+			rt.log.Error("server: looks: cancel the unrecorded look", "job_id", jobID, "err", cerr.Error())
+		}
+		if session, ok := identity.SessionFromContext(ctx); ok {
+			rt.releaseJudgeSeat(clean, session.ID)
+		}
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
 		return
 	}
@@ -952,19 +966,23 @@ func (rt *lookRuntime) productRecord(ctx context.Context, user, productID string
 
 // Picture is the pipeline's Pictures: the kept selfie, a product
 // picture, and a kept render, read from the store the intake and the
-// runner write. A catalog product's picture is the seeded store picture
-// the CatalogMedia seam names; a miss there is the caller's error.
+// runner write. A blob this user does not own is not theirs to read, so
+// it falls through to the catalog seam, which is the only picture a look
+// may read that is not the user's own. A miss there is not_found.
 func (rt *lookRuntime) Picture(ctx context.Context, user, mediaID string) (systemone.Image, error) {
-	img, _, err := rt.openBlob(ctx, mediaID)
-	if err == nil {
+	img, blob, err := rt.openBlob(ctx, mediaID)
+	if err == nil && blob.Owner == user {
 		return img, nil
 	}
-	if !errors.Is(err, mediastore.ErrNotFound) || rt.catalog == nil {
+	if err != nil && !errors.Is(err, mediastore.ErrNotFound) {
 		return systemone.Image{}, err
+	}
+	if rt.catalog == nil {
+		return systemone.Image{}, mediastore.ErrNotFound
 	}
 	seeded, ok := rt.catalog(ctx, mediaID)
 	if !ok {
-		return systemone.Image{}, err
+		return systemone.Image{}, mediastore.ErrNotFound
 	}
 	img, _, err = rt.openBlob(ctx, seeded)
 	return img, err
@@ -1026,7 +1044,11 @@ func (rt *lookRuntime) Keep(ctx context.Context, user, photoHash, task string, v
 // It is one namespace on the shared file, the way every Keel store keeps
 // its own.
 func migrateLooks(ctx context.Context, db *sqlite.DB) error {
-	if err := sqlite.Migrate(ctx, db, lookSchemaNamespace, looksSchema()); err != nil {
+	schema, err := fs.Sub(lookMigrations, "migrations")
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+	if err := sqlite.Migrate(ctx, db, lookSchemaNamespace, schema); err != nil {
 		return fmt.Errorf("migrate: %w", err)
 	}
 	return nil
@@ -1037,94 +1059,8 @@ func migrateLooks(ctx context.Context, db *sqlite.DB) error {
 // without colliding, because each keeps its own ledger.
 const lookSchemaNamespace = "lookserver"
 
-// looksSchema serves the migration file from this file, so the look
-// runtime's schema travels with the code that reads it.
-func looksSchema() fs.FS {
-	return stringFS{"0001_look_runtime.sql": `-- The judge session's counters: fresh selfies started and render seats
--- taken, per identity session. A cap is a count, not a quota of open
--- sessions. Rows are keyed by session id, so an erased session leaves a
--- dead row and no user data.
-CREATE TABLE IF NOT EXISTS judge_sessions (
-    session_id    TEXT    NOT NULL PRIMARY KEY,
-    fresh_selfies INTEGER NOT NULL DEFAULT 0,
-    renders       INTEGER NOT NULL DEFAULT 0
-);
-`}
-}
-
-// stringFS is a read-only file system of one directory of string files,
-// the shape the migration runner reads.
-type stringFS map[string]string
-
-func (f stringFS) Open(name string) (fs.File, error) {
-	if !fs.ValidPath(name) {
-		return nil, fs.ErrNotExist
-	}
-	if name == "." {
-		return stringDir{}, nil
-	}
-	raw, ok := f[name]
-	if !ok {
-		return nil, fs.ErrNotExist
-	}
-	return stringFile{strings.NewReader(raw), name}, nil
-}
-
-// ReadDir lists the migration files, the one read the runner makes.
-func (f stringFS) ReadDir(name string) ([]fs.DirEntry, error) {
-	if name != "." {
-		return nil, fs.ErrNotExist
-	}
-	names := make([]string, 0, len(f))
-	for file := range f {
-		names = append(names, file)
-	}
-	sort.Strings(names)
-	out := make([]fs.DirEntry, 0, len(names))
-	for _, file := range names {
-		out = append(out, stringEntry{stringInfo{name: file, size: int64(len(f[file]))}})
-	}
-	return out, nil
-}
-
-type stringFile struct {
-	r    *strings.Reader
-	name string
-}
-
-func (f stringFile) Stat() (fs.FileInfo, error) { return stringInfo{f.name, int64(f.r.Len())}, nil }
-func (f stringFile) Read(p []byte) (int, error) { return f.r.Read(p) }
-func (f stringFile) Close() error               { return nil }
-
-// stringDir is the migration directory itself.
-type stringDir struct{}
-
-func (stringDir) Stat() (fs.FileInfo, error) { return stringInfo{name: ".", size: 0}, nil }
-func (stringDir) Read([]byte) (int, error) {
-	return 0, errors.New("looks: the migration directory is not readable")
-}
-func (stringDir) Close() error { return nil }
-
-type stringInfo struct {
-	name string
-	size int64
-}
-
-func (i stringInfo) Name() string       { return i.name }
-func (i stringInfo) Size() int64        { return i.size }
-func (i stringInfo) Mode() fs.FileMode  { return 0o444 }
-func (i stringInfo) ModTime() time.Time { return time.Time{} }
-func (i stringInfo) IsDir() bool        { return i.name == "." }
-func (i stringInfo) Sys() any           { return nil }
-
-type stringEntry struct {
-	info stringInfo
-}
-
-func (e stringEntry) Name() string               { return e.info.Name() }
-func (e stringEntry) IsDir() bool                { return false }
-func (e stringEntry) Type() fs.FileMode          { return 0o444 }
-func (e stringEntry) Info() (fs.FileInfo, error) { return e.info, nil }
+//go:embed migrations/*.sql
+var lookMigrations embed.FS
 
 // snapshots is the pipeline's Snapshots seam over the store's
 // look_snapshots table, keyed by the job's root id - which is the look's
@@ -2118,8 +2054,9 @@ func (rt *lookRuntime) serveJobEvents(w http.ResponseWriter, r *http.Request) {
 	rt.broker.ServeTopic(&lookStreamWriter{ResponseWriter: w, rt: rt, ctx: r.Context()}, r, job.Topic(r.PathValue("id")))
 }
 
-// lookJobVisible reports the job an id may be read as, or hands the
-// request to the deletion runtime when that mount owns the id.
+// lookJobVisible reports the job an id may be read as. The dispatcher
+// (jobs.go) has already matched the kind, so an id this runtime does not
+// own is not_found here too.
 func (rt *lookRuntime) lookJobVisible(w http.ResponseWriter, r *http.Request) (jobView, bool) {
 	jobID := r.PathValue("id")
 	if !id.Valid(jobID) {
@@ -2166,19 +2103,6 @@ func (rt *lookRuntime) lookJobVisible(w http.ResponseWriter, r *http.Request) (j
 			return view, true
 		}
 	}
-	deletionMu.Lock()
-	del, shared := deletionBy[rt.srv]
-	deletionMu.Unlock()
-	if shared {
-		// The deletion runtime owns the job this id names. Its handlers
-		// carry their own visibility, so the request is theirs whole.
-		if strings.HasSuffix(r.URL.Path, "/events") {
-			del.serveJobEvents(w, r)
-		} else {
-			del.serveJob(w, r)
-		}
-		return jobView{}, true
-	}
 	writeNotFound(w)
 	return jobView{}, false
 }
@@ -2203,8 +2127,12 @@ type lookStreamWriter struct {
 func (w *lookStreamWriter) Write(p []byte) (int, error) {
 	for _, rewrite := range []func([]byte) ([]byte, bool){w.joinFrame, w.wordErrorFrame} {
 		if out, ok := rewrite(p); ok {
-			if _, err := w.ResponseWriter.Write(out); err != nil {
+			n, err := w.ResponseWriter.Write(out)
+			if err != nil {
 				return 0, err
+			}
+			if n != len(out) {
+				return 0, io.ErrShortWrite
 			}
 			// The frame was consumed whole; the rewrite is its stand-in.
 			return len(p), nil

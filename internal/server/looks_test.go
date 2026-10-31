@@ -55,6 +55,7 @@ import (
 	"github.com/nrynss/dresscode/internal/config"
 	"github.com/nrynss/dresscode/internal/memory"
 	"github.com/nrynss/dresscode/internal/pipeline"
+	"github.com/nrynss/dresscode/internal/privacy"
 	"github.com/nrynss/dresscode/internal/systemone"
 	"github.com/nrynss/dresscode/internal/youcam"
 	"github.com/nrynss/keel/cost"
@@ -63,6 +64,7 @@ import (
 	"github.com/nrynss/keel/job"
 	jobsql "github.com/nrynss/keel/job/sqlitestore"
 	"github.com/nrynss/keel/mediastore"
+	"github.com/nrynss/keel/stream"
 )
 
 // ---------------------------------------------------------------------------
@@ -391,6 +393,7 @@ type lookEnv struct {
 	cam     *countedYouCam
 	mem     *fakeMemory
 	catalog map[string]string
+	blobs   *ownedBlobs
 	budget  *cost.Budget
 	media   *mediastore.Store
 	occDir  string
@@ -432,6 +435,20 @@ func repoRoot(t *testing.T) string {
 // admits. The spending gate is opened wide: these tests start looks to
 // read routes, not to measure the gate, which server_test.go pins.
 func newLookEnv(t *testing.T, answers storyAnswers, units cost.Price, storyHits []memory.Hit) *lookEnv {
+	t.Helper()
+	env, cfg := openLookEnv(t, answers, units, storyHits)
+	if err := env.srv.MountLooks(t.Context(), cfg); err != nil {
+		t.Fatalf("mount looks: %v", err)
+	}
+	if err := env.srv.MountLooks(t.Context(), cfg); err == nil {
+		t.Fatal("a second mount succeeded")
+	}
+	return env
+}
+
+// openLookEnv builds the server and the look config without mounting, so
+// a test can choose the order the mounts come in.
+func openLookEnv(t *testing.T, answers storyAnswers, units cost.Price, storyHits []memory.Hit) (*lookEnv, LooksConfig) {
 	t.Helper()
 	dir := t.TempDir()
 	app := filepath.Join(dir, "app")
@@ -478,6 +495,7 @@ func newLookEnv(t *testing.T, answers storyAnswers, units cost.Price, storyHits 
 		cam:     cam,
 		mem:     mem,
 		catalog: map[string]string{},
+		blobs:   &ownedBlobs{owners: map[string]string{}},
 		budget:  budget,
 		media:   srv.intakeOf().media,
 		occDir:  filepath.Join(repoRoot(t), "testdata", "occasions"),
@@ -495,13 +513,52 @@ func newLookEnv(t *testing.T, answers storyAnswers, units cost.Price, storyHits 
 			return seeded, ok
 		},
 	}
-	if err := srv.MountLooks(t.Context(), cfg); err != nil {
-		t.Fatalf("mount looks: %v", err)
+	return env, cfg
+}
+
+// mountDeletion attaches the deletion routes beside the looks, with the
+// fakes the privacy engine needs. Nothing dials.
+func (e *lookEnv) mountDeletion(t *testing.T) {
+	t.Helper()
+	if err := e.srv.MountDeletion(t.Context(), DeletionConfig{
+		SigningKey: []byte("test-session-signing-key-32b!!!!"),
+		CodeKey:    []byte("test-deletion-code-key-32b!!!!!!"),
+		Blobs:      e.blobs,
+		Memory:     e.mem,
+	}); err != nil {
+		t.Fatalf("mount deletion: %v", err)
 	}
-	if err := srv.MountLooks(t.Context(), cfg); err == nil {
-		t.Fatal("a second mount succeeded")
+	e.handler = e.srv.Handler()
+}
+
+// ownedBlobs is the mediastore seam the erase reads: the blobs a test
+// names, by owner. Nothing dials, and the erase deletes from this map.
+type ownedBlobs struct {
+	mu     sync.Mutex
+	owners map[string]string
+}
+
+func (b *ownedBlobs) add(id, owner string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.owners[id] = owner
+}
+
+func (b *ownedBlobs) Blobs(context.Context) ([]mediastore.Blob, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	out := make([]mediastore.Blob, 0, len(b.owners))
+	for id, owner := range b.owners {
+		out = append(out, mediastore.Blob{ID: id, Owner: owner})
 	}
-	return env
+	return out, nil
+}
+
+func (b *ownedBlobs) Delete(_ context.Context, id string) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	delete(b.owners, id)
+	return nil
 }
 
 // gateRender parks the first poll until the returned release is called.
@@ -785,6 +842,8 @@ var (
 		"10b00000000000000000000000000001",
 		"10b00000000000000000000000000002",
 		"10b0000000000000000000000000000e",
+		"10b0000000000000000000000000000c",
+		"10b0000000000000000000000000000d",
 		"5a391e00000000000000000000000002",
 	}
 	fixtureSelfieID  = "5e1f1e00000000000000000000000001"
@@ -1825,4 +1884,347 @@ func TestTheSnapshotIsTheUsersAndGoesWithTheLook(t *testing.T) {
 	if left != 0 {
 		t.Fatalf("%d snapshots outlived the look", left)
 	}
+}
+
+// TestBothMountsShareTheJobRoutes: the job read and the job stream are one
+// pair of paths, and looks and deletion both answer them. Either mount
+// may come first, the pair is registered once, and each job is served by
+// the runtime that owns its kind - the look's stream through this file's
+// rewrites, the deletion's through its own broker.
+func TestBothMountsShareTheJobRoutes(t *testing.T) {
+	t.Parallel()
+	for _, order := range []string{"looks first", "deletion first"} {
+		t.Run(order, func(t *testing.T) {
+			t.Parallel()
+			env, cfg := openLookEnv(t, earringAnswers(), 8, nil)
+			switch order {
+			case "looks first":
+				if err := env.srv.MountLooks(t.Context(), cfg); err != nil {
+					t.Fatalf("mount looks: %v", err)
+				}
+				env.mountDeletion(t)
+			default:
+				env.mountDeletion(t)
+				if err := env.srv.MountLooks(t.Context(), cfg); err != nil {
+					t.Fatalf("mount looks: %v", err)
+				}
+			}
+			user, cookie := bootUser(t, env.handler)
+			selfieID := env.storySeeds(t, user)
+			env.optIn(t, user, "family-function", "family-gold-jhumkas")
+
+			// A second photo, so the deletion erases nothing the look is
+			// reading while it runs.
+			spare := env.seed(t, user, "selfie", recordedImage(t, "earring-upload-ref"))
+			env.blobs.add(spare, user)
+			rec := do(t, env.handler, http.MethodPost, "/api/photos/"+spare+"/deletion", cookie, nil, nil)
+			if rec.Code != http.StatusAccepted {
+				t.Fatalf("photo deletion %d %s", rec.Code, rec.Body.String())
+			}
+			var deleted struct {
+				JobID string `json:"job_id"`
+			}
+			if err := json.Unmarshal(rec.Body.Bytes(), &deleted); err != nil {
+				t.Fatal(err)
+			}
+			waitFor(t, "the deletion finished", func() bool {
+				body := bodyOf(t, env.get(t, cookie, "/api/jobs/"+deleted.JobID))
+				return body["status"] == "done"
+			})
+			delState := bodyOf(t, env.get(t, cookie, "/api/jobs/"+deleted.JobID))
+			// The photo deletion's last stage is the erase it finished.
+			if delState["stage"] != "erase" || delState["job_id"] != deleted.JobID {
+				t.Fatalf("deletion state %v, want the deletion runtime's own", delState)
+			}
+			// A late subscriber to a finished deletion gets the retained
+			// terminal, from the deletion broker: the look runtime holds no
+			// such topic.
+			delFrames, _, _ := env.readFrames(t, cookie, deleted.JobID, nil)
+			if len(delFrames) != 1 || delFrames[0].Name != "done" {
+				t.Fatalf("deletion frames %v, want the retained terminal alone", delFrames)
+			}
+
+			release := env.park("judge")
+			lookID, jobID, _ := env.start(t, cookie, selfieID)
+			frames, _, _ := env.readFrames(t, cookie, jobID, release)
+			env.waitDone(t, cookie, jobID)
+			if last := frames[len(frames)-1].Name; last != "done" {
+				t.Fatalf("the look's stream ended on %q", last)
+			}
+			// The shop frame carries the media join, which only the look
+			// runtime's writer adds: the dispatch reached this file.
+			shop := stageFrame(t, frames, "shop")
+			products, _ := shop["products"].([]any)
+			if len(products) == 0 {
+				t.Fatalf("shop frame %v carries no products", shop)
+			}
+			entry := products[0].(map[string]any)
+			if entry["media_id"] == "" || entry["url"] == "" {
+				t.Fatalf("shop entry %v carries no media join", entry)
+			}
+			lookState := bodyOf(t, env.get(t, cookie, "/api/jobs/"+jobID))
+			if lookState["root_id"] != lookID || lookState["status"] != "done" {
+				t.Fatalf("look state %v", lookState)
+			}
+			// An id neither runtime owns is not_found, not a panic and not
+			// the other runtime's answer.
+			unknown := env.get(t, cookie, "/api/jobs/"+mustID(t))
+			if unknown.Code != http.StatusNotFound {
+				t.Fatalf("an unknown job answered %d", unknown.Code)
+			}
+		})
+	}
+}
+
+// TestACancelledLookAnswersItsExample is the cancelled pair: a look stopped
+// while it runs keeps its last published stage, and the stream carries the
+// stages that ran and then the cancelled terminal.
+func TestACancelledLookAnswersItsExample(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	user, cookie := bootUser(t, env.handler)
+	selfieID := env.storySeeds(t, user)
+	env.optIn(t, user, "family-function", "family-gold-jhumkas")
+	holdJudge := env.park("judge")
+	env.park("pick")
+	lookID, jobID, _ := env.start(t, cookie, selfieID)
+
+	// The subscription opens while the judge is held, so the judge frame
+	// is read live; the pick is held so nothing else can publish between
+	// that frame and the cancel.
+	stop := func() {
+		holdJudge()
+		waitFor(t, "the judge finished", func() bool {
+			return bodyOf(t, env.get(t, cookie, "/api/jobs/"+jobID))["stage"] == "judge"
+		})
+		if err := env.srv.looksOf().jobs.Cancel(jobID); err != nil {
+			t.Errorf("cancel: %v", err)
+		}
+	}
+	frames, header, status := env.readFrames(t, cookie, jobID, stop)
+	r := env.renames(lookID, selfieID, "")
+	compare(t, "job-cancelled", env.get(t, cookie, "/api/jobs/"+jobID), r)
+	compareFrames(t, "job-events-cancelled", frames, header, status, r)
+}
+
+// TestAnInterruptedLookAnswersItsExample is the interrupted pair: the
+// attempt a restart left behind keeps the interrupted terminal and its
+// last published stage. The restart's kind is at its attempt limit, so no
+// replacement is named - the state the example records. A live subscriber
+// sees the terminal because the restart publishes on the same broker; a
+// phone reconnecting after a real restart reads it as the retained
+// terminal, the way the deletion stream above does.
+func TestAnInterruptedLookAnswersItsExample(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	user, cookie := bootUser(t, env.handler)
+	selfieID := env.storySeeds(t, user)
+	env.optIn(t, user, "family-function", "family-gold-jhumkas")
+	holdJudge := env.park("judge")
+	env.park("pick")
+	lookID, jobID, _ := env.start(t, cookie, selfieID)
+
+	rt := env.srv.looksOf()
+	die := func() {
+		holdJudge()
+		waitFor(t, "the judge finished", func() bool {
+			return bodyOf(t, env.get(t, cookie, "/api/jobs/"+jobID))["stage"] == "judge"
+		})
+		jobStore, err := jobsql.Open(t.Context(), jobsql.Config{DB: env.srv.db})
+		if err != nil {
+			t.Errorf("job store: %v", err)
+			return
+		}
+		spent := lookKind(rt)
+		spent.MaxAttempts = 1
+		kinds := map[string]job.Kind{pipeline.KindName: spent}
+		if _, err := job.Open(t.Context(), job.Config{
+			Broker: rt.broker,
+			Store:  kindStore{Store: jobStore, kinds: kinds},
+			Kinds:  kinds,
+			Log:    slog.New(slog.DiscardHandler),
+		}); err != nil {
+			t.Errorf("restart: %v", err)
+		}
+	}
+	frames, header, status := env.readFrames(t, cookie, jobID, die)
+	r := env.renames(lookID, selfieID, "")
+	compare(t, "job-interrupted", env.get(t, cookie, "/api/jobs/"+jobID), r)
+	compareFrames(t, "job-events-interrupted", frames, header, status, r)
+	// The dead attempt is still on its goroutine, held at the pick. Let it
+	// go now the examples are read.
+	if err := rt.jobs.Cancel(jobID); err != nil && !errors.Is(err, job.ErrUnknownJob) {
+		t.Fatalf("cancel the dead attempt: %v", err)
+	}
+}
+
+// TestARestartRecoversOnlyItsOwnKinds: the two mounts share one jobs
+// table, and a runner's recovery interrupts every unfinished row it is
+// shown but resumes only its own kinds. Shown the other mount's rows it
+// would interrupt a job it cannot resume and leave it there, so each
+// runner reads its own kinds' unfinished rows and no others.
+func TestARestartRecoversOnlyItsOwnKinds(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	ctx := t.Context()
+	seedRunning := func(kind string) string {
+		t.Helper()
+		jobID := mustID(t)
+		if _, err := env.srv.db.Writer().ExecContext(ctx,
+			`INSERT INTO jobs (id, kind, status, attempt, parent_id, root_id, progress, updated_at)
+			 VALUES (?, ?, 'running', 1, '', ?, '', 1)`,
+			jobID, kind, jobID); err != nil {
+			t.Fatalf("seed %s: %v", kind, err)
+		}
+		return jobID
+	}
+	statusOf := func(jobID string) string {
+		t.Helper()
+		var status string
+		if err := env.srv.db.Reader().QueryRowContext(ctx,
+			`SELECT status FROM jobs WHERE id = ?`, jobID).Scan(&status); err != nil {
+			t.Fatalf("status of %s: %v", jobID, err)
+		}
+		return status
+	}
+	restart := func(kinds map[string]job.Kind) {
+		t.Helper()
+		store, err := jobsql.Open(ctx, jobsql.Config{DB: env.srv.db})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := job.Open(ctx, job.Config{
+			Broker: stream.New(stream.Config{}),
+			Store:  kindStore{Store: store, kinds: kinds},
+			Kinds:  kinds,
+			Log:    slog.New(slog.DiscardHandler),
+			Now:    time.Now,
+		}); err != nil {
+			t.Fatalf("restart: %v", err)
+		}
+	}
+
+	look := seedRunning(pipeline.KindName)
+	deletion := seedRunning(privacy.KindName)
+	restart(map[string]job.Kind{pipeline.KindName: {}})
+	if got := statusOf(look); got != "interrupted" {
+		t.Fatalf("the look row is %s after its own restart, want interrupted", got)
+	}
+	if got := statusOf(deletion); got != "running" {
+		t.Fatalf("the look restart left the deletion %s, want running: it cannot resume it", got)
+	}
+
+	look = seedRunning(pipeline.KindName)
+	deletion = seedRunning(privacy.KindName)
+	restart(map[string]job.Kind{privacy.KindName: {}})
+	if got := statusOf(deletion); got != "interrupted" {
+		t.Fatalf("the deletion row is %s after its own restart, want interrupted", got)
+	}
+	if got := statusOf(look); got != "running" {
+		t.Fatalf("the deletion restart left the look %s, want running: it cannot resume it", got)
+	}
+}
+
+// TestAStartThatCannotRecordTheLookSpendsNothing: the keep writes the look
+// row and its snapshot together, and when it fails there is no look to
+// read and none to resume. The job is cancelled so no paid step runs for
+// it, and the seat it took is handed back, because the start delivered
+// nothing.
+func TestAStartThatCannotRecordTheLookSpendsNothing(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	user, cookie := bootUser(t, env.handler)
+	selfieID := env.storySeeds(t, user)
+	env.optIn(t, user, "family-function", "family-gold-jhumkas")
+	release := env.park("judge")
+	if _, err := env.srv.db.Writer().ExecContext(t.Context(), `DROP TABLE look_snapshots`); err != nil {
+		t.Fatal(err)
+	}
+
+	body := fmt.Sprintf(`{"occasion":"family-function","selfie_id":%q}`, selfieID)
+	rec := do(t, env.handler, http.MethodPost, "/api/looks", cookie, strings.NewReader(body), headerJSON)
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("start %d %s, want the internal refusal", rec.Code, rec.Body.String())
+	}
+	if got := bodyOf(t, rec)["error"].(map[string]any)["code"]; got != "internal_error" {
+		t.Fatalf("start error code %v", got)
+	}
+	release()
+
+	var jobID, status string
+	waitFor(t, "the unrecorded look was cancelled", func() bool {
+		err := env.srv.db.Reader().QueryRowContext(t.Context(),
+			`SELECT id, status FROM jobs WHERE kind = ?`, pipeline.KindName).Scan(&jobID, &status)
+		return err == nil && status == "cancelled"
+	})
+	var looks, fresh, renders int
+	if err := env.srv.db.Reader().QueryRowContext(t.Context(),
+		`SELECT count(*) FROM looks WHERE user_id = ?`, user).Scan(&looks); err != nil {
+		t.Fatal(err)
+	}
+	if looks != 0 {
+		t.Fatalf("%d look rows landed for a start that refused", looks)
+	}
+	var session string
+	if err := env.srv.db.Reader().QueryRowContext(t.Context(),
+		`SELECT id FROM sessions WHERE user_id = ?`, user).Scan(&session); err != nil {
+		t.Fatal(err)
+	}
+	if err := env.srv.db.Reader().QueryRowContext(t.Context(),
+		`SELECT fresh_selfies, renders FROM judge_sessions WHERE session_id = ?`, session).Scan(&fresh, &renders); err != nil {
+		t.Fatal(err)
+	}
+	if fresh != 0 || renders != 0 {
+		t.Fatalf("the seat was not handed back: fresh %d renders %d", fresh, renders)
+	}
+	if creates, _, _, _ := env.cam.count(); creates != 0 {
+		t.Fatalf("creates %d, want no paid task for a look that was never recorded", creates)
+	}
+	if env.budget.Spent() != 0 || env.budget.Reserved() != 0 {
+		t.Fatalf("spent %d reserved %d, want nothing", env.budget.Spent(), env.budget.Reserved())
+	}
+}
+
+// TestTheStreamRewriteRefusesAShortWrite: a rewritten frame is consumed
+// whole, so the writer must report the whole frame or an error. A short
+// write with no error would truncate the frame and still claim it landed.
+func TestTheStreamRewriteRefusesAShortWrite(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	w := &lookStreamWriter{
+		ResponseWriter: &shortWriter{header: http.Header{}},
+		rt:             env.srv.looksOf(),
+		ctx:            t.Context(),
+	}
+	frame := []byte("event: error\nid: 1\ndata: {\"status\":\"error\",\"job_id\":\"x\",\"error\":{\"code\":\"no_face_in_photo\",\"message\":\"not the phrase\"}}\n\n")
+	n, err := w.Write(frame)
+	if !errors.Is(err, io.ErrShortWrite) || n != 0 {
+		t.Fatalf("a short rewrite answered %d, %v, want 0 and io.ErrShortWrite", n, err)
+	}
+	// A frame it does not rewrite passes through, and the underlying
+	// writer's own answer is the answer.
+	ping := []byte(": ping\n\n")
+	n, err = w.Write(ping)
+	if err != nil || n != len(ping)-1 {
+		t.Fatalf("a comment answered %d, %v, want the underlying writer's count", n, err)
+	}
+}
+
+func mustID(t *testing.T) string {
+	t.Helper()
+	value, err := id.New()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return value
+}
+
+type shortWriter struct {
+	header http.Header
+}
+
+func (w *shortWriter) Header() http.Header { return w.header }
+func (w *shortWriter) WriteHeader(int)     {}
+func (w *shortWriter) Write(p []byte) (int, error) {
+	return len(p) - 1, nil
 }
