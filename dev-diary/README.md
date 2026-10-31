@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T3.7 landed (`bdda7cd`) — the shop stage is wired into the run. T3.8 (Remember and recall ★) dispatches next; T3.9 (evaluation) closes P3. T5.16 (capture declutter) in review. **Product decisions pending for the user:** the words fixture tension (phrase table vs regenerate), nude-lip renders unrecorded, colour-tones (lands via T5.18's product.md sync).
+**Current status:** T5.16 landed (`d21f358`) — capture leads with the in-mirror CTAs. T5.17 (unified look) claims next and closes the serial UI chain to T5.18. T3.7 (Shop the look) landed — T3.8 (Remember and recall ★) dispatches next; T3.9 closes P3.
 
 ---
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 7 / 9 | T3.7 (Shop the look) landed — every product labelled exact/approximate/simulation, kept products first, the shop stage wired into the run (media join = T4.4's named deferral). T3.8 (Remember and recall ★) dispatches next; then T3.9 evaluation closes P3. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 7 / 9 | T5.19 landed — the sign-in copy is the user's dictated one line, the no-Google line removed at the source. T5.16 (capture declutter) in review; T5.17 and T5.18 follow. |
+| P5B | 8 / 9 | T5.16 landed — the capture screen leads with the in-mirror camera CTAs and the 2-column fallback row. Only T5.17 (unified look) and T5.18 (History/Account + shade-match sync) remain. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.16 Capture declutter.** Capture now leads with the arched mirror: the prompt and `Open the front camera` sit inside the arch, `Take the photo` overlays its bottom centre when live, `Check the dress code` follows with the ready hint, and the two file fallbacks share one 2-column row. The lead, the visible h2 (section aria-label instead), the camera hint, and the drawer's redundant h2 are gone; every landed T5.13 pin survives and new structural pins cover the in-mirror controls, the overlay anchor, and the picker order. Review CLEAN, no findings (noted: the review ran in place at the branch tip because the orchestrator never created its dedicated worktree — process slip on the orchestrator, read-only, harmless). Landed as `d21f358`, gate green in the worktree and the main checkout. Known behaviour, unchanged: picking a gallery selfie while the camera is live leaves both the take overlay and the ready CTA visible (pre-existing, not a regression).
 
 - **T3.7 Shop the look.** `internal/pipeline/shop.go`: `Shop(occ, fix, brought, catalog, recall)` labels every product for the chosen fix — exact product (the user's own bytes, or the catalog product the flow composites), approximate match (the painted colour), visual simulation (the suggestion itself, category from the basket) — with all three rules in the doc comment, data-driven from the catalog's fidelity field, the interior shooting notes never travelling. Kept products rank first through the fix's own products mapping; the empty case is a shorter list, never an invented product; refusals name the violation. Remediation landed the run wiring (granted): `stageShop`, `Deps.Catalog` + `ProductRecord` (validate refuses nil record and empty catalog by name), `Look.Products`, `finish` on all six clean returns, and the which-fix-shops rule stated and pinned — **shop for the shown fix when one is shown, else the picked fix** (the runner-up-discarded path shops the pick, per the recorded suggestion fixture naming gold-jhumkas). Media join = decision (b): the frame carries Shop's entries as-is, the server enriches at serve time — T4.4's named deferral. Two review rounds; the second CLEAN on the wiring delta. Landed as `f8253e0`+`bdda7cd`, gate green in the worktree and the main checkout, race clean. For T3.8: `Recall.Kept` drives shop's ranking; dismissal plays no shop role — a dismissed fix can never be picked, so it never reaches shop.
 
