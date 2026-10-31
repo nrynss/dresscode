@@ -1070,6 +1070,158 @@ func TestABudgetRefusalTakesTheSuggestionAlone(t *testing.T) {
 	}
 }
 
+// TestThePickDecliningEndsAtTheSuggestion pins the suggestion-only arm
+// the fixtures do not record: a judge that flags and a pick whose answer
+// is none. The stream is the contract's judge frame and pick frame and
+// nothing after - a declined pick has no measure, render or check to
+// speak of - the look stands on its suggestions with no fix named, and
+// the provider is never reached: no upload, no create, no poll, no
+// fetch, zero spend. The one pick ask pins the decline to the model's
+// answer, not to an empty menu.
+func TestThePickDecliningEndsAtTheSuggestion(t *testing.T) {
+	t.Parallel()
+	rep := openRenderReplay(t)
+	occasions := loadOccasions(t)
+	photo := recordedImage(t, rep, v04Selfie)
+
+	// The rig is hand-built, the resume proof's way, so the runner's
+	// YouCam sits behind the tallying gate - a gate with no entered
+	// channel, which counts without parking. The wire queues no slot and
+	// the budget holds no unit, so a single provider call would fail the
+	// run loudly before the tally could say otherwise.
+	wire := newWireReplay(t, rep)
+	client, err := youcam.NewClient(youcam.ClientConfig{
+		BaseURL:  wire.base,
+		Token:    runToken,
+		Throttle: throttlePace(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	gated := &gatedYoucam{YouCam: newResultReplay(client, wire.base, rep)}
+	budget, err := cost.NewBudgetIn(youcam.UnitsDenomination, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ledger := cost.NewLedger()
+	meter, err := cost.NewMeter(budget, ledger)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := sqlite.Open(t.Context(), sqlite.Config{
+		Path:   filepath.Join(t.TempDir(), "decline-tasks.db"),
+		Logger: quietLog(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	tasks, err := sqlitestore.Open(t.Context(), sqlitestore.Config{DB: db})
+	if err != nil {
+		t.Fatal(err)
+	}
+	blobs := &runBackend{blobs: map[string][]byte{}}
+	media, err := mediastore.Open(t.Context(), mediastore.Config{
+		Index:   &memMediaIndex{rows: map[string]mediastore.Blob{}},
+		Backend: blobs,
+		Log:     quietLog(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	runner, err := youcam.NewRunner(gated, youcam.RunnerConfig{
+		Store: tasks,
+		Meter: meter,
+		Media: media,
+		Config: providertask.Config{
+			PollBase:    time.Millisecond,
+			PollCeiling: 2 * time.Millisecond,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pics := &runPictures{named: map[string]systemone.Image{"selfie-1": photo}, media: media}
+	clef := &lookStub{
+		judge: map[string]float64{"family-earring-festive": 0.03, "family-lip-colour": 0.2},
+		issue: "family-earring-festive",
+		picks: []pickAnswer{{choice: "none"}},
+	}
+	src := occasionSource(occasions)
+	deps := Deps{
+		Clef:       clef,
+		Runner:     runner,
+		Cache:      newMemCache(),
+		Vocab:      loadVocabulary(t),
+		Thresholds: Thresholds{Met: readingAt},
+		Lines:      checkReading,
+		CheckModel: systemone.ModelClef,
+		Occasions:  src.resolve,
+		Pictures:   pics,
+	}
+	req := Request{
+		Photo:    Photo{User: "user-1", Hash: "hash-v04", Image: photo},
+		Selfie:   "selfie-1",
+		Occasion: "family-function",
+		OptIn:    []string{"family-gold-jhumkas", "family-red-lip"},
+	}
+	events := &eventLog{}
+
+	look, err := Run(t.Context(), deps, req, events.publish)
+	if err != nil {
+		t.Fatalf("run: %v", err)
+	}
+
+	// The stream is judge, pick, done: the two frames the contract holds
+	// before a fix is measured, and nothing after them.
+	got := stagesOf(t, events)
+	want := []string{stageJudge, stagePick}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("stages %v, want %v", got, want)
+	}
+	published := events.all()
+	judgeFixture := frameOf(t, readContract(t, "job-events.json"), stageJudge)
+	assertShape(t, stageJudge, judgeFixture, detail(t, published[0]))
+	pickFixture := frameOf(t, readContract(t, "job-events-suggestion.json"), stagePick)
+	assertShape(t, stagePick, pickFixture, detail(t, published[1]))
+	var pickGot pickEvent
+	if err := json.Unmarshal(published[1].Detail, &pickGot); err != nil {
+		t.Fatal(err)
+	}
+	if pickGot.Fix != "" || pickGot.RunnerUp != "" || pickGot.Recall != "" {
+		t.Fatalf("pick %+v, want the decline's two empty ids and no recall", pickGot)
+	}
+
+	// The look stands on its suggestions: the flags and the issue stay,
+	// and no fix, runner-up, render or words came out of a declined pick.
+	if !look.SuggestionOnly || look.Shown != nil || look.Words != "" || look.FixID != "" || look.RunnerUpID != "" {
+		t.Fatalf("look %+v, want the suggestion-only look", look)
+	}
+	if len(look.Flags) != 2 {
+		t.Fatalf("%d flags, want the two misses the look stands on", len(look.Flags))
+	}
+
+	// The provider saw nothing at all.
+	uploads, creates, polls, fetches := gated.tally()
+	if len(uploads) != 0 || creates != 0 || polls != 0 || fetches != 0 {
+		t.Fatalf("provider calls (%d uploads, %d creates, %d polls, %d fetches), want none", len(uploads), creates, polls, fetches)
+	}
+	if budget.Spent() != 0 || budget.Reserved() != 0 || len(ledger.Charges()) != 0 {
+		t.Fatalf("spent %d reserved %d with %d charges, want empty books", budget.Spent(), budget.Reserved(), len(ledger.Charges()))
+	}
+
+	// The decline was the model's answer: one judge, one pick, no check.
+	if n := clef.askCount(t, biggestIssueID); n != 1 {
+		t.Fatalf("%d judge calls, want one", n)
+	}
+	if n := clef.askCount(t, pickQuestionID); n != 1 {
+		t.Fatalf("%d pick calls, want the one the decline answered", n)
+	}
+	if n := clef.askCount(t, changeMadeID); n != 0 {
+		t.Fatal("the check asked about a fix that was never picked")
+	}
+}
+
 // TestTheMeasureStageSaysWhatTheAnalysisDid rides the hairstyle story,
 // where the fix names Face Attributes: the first look runs the analysis
 // and says cached false, the second look on the same photo reads the
@@ -1434,7 +1586,9 @@ func TestAKilledLookResumesAndNeverPaysTwice(t *testing.T) {
 
 // gatedYoucam is the process boundary: every call passes through, but
 // the first poll parks until its context ends or the test releases it,
-// the way a task in flight does when its process dies.
+// the way a task in flight does when its process dies. A gate built
+// with no entered channel never parks - it is a tally alone, for a run
+// that must reach the provider not at all.
 type gatedYoucam struct {
 	youcam.YouCam
 
@@ -1464,8 +1618,9 @@ func (g *gatedYoucam) Poll(ctx context.Context, ref youcam.PollRef) (youcam.Stat
 	g.mu.Lock()
 	g.polls++
 	first := g.polls == 1
+	park := first && g.entered != nil
 	g.mu.Unlock()
-	if first {
+	if park {
 		close(g.entered)
 		select {
 		case <-ctx.Done():
@@ -1735,5 +1890,162 @@ func TestStartRefusesALookItCannotName(t *testing.T) {
 		Photo: req.Photo, Occasion: req.Occasion,
 	}); err == nil || !strings.Contains(err.Error(), "no kept selfie") {
 		t.Fatalf("err %v, want the look with no kept selfie refused", err)
+	}
+}
+
+// parkSnaps is the snapshot store with the sliver made wide enough to
+// stand in: its keep parks until the test releases it, and the context
+// it was handed stays readable while it parks. A keep whose handed
+// context is already done is refused, the way a store that honours its
+// context refuses one - which is exactly what a cancel in the window
+// between StartKind and the keep used to cost the look.
+type parkSnaps struct {
+	mu      sync.Mutex
+	kept    map[string]Snapshot
+	handed  context.Context
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (s *parkSnaps) Keep(ctx context.Context, root string, snap Snapshot) error {
+	s.mu.Lock()
+	s.handed = ctx
+	s.mu.Unlock()
+	close(s.entered)
+	<-s.release
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.kept == nil {
+		s.kept = map[string]Snapshot{}
+	}
+	s.kept[root] = snap
+	return nil
+}
+
+func (s *parkSnaps) Snapshot(_ context.Context, root string) (Snapshot, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	snap, ok := s.kept[root]
+	return snap, ok, nil
+}
+
+// handedCtx is the context the last keep was handed.
+func (s *parkSnaps) handedCtx() context.Context {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.handed
+}
+
+// TestStartKeepsTheSnapshotPastACancel pins the sliver's hardening: the
+// keep runs under the caller's context with the cancellation cut, so a
+// cancel that lands between StartKind and the keep cannot leave a
+// running look whose record names nothing. The window is staged
+// deterministically at the keep itself - the one statement the window
+// holds: the probe's keep parks, the test cancels the caller's context
+// while Start stands inside it, and the context the keep was handed must
+// still be alive. Released, the keep lands and Start returns the id with
+// no error; the snapshot is queryable and the kind's resume hook rebuilds
+// the look from it, which is the record a restart's replacement takes
+// over. The rig cannot cancel between two statements of Start, so the
+// window is stood in, not raced past.
+func TestStartKeepsTheSnapshotPastACancel(t *testing.T) {
+	t.Parallel()
+	rep := openRenderReplay(t)
+	occasions := loadOccasions(t)
+	photo := recordedImage(t, rep, v04Selfie)
+	rig := newRunRig(t, rep, 5)
+	rig.pics.named["selfie-1"] = photo
+	rig.clef.judge = map[string]float64{"family-earring-festive": 0.03}
+	rig.clef.issue = "family-earring-festive"
+	rig.clef.picks = []pickAnswer{{choice: "none"}}
+	src := occasionSource(occasions)
+	deps := Deps{
+		Clef:       rig.clef,
+		Runner:     rig.runner,
+		Cache:      rig.cache,
+		Vocab:      loadVocabulary(t),
+		Thresholds: Thresholds{Met: readingAt},
+		Lines:      checkReading,
+		CheckModel: systemone.ModelClef,
+		Occasions:  src.resolve,
+		Pictures:   rig.pics,
+	}
+	req := Request{
+		Photo:    Photo{User: "user-1", Hash: "hash-v04", Image: photo},
+		Selfie:   "selfie-1",
+		Occasion: "family-function",
+		OptIn:    []string{"family-gold-jhumkas"},
+	}
+	snaps := &parkSnaps{entered: make(chan struct{}), release: make(chan struct{})}
+
+	broker := stream.New(stream.Config{})
+	db, err := sqlite.Open(t.Context(), sqlite.Config{
+		Path:   filepath.Join(t.TempDir(), "cancel-jobs.db"),
+		Logger: quietLog(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	jobStore, err := jobsql.Open(t.Context(), jobsql.Config{DB: db})
+	if err != nil {
+		t.Fatal(err)
+	}
+	jr, err := job.Open(t.Context(), job.Config{
+		Broker: broker,
+		Store:  jobStore,
+		Kinds:  map[string]job.Kind{KindName: Kind(deps, snaps)},
+		Log:    quietLog(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	started := make(chan error, 1)
+	var id string
+	go func() {
+		var err error
+		id, err = Start(ctx, jr, deps, snaps, req)
+		started <- err
+	}()
+	select {
+	case <-snaps.entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the keep never started")
+	}
+
+	// The caller gives up in the window. The job's drive dies with this
+	// cancel; only the cut keeps the keep alive.
+	cancel()
+
+	if err := snaps.handedCtx().Err(); err != nil {
+		t.Fatalf("the keep was handed a context already done (%v), want the cancellation cut", err)
+	}
+
+	close(snaps.release)
+	if err := <-started; err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	if id == "" {
+		t.Fatal("start returned no job id")
+	}
+
+	// The record a restart finds: the snapshot is queryable and the kind
+	// rebuilds the look's work from it.
+	snap, ok, err := snaps.Snapshot(t.Context(), id)
+	if err != nil || !ok {
+		t.Fatalf("snapshot (%v, %v), want the look's inputs kept past the cancel", ok, err)
+	}
+	if err := snap.valid(); err != nil {
+		t.Fatalf("snapshot: %v", err)
+	}
+	fn, err := Kind(deps, snaps).Resume(job.Record{ID: id + "-attempt-2", Kind: KindName, RootID: id, Attempt: 2, Status: job.StatusQueued})
+	if err != nil || fn == nil {
+		t.Fatalf("resume (%v, %v), want the look rebuilt and resumable", fn, err)
 	}
 }

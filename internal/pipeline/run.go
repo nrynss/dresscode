@@ -116,8 +116,12 @@ func (s Snapshot) valid() error {
 // the wiring implements it over the look it wrote when the job started.
 // Start keeps the snapshot under the job id the runner returns, so a
 // look killed after its first stage event resumes; a look killed in the
-// sliver before that names nothing in the record and is retried from
-// scratch, which costs nothing, because it had reached no paid step.
+// sliver before that names nothing in the record and is not resumable -
+// the resume hook refuses it, Keel leaves the record interrupted and
+// never retries it - so the retry is the app or the user starting a new
+// look. Nothing pays twice even then: a sliver look had reached no paid
+// step, and a new look's keys resume whatever the provider had already
+// charged.
 type Snapshots interface {
 	Keep(ctx context.Context, root string, snap Snapshot) error
 	Snapshot(ctx context.Context, root string) (Snapshot, bool, error)
@@ -262,6 +266,10 @@ type Look struct {
 // snapshot is kept as soon as the runner has minted the id, before the
 // stages are read by anyone but the job itself, so a restart finds a
 // rebuildable record for every look that got far enough to publish.
+// The keep runs under the caller's context with the cancellation cut
+// (context.WithoutCancel), so a cancel in the sliver between StartKind
+// and the keep cannot strand the running look without its record; the
+// job's drive and this call's return still honour the caller's cancel.
 // A keep that fails does not stop the job that already started: the id
 // comes back beside the error, and the look simply will not resume.
 func Start(ctx context.Context, runner *job.Runner, deps Deps, snaps Snapshots, req Request) (string, error) {
@@ -286,7 +294,7 @@ func Start(ctx context.Context, runner *job.Runner, deps Deps, snaps Snapshots, 
 	if err != nil {
 		return "", err
 	}
-	if err := snaps.Keep(ctx, id, req.snapshot()); err != nil {
+	if err := snaps.Keep(context.WithoutCancel(ctx), id, req.snapshot()); err != nil {
 		return id, fmt.Errorf("run: keep the look's snapshot for %s: %w", id, err)
 	}
 	return id, nil
