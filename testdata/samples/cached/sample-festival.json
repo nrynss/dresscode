@@ -1,0 +1,54 @@
+{
+  "kind": "sample-cache",
+  "id": "sample-festival",
+  "name": "Festival",
+  "occasion": "festival",
+  "variant": "V14",
+  "source": "testdata/eval/ground-truth.json V14 (the miss list), which is also what the shipped judge lines read out of testdata/clef/judge-V14-festival.json; the biggest issue is that recording's own choice. The pick is the recorded issue's fix. Its face-shape row is the recorded face-attr read of the same sample person, not of this selfie: testdata/youcam/face-attr-upload-src.json uploaded woman/V06-family-function.jpg and testdata/youcam/http-face-attr-poll.json answered faceshape Oval; no face-attr read of V14 was ever made, and a sample never makes one. The runner-up's render is the genuine recorded necklace try-on of V14 (testdata/youcam/necklace-fetch.json, results/necklace-chain-V14.jpg), which the check showed after the first pass was discarded; its look answers are that fix's own declared vocabulary in testdata/occasions/festival.json. A discarded pass carries no check values, because none was recorded for it.",
+  "selfie": "woman/V14-festival.jpg",
+  "judge": {
+    "flags": [
+      "festival-garment-festive",
+      "festival-earring",
+      "festival-necklace",
+      "festival-lip",
+      "festival-hair",
+      "festival-expression",
+      "festival-light"
+    ],
+    "issue": "festival-hair"
+  },
+  "pick": {
+    "fix": "festival-tie-hair",
+    "runner_up": "festival-gold-chain"
+  },
+  "analysis": [
+    {
+      "task": "face-attr-analysis",
+      "face_shape": "Oval",
+      "read_from": "woman/V06-family-function.jpg"
+    }
+  ],
+  "attempts": [
+    {
+      "fix": "festival-tie-hair",
+      "attempt": "fix",
+      "shown": false
+    },
+    {
+      "fix": "festival-gold-chain",
+      "attempt": "runner_up",
+      "shown": true,
+      "image": "../youcam/results/necklace-chain-V14.jpg",
+      "check": {
+        "change_made": true,
+        "same_person": true,
+        "criterion_met": true,
+        "attributes": [
+          {"id": "necklace", "value": "chain"},
+          {"id": "necklace_colour", "value": "gold"}
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "kind": "sample-cache",
+  "id": "sample-date",
+  "name": "Date",
+  "occasion": "date",
+  "variant": "V03",
+  "source": "testdata/eval/ground-truth.json V03 (the miss list), which is also what the shipped judge lines read out of testdata/clef/judge-V03-date.json; the biggest issue is that recording's own choice. The pick is the fix of the recorded issue and the runner-up the fix of the other flag. No YouCam render of V03 on a date fix was ever recorded, so this story shows no render: both passes are the check's discard, the outcome testdata/clef/check-clef-V04-to-woman-white.json records. A discarded pass carries no check values, because none was recorded for it.",
+  "selfie": "woman/V03-date.jpg",
+  "judge": {
+    "flags": ["date-hair-clear", "date-lip-clear"],
+    "issue": "date-lip-clear"
+  },
+  "pick": {
+    "fix": "date-nude-lip",
+    "runner_up": "date-tie-hair"
+  },
+  "analysis": [],
+  "attempts": [
+    {
+      "fix": "date-nude-lip",
+      "attempt": "fix",
+      "shown": false
+    },
+    {
+      "fix": "date-tie-hair",
+      "attempt": "runner_up",
+      "shown": false
+    }
+  ]
+}

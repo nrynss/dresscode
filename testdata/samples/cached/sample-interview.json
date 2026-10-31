@@ -1,0 +1,19 @@
+{
+  "kind": "sample-cache",
+  "id": "sample-interview",
+  "name": "Interview",
+  "occasion": "interview",
+  "variant": "V09",
+  "source": "testdata/eval/ground-truth.json V09 (an empty miss list); testdata/clef/judge-V09-interview.json (biggest issue none, and every reading at or over the shipped judge lines, the collar on its per-criterion line). Nothing was flagged, so no fix is picked, nothing is measured or rendered and the look stands on its own; the shop list is empty because the basket is keyed to a fix.",
+  "selfie": "man/V09-interview.jpg",
+  "judge": {
+    "flags": [],
+    "issue": "none"
+  },
+  "pick": {
+    "fix": "",
+    "runner_up": ""
+  },
+  "analysis": [],
+  "attempts": []
+}

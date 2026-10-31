@@ -1,0 +1,35 @@
+{
+  "kind": "sample-cache",
+  "id": "sample-family",
+  "name": "Family function",
+  "occasion": "family-function",
+  "variant": "V04",
+  "source": "The recorded second-visit story, on its sample person V04. testdata/eval/ground-truth.json V04 (the miss list), which is also what the shipped judge lines read out of testdata/clef/judge-V04-family-function.json; the biggest issue is that recording's own choice. The pick and the runner-up are testdata/api/look.json's fix and runner_up, the contract's recorded example of this story. The render is the earring flow's recorded result (testdata/youcam/earring-fetch.json, results/earring-jhumka-V04.jpg), the genuine YouCam output of V04 with the fix's own gold-jhumkas reference. The check's look answers are that fix's declared vocabulary in testdata/occasions/family-function.json, which testdata/api/look.json records and testdata/clef/check-clef-V04-to-V05.json, the recorded check of this story's honest render, reads the same two ways.",
+  "selfie": "woman/V04-family-function.jpg",
+  "judge": {
+    "flags": ["family-earring-festive", "family-lip-colour"],
+    "issue": "family-earring-festive"
+  },
+  "pick": {
+    "fix": "family-gold-jhumkas",
+    "runner_up": "family-festive-top"
+  },
+  "analysis": [],
+  "attempts": [
+    {
+      "fix": "family-gold-jhumkas",
+      "attempt": "fix",
+      "shown": true,
+      "image": "../youcam/results/earring-jhumka-V04.jpg",
+      "check": {
+        "change_made": true,
+        "same_person": true,
+        "criterion_met": true,
+        "attributes": [
+          {"id": "jewellery", "value": "jhumkas"},
+          {"id": "jewellery_colour", "value": "gold"}
+        ]
+      }
+    }
+  ]
+}

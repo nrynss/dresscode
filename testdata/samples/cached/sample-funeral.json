@@ -1,0 +1,36 @@
+{
+  "kind": "sample-cache",
+  "id": "sample-funeral",
+  "name": "Funeral",
+  "occasion": "funeral",
+  "variant": "V18",
+  "source": "testdata/eval/ground-truth.json V18 (the miss list), which is also what the shipped judge lines read out of testdata/clef/judge-V18-funeral.json; the biggest issue is that recording's own choice. The pick is the fix of the recorded issue and the runner-up the fix of the beard flag. No YouCam render of V18 on a funeral fix was ever recorded, so this story shows no render: both passes are the check's discard, the outcome testdata/clef/check-clef-V04-to-woman-white.json records. A discarded pass carries no check values, because none was recorded for it.",
+  "selfie": "man/V18-funeral.jpg",
+  "judge": {
+    "flags": [
+      "funeral-garment-dark",
+      "funeral-collar-plain",
+      "funeral-beard-close",
+      "funeral-expression-still",
+      "funeral-light-plain"
+    ],
+    "issue": "funeral-garment-dark"
+  },
+  "pick": {
+    "fix": "funeral-dark-shirt",
+    "runner_up": "funeral-short-beard"
+  },
+  "analysis": [],
+  "attempts": [
+    {
+      "fix": "funeral-dark-shirt",
+      "attempt": "fix",
+      "shown": false
+    },
+    {
+      "fix": "funeral-short-beard",
+      "attempt": "runner_up",
+      "shown": false
+    }
+  ]
+}
