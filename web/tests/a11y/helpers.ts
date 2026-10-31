@@ -160,6 +160,24 @@ export async function openProductDrawer(): Promise<void> {
   await waitUntil(() => document.querySelector("details.product-drawer[open]"), "the product drawer opens");
 }
 
+/** Open the finished verdict's stepper drawer, so the completed steps face
+ * the gate the way a reader who opens them sees them. */
+export async function openStagesDrawer(): Promise<void> {
+  const summary = withText("summary", "Checked against the dress code");
+  expect(summary, "the stages drawer summary").not.toBeNull();
+  (summary as HTMLElement).click();
+  await waitUntil(() => document.querySelector("details.stages-drawer[open]"), "the stages drawer opens");
+}
+
+/** Open the missed-criteria drawer on a look screen, so the dress-code notes
+ * face the gate the way a reader who expands them sees them. */
+export async function openReasonsDrawer(): Promise<void> {
+  const summary = withText("summary", "What the dress code still asks for");
+  expect(summary, "the reasons drawer summary").not.toBeNull();
+  (summary as HTMLElement).click();
+  await waitUntil(() => document.querySelector("details.reasons-drawer[open]"), "the reasons drawer opens");
+}
+
 /** Open a fidelity explanation beside its label in the open shop sheet: tap
  * the product's label chip and wait for the named explanation popover. */
 export async function openFidelityExplanation(): Promise<void> {

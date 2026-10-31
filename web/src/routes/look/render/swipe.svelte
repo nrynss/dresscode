@@ -33,8 +33,8 @@
     <span class="divider" style:left="{clampedPosition(position)}%" aria-hidden="true">
       <span class="handle"><span aria-hidden="true">◂ ▸</span></span>
     </span>
-    <span class="badge before">Original</span>
-    <span class="badge after">After the fix</span>
+    <button type="button" class="badge original" onclick={showOriginal}>Original</button>
+    <button type="button" class="badge after" onclick={showRender}>After the fix</button>
     <input
       class="slide"
       type="range"
@@ -43,10 +43,6 @@
       bind:value={position}
       aria-label="Swipe between the original and the render"
     />
-  </div>
-  <div class="tap">
-    <button type="button" onclick={showOriginal}>Show the original</button>
-    <button type="button" onclick={showRender}>Show the render</button>
   </div>
 </div>
 
@@ -127,9 +123,15 @@
     color: var(--text);
   }
 
+  /* The corner badges are the two taps of the arch: the picture at either
+   * end, without a second row of buttons below. They ride above the range
+   * input, so a tap on a badge reaches the button while a drag anywhere
+   * else still drives the split. */
   .badge {
     position: absolute;
     top: 0.6rem;
+    z-index: 2;
+    min-height: 2.75rem;
     padding: 0.15rem 0.6rem;
     background: var(--surface);
     border: 1px solid var(--line);
@@ -138,7 +140,7 @@
     overflow-wrap: break-word;
   }
 
-  .badge.before {
+  .badge.original {
     left: 0.6rem;
   }
 
@@ -173,12 +175,6 @@
     border: none;
     background: transparent;
     cursor: ew-resize;
-  }
-
-  .tap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
   }
 
   @media (prefers-reduced-motion: no-preference) {

@@ -267,11 +267,13 @@ test("the screen and the shell link show no digit", () => {
   expect(staticText).toContain("The verdict");
   expect(staticText).toContain("What the dress code still asks for");
   expect(staticText).toContain("A fix");
-  expect(staticText).toContain("Why");
+  expect(staticText).toContain("Checked against the dress code");
+  expect(staticText).not.toContain("Why");
   expect(screen).toContain("stageWord(");
   expect(screen).toContain("pausedSentence");
   expect(screen).toContain("{verdict.fix}");
-  expect(screen).toContain("{verdict.why}");
+  expect(screen).not.toContain("{verdict.why}");
+  expect(screen).not.toContain(">Why<");
   expect(screen).toContain("{reason}");
   expect(screen).not.toContain("stream.current");
   expect(screen).not.toContain("stream.total");
@@ -280,11 +282,22 @@ test("the screen and the shell link show no digit", () => {
   expect(markup).not.toContain("jobId");
 
   // The live path: four words, the one in hand named as the step, the hero
-  // carrying the fix, and the finished verdict never a dead end.
+  // carrying the fix, and the finished verdict never a dead end. Once the
+  // look finishes the steps fold into their own drawer; while it runs the
+  // stepper stands directly on the screen.
+  expect(screen).toContain('<details class="disclosure stages-drawer">');
+  expect(screen).toContain("<summary>Checked against the dress code</summary>");
+  expect(screen).toContain('{@render stages()}');
   expect(screen).toContain('<ol class="stages"');
   expect(screen).toContain("aria-current=");
+  // The missed criteria fold away the same way, named by their summary, and
+  // the hero carries the fix alone — the why sentence repeated reasons[0]
+  // word for word, so it is gone.
+  expect(screen).toContain('<details class="disclosure reasons-drawer">');
+  expect(screen).toContain("<summary>What the dress code still asks for</summary>");
   expect(screen).toContain('<div class="hero">');
-  expect(screen).toContain('{verdict.fix}</p>');
+  expect(screen).toContain('<h3 class="hero-label">A fix</h3>');
+  expect(screen).toContain('<p class="hero-fix">{verdict.fix}</p>');
   expect(screen).toContain('<a class="primary-link" href={renderHash}>See the render</a>');
   expect(staticText).toContain("See the render");
   expect(markup).toContain("renderHash");

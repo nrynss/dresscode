@@ -127,19 +127,20 @@ test("the swipe lands on the original in one tap and never shows a figure", () =
   expect(swipe).toContain("bind:value={position}");
   expect(swipe).toContain('src={before}');
   expect(swipe).toContain('src={after}');
-  expect(swipe).toContain("Show the original");
-  expect(swipe).toContain("Show the render");
-  expect(swipe).toContain("onclick={showOriginal}");
   expect(swipe).toContain("position = clampedPosition(originalPosition)");
   // A tap on the original covers the frame completely: nothing of the render peeks out.
   expect(swipe).toContain('style:clip-path="inset(0 {clip}% 0 0)"');
   expect(swipe).toContain("const clip = $derived(originalPosition - clampedPosition(position));");
   // The split is visible: a line at the clip, a handle riding it, and the
-  // two corners naming their side.
+  // two corners naming their side. The corners are the taps now — buttons
+  // above the range input — so no second row of buttons stands below the
+  // arch.
   expect(swipe).toContain('style:left="{clampedPosition(position)}%"');
   expect(swipe).toContain('<span aria-hidden="true">◂ ▸</span>');
-  expect(swipe).toContain(">Original</span>");
-  expect(swipe).toContain(">After the fix</span>");
+  expect(swipe).toContain('<button type="button" class="badge original" onclick={showOriginal}>Original</button>');
+  expect(swipe).toContain('<button type="button" class="badge after" onclick={showRender}>After the fix</button>');
+  expect(swipe).not.toContain("Show the original");
+  expect(swipe).not.toContain("Show the render");
   const styles = swipe.slice(swipe.indexOf("<style>"));
   expect(styles).toMatch(/\.frame\s*\{[^}]*border-radius: 999px 999px var\(--radius-panel\) var\(--radius-panel\)/);
   expect(styles).toMatch(/\.frame\s*\{[^}]*border: 2px solid var\(--line\)/);
@@ -147,15 +148,19 @@ test("the swipe lands on the original in one tap and never shows a figure", () =
   expect(styles).toMatch(/\.divider\s*\{[^}]*width: 2px/);
   expect(styles).toMatch(/\.handle\s*\{[^}]*width: 2\.5rem/);
   expect(styles).toMatch(/\.handle\s*\{[^}]*border-radius: 999px/);
+  expect(styles).toMatch(/\.badge\s*\{[^}]*min-height: 2\.75rem/);
   expect(styles).toMatch(/\.badge\s*\{[^}]*background: var\(--surface\)/);
   expect(styles).toMatch(/\.badge\s*\{[^}]*border: 1px solid var\(--line\)/);
+  expect(styles).toMatch(/\.badge\s*\{[^}]*color: var\(--text\)/);
+  expect(styles).toMatch(/\.badge\s*\{[^}]*z-index: 2/);
   // A tap glides; a drag, and any forced-reduction reader, does not wait.
   expect(styles).toMatch(/@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?transition: clip-path/);
   const text = staticText(swipe);
   expect(text).not.toMatch(/\d/);
-  expect(text).toContain("Show the original");
   expect(text).toContain("Original");
   expect(text).toContain("After the fix");
+  expect(text).not.toContain("Show the original");
+  expect(text).not.toContain("Show the render");
 });
 
 test("the sheet lists every product with its label", async () => {
@@ -305,8 +310,18 @@ test("the screen shows the render, the actions and the sheet, and no digit", asy
   // The fix is the hero; the verdict actions sit in equal segments, the
   // stored one (Keep, until a choice is stored) carrying the primary fill.
   expect(screen).toContain('<div class="hero">');
-  expect(screen).toContain("{look.fix}</p>");
+  expect(screen).toContain('<h3 class="hero-label">A fix</h3>');
+  expect(screen).toContain('<p class="hero-fix">{look.fix}</p>');
+  // The why sentence repeated reasons[0] word for word; it is gone, and the
+  // fix paragraph is the card's only body.
+  expect(screen).not.toContain("{look.why}");
+  expect(screen).not.toContain(">Why<");
   expect(screen).toContain('class:primary={(saved ?? "kept") === choice}');
+  // The missed criteria fold away: the closed drawer carries them, named by
+  // its summary.
+  expect(screen).toContain('<details class="disclosure reasons-drawer">');
+  expect(screen).toContain("<summary>What the dress code still asks for</summary>");
+  expect(screen).toContain("{reason}");
   const styles = screen.slice(screen.indexOf("<style>"));
   expect(styles).toMatch(/\.hero\s*\{[^}]*background: var\(--raised\)/);
   expect(styles).toMatch(/\.hero\s*\{[^}]*border-left: 3px solid var\(--accent\)/);
@@ -316,7 +331,7 @@ test("the screen shows the render, the actions and the sheet, and no digit", asy
   expect(text).toContain("The render");
   expect(text).toContain("What the dress code still asks for");
   expect(text).toContain("A fix");
-  expect(text).toContain("Why");
+  expect(text).not.toContain("Why");
   expect(text).not.toContain("lookId");
   expect(text).not.toContain("jobId");
 

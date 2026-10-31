@@ -72,19 +72,19 @@
     {/if}
 
     {#if look.reasons.length > 0}
-      <h3>What the dress code still asks for</h3>
-      <ul>
-        {#each look.reasons as reason, index (index)}
-          <li>{reason}</li>
-        {/each}
-      </ul>
+      <details class="disclosure reasons-drawer">
+        <summary>What the dress code still asks for</summary>
+        <ul>
+          {#each look.reasons as reason, index (index)}
+            <li>{reason}</li>
+          {/each}
+        </ul>
+      </details>
     {/if}
 
     <div class="hero">
-      <h3>A fix</h3>
-      <p>{look.fix}</p>
-      <h3>Why</h3>
-      <p>{look.why}</p>
+      <h3 class="hero-label">A fix</h3>
+      <p class="hero-fix">{look.fix}</p>
     </div>
 
     <div class="verdict">
@@ -165,6 +165,27 @@
     padding-left: 1.1rem;
   }
 
+  /* The dress-code notes fold away until asked. The summary is the whole
+   * control: a quiet tap target whose tail turns as it opens. */
+  .disclosure summary {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    cursor: pointer;
+    color: var(--text);
+    overflow-wrap: break-word;
+  }
+
+  .disclosure summary::after {
+    content: "▾";
+    color: var(--dim);
+  }
+
+  .disclosure[open] summary::after {
+    rotate: 180deg;
+  }
+
   /* The fix is the screen's one hero: its own card, edged in the accent. */
   .hero {
     margin-top: 0.75rem;
@@ -182,10 +203,6 @@
 
   .hero p {
     margin: 0.35rem 0 0;
-  }
-
-  .hero p + h3 {
-    margin-top: 0.9rem;
   }
 
   /* The look's verdict: three equal segments, the one stored (Keep, until a

@@ -10,8 +10,10 @@ import {
   openFixMenu,
   openFidelityExplanation,
   openProductDrawer,
+  openReasonsDrawer,
   openSampleDrawer,
   openSecondVisit,
+  openStagesDrawer,
   openShopSheet,
   toggleFixPill,
   useMock,
@@ -99,9 +101,21 @@ const states: ScreenState[] = [
     ready: () => withText("h3", "A fix"),
   },
   {
+    name: "the verdict screen with the finished stepper drawer open",
+    hash: "#/look/verdict",
+    ready: () => withText("h3", "A fix"),
+    open: openStagesDrawer,
+  },
+  {
     name: "the render screen with the swipe and the verdict buttons",
     hash: "#/look/render",
     ready: () => withText("button", "Shop the look"),
+  },
+  {
+    name: "the render screen with the missed-criteria drawer open",
+    hash: "#/look/render",
+    ready: () => withText("button", "Shop the look"),
+    open: openReasonsDrawer,
   },
   {
     name: "the render screen with the shop sheet open",

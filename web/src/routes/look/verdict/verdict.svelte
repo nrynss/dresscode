@@ -72,7 +72,7 @@
     <p class="hint" role="status">{openingSentence}</p>
   {/if}
 
-  {#if stream !== undefined}
+  {#snippet stages()}
     <ol class="stages" aria-label="Where the look is">
       {#each stageOrder as stage, index (stage)}
         <li
@@ -85,6 +85,17 @@
         </li>
       {/each}
     </ol>
+  {/snippet}
+
+  {#if stream !== undefined}
+    {#if finished}
+      <details class="disclosure stages-drawer">
+        <summary>Checked against the dress code</summary>
+        {@render stages()}
+      </details>
+    {:else}
+      {@render stages()}
+    {/if}
   {/if}
 
   {#if paused}
@@ -97,18 +108,18 @@
 
   {#if verdict}
     {#if verdict.reasons.length > 0}
-      <h3>What the dress code still asks for</h3>
-      <ul>
-        {#each verdict.reasons as reason, index (index)}
-          <li>{reason}</li>
-        {/each}
-      </ul>
+      <details class="disclosure reasons-drawer">
+        <summary>What the dress code still asks for</summary>
+        <ul>
+          {#each verdict.reasons as reason, index (index)}
+            <li>{reason}</li>
+          {/each}
+        </ul>
+      </details>
     {/if}
     <div class="hero">
-      <h3>A fix</h3>
-      <p>{verdict.fix}</p>
-      <h3>Why</h3>
-      <p>{verdict.why}</p>
+      <h3 class="hero-label">A fix</h3>
+      <p class="hero-fix">{verdict.fix}</p>
     </div>
     <a class="primary-link" href={renderHash}>See the render</a>
   {/if}
@@ -162,6 +173,27 @@
   ul {
     margin: 0;
     padding-left: 1.1rem;
+  }
+
+  /* The dress-code notes fold away until asked. The summary is the whole
+   * control: a quiet tap target whose tail turns as it opens. */
+  .disclosure summary {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    cursor: pointer;
+    color: var(--text);
+    overflow-wrap: break-word;
+  }
+
+  .disclosure summary::after {
+    content: "▾";
+    color: var(--dim);
+  }
+
+  .disclosure[open] summary::after {
+    rotate: 180deg;
   }
 
   /* The live path: four words, the one in hand awake, the ones behind it
@@ -265,10 +297,6 @@
 
   .hero p {
     margin: 0.35rem 0 0;
-  }
-
-  .hero p + h3 {
-    margin-top: 0.9rem;
   }
 
   .primary-link {
