@@ -205,4 +205,20 @@ test("the shell link opens the account route", () => {
   expect(watch).not.toContain("stream.current");
   expect(watch).not.toContain("stream.total");
   expect(watch).not.toContain("user_id");
+
+  // Both disclosures are closed by default: the privacy table and the
+  // erasure instructions open only when asked. The SSR render check in the
+  // privacy test above still sees every sentence, because a details
+  // carries its children in the HTML either way.
+  expect(account).not.toContain("<details open");
+  expect(account).toContain('class="disclosure privacy-drawer"');
+  expect(account).toContain('class="disclosure erase-drawer"');
+  // The nothing-automatic sentence lives inside the erasure disclosure, so
+  // the Deletion section itself leads with the one stay sentence.
+  const erase = account.indexOf('<details class="disclosure erase-drawer">');
+  expect(erase).toBeGreaterThan(0);
+  expect(account.indexOf("{accounts.notAutomatic}"), "the nothing-automatic sentence sits in the disclosure").toBeGreaterThan(
+    erase,
+  );
+  expect(account.indexOf("{accounts.notAutomatic}")).toBeGreaterThan(account.indexOf("{accounts.stays}"));
 });

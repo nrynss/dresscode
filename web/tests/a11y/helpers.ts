@@ -200,6 +200,16 @@ export async function openSecondVisit(): Promise<void> {
   );
 }
 
+/** Open the account screen's who-sees-what disclosure, so the privacy table
+ * faces the gate the way a reader who expands it sees it. The disclosure is
+ * closed by default and its summary names itself with the heading inside. */
+export async function openPrivacyDrawer(): Promise<void> {
+  const heading = withText("h2", "Who sees what");
+  expect(heading, "the who-sees-what heading").not.toBeNull();
+  (heading!.closest("summary") as HTMLElement).click();
+  await waitUntil(() => document.querySelector("details.privacy-drawer[open]"), "the who-sees-what disclosure opens");
+}
+
 /** Open a confirm dialog on the account screen. */
 export async function openDeleteDialog(title: string): Promise<void> {
   const trigger = withText("button", title);

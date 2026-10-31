@@ -264,7 +264,7 @@
     {/if}
   </section>
 
-  <details open class="disclosure">
+  <details class="disclosure privacy-drawer">
     <summary>
       <h2 id="who-sees">{privacy.heading}</h2>
       <span class="chevron" aria-hidden="true">▾</span>
@@ -279,7 +279,6 @@
 
   <section class="block" aria-labelledby="deletion">
     <h3 id="deletion">Deletion</h3>
-    <p>{accounts.notAutomatic}</p>
     <p>{accounts.stays}</p>
 
     {#if ready && looks.length === 0}
@@ -394,64 +393,70 @@
       </Dialog.Portal>
     </Dialog.Root>
 
-    <h3>Delete the account</h3>
-    <p>{accounts.deletion}</p>
-    <p>Request a fresh code. A code already used to sign in cannot be used again.</p>
-    <div class="row">
-      <button type="button" disabled={pending || address.trim() === ""} onclick={() => void sendFreshCode()}>
-        Email a fresh code
-      </button>
-    </div>
-    {#if freshSent}
-      <label>
-        Fresh code
-        <span class="otp">
-          <input
-            name="deletion-code"
-            inputmode="numeric"
-            autocomplete="one-time-code"
-            maxlength="6"
-            bind:value={deletionCode}
-          />
-          {#each deletionCells as cell, index (index)}
-            <span class="cell" aria-hidden="true">{cell}</span>
-          {/each}
-        </span>
-      </label>
-      <Dialog.Root
-        open={dialog === "account"}
-        onOpenChange={(open) => {
-          if (open) dialog = "account";
-          else if (dialog === "account") dialog = null;
-        }}
-      >
-        <Dialog.Trigger class="danger" disabled={pending || !freshCodeReady}>Delete the account</Dialog.Trigger>
-        <Dialog.Portal>
-          <Dialog.Overlay class="dresscode-overlay" />
-          <Dialog.Content class="dresscode-panel">
-            <Dialog.Title class="dresscode-title">Delete the account</Dialog.Title>
-            <Dialog.Description class="dresscode-copy">{accounts.deletion}</Dialog.Description>
-            <div class="row">
-              <button
-                type="button"
-                class="primary"
-                disabled={pending}
-                onclick={() => {
-                  dialog = null;
-                  void eraseAccount();
-                }}
-              >
-                Delete the account
-              </button>
-              <Dialog.Close>Cancel</Dialog.Close>
-            </div>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    {/if}
-    {#if accountErasure}
-      <p>The session has ended. Deletion continues until every part has confirmed.</p>
-    {/if}
+    <details class="disclosure erase-drawer">
+      <summary>
+        <h3>Delete the account</h3>
+        <span class="chevron" aria-hidden="true">▾</span>
+      </summary>
+      <p>{accounts.notAutomatic}</p>
+      <p>{accounts.deletion}</p>
+      <p>Request a fresh code. A code already used to sign in cannot be used again.</p>
+      <div class="row">
+        <button type="button" disabled={pending || address.trim() === ""} onclick={() => void sendFreshCode()}>
+          Email a fresh code
+        </button>
+      </div>
+      {#if freshSent}
+        <label>
+          Fresh code
+          <span class="otp">
+            <input
+              name="deletion-code"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="6"
+              bind:value={deletionCode}
+            />
+            {#each deletionCells as cell, index (index)}
+              <span class="cell" aria-hidden="true">{cell}</span>
+            {/each}
+          </span>
+        </label>
+        <Dialog.Root
+          open={dialog === "account"}
+          onOpenChange={(open) => {
+            if (open) dialog = "account";
+            else if (dialog === "account") dialog = null;
+          }}
+        >
+          <Dialog.Trigger class="danger" disabled={pending || !freshCodeReady}>Delete the account</Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay class="dresscode-overlay" />
+            <Dialog.Content class="dresscode-panel">
+              <Dialog.Title class="dresscode-title">Delete the account</Dialog.Title>
+              <Dialog.Description class="dresscode-copy">{accounts.deletion}</Dialog.Description>
+              <div class="row">
+                <button
+                  type="button"
+                  class="primary"
+                  disabled={pending}
+                  onclick={() => {
+                    dialog = null;
+                    void eraseAccount();
+                  }}
+                >
+                  Delete the account
+                </button>
+                <Dialog.Close>Cancel</Dialog.Close>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      {/if}
+      {#if accountErasure}
+        <p>The session has ended. Deletion continues until every part has confirmed.</p>
+      {/if}
+    </details>
   </section>
 
   {#if jobId}

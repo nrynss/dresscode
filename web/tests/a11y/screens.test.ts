@@ -10,6 +10,7 @@ import {
   openFixMenu,
   openFidelityExplanation,
   openProductDrawer,
+  openPrivacyDrawer,
   openReasonsDrawer,
   openSampleDrawer,
   openSecondVisit,
@@ -166,9 +167,15 @@ const states: ScreenState[] = [
     },
   },
   {
-    name: "the account screen with the privacy text",
+    name: "the account screen with the disclosures closed",
     hash: "#account",
     ready: () => withText("h2", "Who sees what"),
+  },
+  {
+    name: "the account screen with the who-sees-what disclosure open",
+    hash: "#account",
+    ready: () => withText("h2", "Who sees what"),
+    open: openPrivacyDrawer,
   },
   {
     name: "the account screen with the history dialog open",

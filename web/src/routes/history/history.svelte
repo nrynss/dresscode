@@ -68,26 +68,32 @@
 
 <section class="history" aria-labelledby="history-heading">
   <a class="back" href="#/">Back</a>
-  <h2 id="history-heading">Style history</h2>
+  <div class="history-bar">
+    <h2 id="history-heading">Style history</h2>
+    {#if switchState !== undefined}
+      <label class="switch">
+        <input
+          type="checkbox"
+          checked={switchState.enabled}
+          disabled={saving}
+          onchange={(event) => void toggle(event.currentTarget.checked)}
+        />
+        <span class="sr-only">Style history</span>
+      </label>
+    {/if}
+  </div>
 
   {#if problem}
     <ErrorNotice error={problem} />
   {:else if switchState === undefined}
     <p class="hint" role="status">{openingSentence}</p>
   {:else}
-    <label class="switch">
-      <input
-        type="checkbox"
-        checked={switchState.enabled}
-        disabled={saving}
-        onchange={(event) => void toggle(event.currentTarget.checked)}
-      />
-      Style history
-    </label>
-    <p class="info-card">{switchState.notice}</p>
+    <details class="disclosure">
+      <summary>How style history works</summary>
+      <p class="info-card">{switchState.notice}</p>
+    </details>
 
     {#if switchState.enabled}
-      <h3>Past looks</h3>
       {#if visitProblem}
         <ErrorNotice error={visitProblem} />
       {:else if openingVisit || visit === undefined}
@@ -97,7 +103,7 @@
       {:else}
         {#each visit.groups as group (group.occasion.id)}
           <div class="group">
-            <h4>{group.occasion.name}</h4>
+            <h3>{group.occasion.name}</h3>
             {#if group.line !== ""}
               <p class="line">{group.line}</p>
             {/if}
@@ -143,15 +149,62 @@
   }
 
   h3 {
-    margin: 0.75rem 0 0;
-    font-size: 1.15rem;
-    font-weight: 600;
-  }
-
-  h4 {
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
+  }
+
+  /* The header bar: the heading names the screen, the switch sits beside it,
+   * and the label's own text is hidden from sight because the heading is the
+   * name a reader sees. */
+  .history-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    max-width: 100%;
+    min-inline-size: 0;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* The explanation of what the switch keeps is tucked away until asked. */
+  .disclosure summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.15rem;
+    max-width: 100%;
+    min-inline-size: 0;
+    overflow-wrap: break-word;
+    color: var(--text);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .disclosure summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .disclosure summary::after {
+    content: "▾";
+    color: var(--dim);
+  }
+
+  .disclosure[open] summary::after {
+    rotate: 180deg;
   }
 
   p,

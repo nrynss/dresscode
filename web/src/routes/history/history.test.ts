@@ -317,7 +317,16 @@ test("no digit anywhere and no id on the screen", () => {
   const markup = staticText(screen);
   expect(markup).not.toMatch(/\d/);
   expect(markup).toContain("Style history");
-  expect(markup).toContain("Past looks");
+  // The notice folds into a disclosure closed by default, and the redundant
+  // subheading above the occasion groups is gone; the groups carry the
+  // occasion names themselves.
+  expect(markup).toContain("How style history works");
+  expect(markup).not.toContain("Past looks");
+  expect(screen).not.toContain("<details open");
+  // The heading and the switch share one bar, and the switch's own text
+  // hides inside its label, so the control still carries its name.
+  expect(screen).toContain('class="history-bar"');
+  expect(screen).toContain('<span class="sr-only">Style history</span>');
   expect(markup).toContain("Back");
   // The ids and counts stay keys, never words on the screen.
   expect(markup).not.toContain("lookId");

@@ -411,7 +411,7 @@ requires:   T5.17
 fixture-ok: yes
 size:       M · mid
 owns:       product.md, web/src/routes/account/, web/src/routes/history/, web/tests/a11y/
-status:     not-started
+status:     in-review
 ```
 Reduce cognitive load on `#/history` and `#account` using progressive disclosure (`<details>` sections closed by default for `How style history works`, `Who sees what`, and `Delete the account`), cut duplicate explanatory sentences in Account, align `product.md`'s analysis sentence with the shipped `faceShape` scope (closing the T3.3 product finding), and refresh the closing screenshot set in `/tmp/ui-explore-after/`.
 
@@ -442,6 +442,16 @@ What to build:
    - Add an `open` step in `screens.test.ts` for the `Who sees what` disclosure state on Account, verify all mounted states pass `a11yGate` and `contrastGate` in forced light and dark at 375 px, and re-capture the screenshots in `/tmp/ui-explore-after/` (`light/`, `dark/`, `wide/`, `INDEX.md`).
 
 **Done when:** `./tools/check.sh` passes; `Who sees what`, `Delete the account`, and `How style history works` are collapsed by default; duplicate paragraphs on Account and History are gone; `product.md` matches the shipped analysis scope; `/tmp/ui-explore-after/` holds the updated decluttered screenshots.
+
+Notes:
+
+- Inherited, not authored: the first implementer on this task died with the whole change set uncommitted in the worktree (seven files, all inside owns, nothing committed). The takeover fast-forwarded onto main (diary-only commits, no conflict), audited the diff against the four numbered items, and ran the gate — the inherited code passed everything as it stood, so the takeover's own work is the browser verification and the full screenshot refresh, not code repair.
+- Item 1: both product.md sentences moved exactly as specified (step 3 now reads `YouCam analysis runs only when the fix needs it: face shape for a hairstyle.`; the picker row reads `allowlisted attributes (face shape)`). `privacy.ts` needed no edit — it lifts its sentences out of product.md at import, so the drawer copy follows the file; the sentence-by-sentence test against product.md passes unchanged, and no stale `hair type`/`colour tones`/`shade match` mention survives anywhere in product.md.
+- Item 2: heading and switch share a `.history-bar` row; the label's visible text moved into `<span class="sr-only">`, so `firstInputOf("Style history")` still resolves the control (proven by the mounted second-visit state, which toggles it); the notice sits in a closed `<details class="disclosure"><summary>How style history works</summary>` following the verdict drawer pattern (flex summary, 2.75rem tap target, `::after` chevron that rotates on open); `<h3>Past looks</h3>` is gone and the occasion groups moved h4→h3 so the outline does not skip a level.
+- Item 3: `Who sees what` lost its `open` attribute; the erasure subsection (heading, deletion sentence, fresh-code instruction, OTP input, confirm dialog) wrapped in a closed `<details class="disclosure erase-drawer">` with `notAutomatic` moved inside it, leaving `stays` as the Deletion section's only sentence above the items. The sign-in dedup the task describes was already done by T5.19 — the shipped screen has exactly one sentence above the email input and no `noGoogle` or device-address paragraph exists anywhere in the tree (verified by grep), so there was nothing to move. SSR still carries every drawer sentence (details renders children when closed), so the privacy test keeps its teeth; new pins: no `<details open` in source, both drawer classes present, `notAutomatic` positioned inside the erase drawer after `stays`.
+- Item 4: the mounted matrix is 18 states × 2 themes = 36 tests — the account screen now covers closed disclosures, the `Who sees what` drawer open (helper `openPrivacyDrawer` clicks the summary and waits for `details.privacy-drawer[open]`) and the history dialog; contrast and 375 px layout guards unchanged and green. Gate `./tools/check.sh` exit 0.
+- Screenshots: the whole closing set was re-shot from this tree against the mock dev server — 25 light + 25 dark states at 375 px and 7 wide at 768 px, full-page CDP captures (`captureBeyondViewport`), themes forced through `localStorage["chaaya-theme"]`. Five drawer-open states are new (21 who-sees open — dark was missing it before, 22 stepper open, 23 criteria open, 24 history notice open, 25 erasure open), so the collapsed-by-default claim is checkable from the set; INDEX.md rewritten to match. Shot 06 changed with the shipped picker: ticks auto-save, so no Save press or confirmation line appears. Verified in the browser at 375 px: each drawer opens from collapsed onto its content, the heading/switch bar fits one row, no horizontal overflow on any screen.
+- Grants: none — everything stayed inside owns. The screenshot driver lives in `/tmp/t518-shots/` (raw CDP over google-chrome-stable through Node's built-in WebSocket), never in the repo.
 
 ---
 
