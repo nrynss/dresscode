@@ -335,7 +335,7 @@ requires:   T5.15
 fixture-ok: yes
 size:       S · mid
 owns:       web/src/routes/capture/, web/tests/a11y/
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 Remove all instructional paragraphs and redundant headings from `#/capture`, move `Open the front camera` and `Take the photo` directly inside the arched vanity mirror viewfinder, and place the two file-input fallbacks side by side in one compact row.
 
@@ -354,6 +354,17 @@ What to build:
    - Update `screens.test.ts` capture state `ready` marker from `withText("h2", "Your selfie")` to `withText("button", "Open the front camera")`.
 
 **Done when:** `./tools/check.sh` passes; `#/capture` leads immediately with the arched mirror containing `Open the front camera`, a 2-column `Choose a photo` / `Use the phone camera` row below, and the closed `Considering a specific piece?` drawer.
+
+Notes:
+
+- Markup: the lead paragraph, the visible `<h2>Your selfie</h2>`, the camera hand-holding hint and the drawer's redundant `<h2>A product</h2>` are gone — no `h2` remains on the screen, and the selfie section names itself with `aria-label="Your selfie"` so the landmark survives the heading.
+- In-mirror controls: an idle block (`.mirror-idle`, absolute over the glass, flex column centred) carries the prompt and the `Open the front camera` primary button inside `.mirror-frame`; the live state overlays `.take-btn` at the frame's bottom centre (`position: absolute`, `bottom: 1.25rem`, centred with `left: 50%` + `translate`, `z-index` above the video). `translate` is positioning, not a transition, so nothing sits outside the motion gate — and it deliberately avoids the theme button's `transform` transition, so the centring never animates. Requesting keeps the mirror bare with its `Opening the camera.` hint; denied/unavailable/failed fall back to the idle block plus the authored failure sentence, so the retry CTA is the one inside the arch.
+- Order below the mirror: the camera hints (requesting, denial) stay adjacent to the frame they describe, then the ready block — `The selfie is ready.` + `Check the dress code` — then the 2-column `.row` of the two fallbacks (`.row > .file { flex: 1 1 0; min-inline-size: 0 }`). In every common state the CTA sits directly below the mirror; only a transient camera hint can sit between, and the denial hint's "use the phone camera below" still holds because the row is last.
+- Contrast: no new pair and nothing for the drawn-pair guards to learn. `.mirror-idle` and `.take-btn` declare no colour; the prompt stays `--dim` on `--sunken`, measured.
+- Tests: `upload.test.ts`'s screen test keeps every landed pin (three `type="file"`, the mirror recipe, the `.file` button recipe and hiding properties, the drawer, the CTA) and adds the decluttered ones: no lead, no `<h2>` anywhere, the named section, no hand-holding hint, both camera controls inside the source slice between the frame's open tag and the requesting branch with the prompt before the CTA, the take overlay with its anchor styles, the ready-CTA-before-pickers order, exactly one `</label>` between the two picker texts, the `.row > .file` flex basis, and `A product` gone. One of my own first pins was wrong, not the screen: `indexOf("Use the phone camera")` matched the denial hint's "…use the phone camera below." before the picker label; the picker search now starts at the gallery pill.
+- `screens.test.ts`: both capture states' ready marker moved from `withText("h2", "Your selfie")` to `withText("button", "Open the front camera")` per the phase — the in-frame CTA is what a reader lands on, and it proves the screen mounted past its empty opening frame. helpers.ts needed nothing: `openProductDrawer` still finds the summary, and the drawer-open state waits on `details.product-drawer[open]`, not the deleted heading.
+- Measured finding at 375 px: the row's pills are 166 px each and the theme's control font is 17 px, so `Use the phone camera` wraps to two lines while `Choose a photo` holds one. Both pills keep equal height with centred text, and a one-line row is impossible at this width without shrinking the font or renaming a label the phase pins, so the row ships as designed; the screenshot pass can judge it with real eyes.
+- Browser pass at 375 px on mock (own dev server on a scratch port): the mirror leads with the in-frame prompt and CTA, the 2-column row sits below, the drawer opens onto its fields with no heading; forced-light and forced-dark shots of the idle and open-drawer states are in `/tmp/t516-shots/`. The open-drawer shot re-hit the known in-app-browser full-page tiling (T5.13's note) — a viewport-height-tall shot (width still 375) captures the whole page in one frame. The unforced render was dark because the machine prefers dark, so the light shots force the theme explicitly.
 
 ---
 

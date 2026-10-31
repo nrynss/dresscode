@@ -241,7 +241,6 @@
 </script>
 
 <a class="back" href="#/">Back</a>
-<p class="lead">One selfie for the occasion, and any product you are considering.</p>
 
 {#if problem}
   <ErrorNotice error={problem} />
@@ -264,13 +263,7 @@
   </div>
 {/if}
 
-<section>
-  <h2>Your selfie</h2>
-  <div class="row">
-    <button type="button" class="primary" disabled={busy} onclick={() => void openLens("selfie")}>
-      Open the front camera
-    </button>
-  </div>
+<section aria-label="Your selfie">
   <div class="mirror-frame">
     <video
       bind:this={video}
@@ -282,45 +275,52 @@
       aria-label="Camera preview"
     ></video>
     {#if session.phase !== "live" && session.phase !== "requesting"}
-      <p class="mirror-prompt">The mirror opens here.</p>
+      <div class="mirror-idle">
+        <p class="mirror-prompt">The mirror opens here.</p>
+        <button type="button" class="primary" disabled={busy} onclick={() => void openLens("selfie")}>
+          Open the front camera
+        </button>
+      </div>
+    {/if}
+    {#if session.phase === "live"}
+      <button type="button" class="primary take-btn" disabled={busy} onclick={() => void take()}>
+        Take the photo
+      </button>
     {/if}
   </div>
   {#if session.phase === "requesting"}
     <p class="hint">Opening the camera.</p>
   {/if}
-  {#if session.phase === "live"}
-    <button type="button" class="primary" disabled={busy} onclick={() => void take()}>Take the photo</button>
-  {/if}
   {#if session.phase === "denied" || session.phase === "unavailable" || session.phase === "failed"}
     <p class="hint">The camera did not open. Use the phone camera below.</p>
   {/if}
-  <label class="file">
-    Choose a photo
-    <input type="file" accept="image/*" disabled={busy} onchange={(event) => void onGallery(event, "selfie")} />
-  </label>
-  <p class="hint">If that camera does not open, use the phone camera.</p>
-  <label class="file">
-    Use the phone camera
-    <input
-      type="file"
-      accept="image/*"
-      capture="user"
-      disabled={busy}
-      onchange={(event) => void onGallery(event, "selfie")}
-    />
-  </label>
   {#if selfie}
     <p class="hint">The selfie is ready.</p>
     <button type="button" class="primary" disabled={busy || starting} onclick={() => void checkDressCode()}>
       Check the dress code
     </button>
   {/if}
+  <div class="row">
+    <label class="file">
+      Choose a photo
+      <input type="file" accept="image/*" disabled={busy} onchange={(event) => void onGallery(event, "selfie")} />
+    </label>
+    <label class="file">
+      Use the phone camera
+      <input
+        type="file"
+        accept="image/*"
+        capture="user"
+        disabled={busy}
+        onchange={(event) => void onGallery(event, "selfie")}
+      />
+    </label>
+  </div>
 </section>
 
 <details class="product-drawer">
   <summary>Considering a specific piece?</summary>
   <section>
-    <h2>A product</h2>
     <label class="field">
       Name
       <input bind:value={productName} autocomplete="off" />
@@ -373,12 +373,6 @@
     margin-top: 1.5rem;
   }
 
-  h2 {
-    margin: 0;
-    font-size: 1.35rem;
-    font-weight: 600;
-  }
-
   .row {
     display: flex;
     flex-wrap: wrap;
@@ -387,6 +381,13 @@
 
   .row > button {
     flex: 1 1 100%;
+  }
+
+  /* The two selfie fallbacks share one compact row: each pill takes half of
+   * it, so no picker sits on its own line. */
+  .row > .file {
+    flex: 1 1 0;
+    min-inline-size: 0;
   }
 
   .field {
@@ -436,17 +437,34 @@
     transform: scaleX(-1);
   }
 
-  .mirror-prompt {
+  /* Inside the arch: the idle state centres its prompt and the front-camera
+   * CTA on the sunken glass; the live state overlays the shutter at the
+   * bottom centre. */
+  .mirror-idle {
     position: absolute;
     inset: 0;
+    z-index: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    margin: 0;
+    gap: 1rem;
     padding: 1.5rem;
+  }
+
+  .mirror-prompt {
+    margin: 0;
     color: var(--dim);
     text-align: center;
     overflow-wrap: break-word;
+  }
+
+  .take-btn {
+    position: absolute;
+    bottom: 1.25rem;
+    left: 50%;
+    translate: -50% 0;
+    z-index: 1;
   }
 
   /* The file pickers wear the button, and the native input hides inside. */

@@ -358,8 +358,8 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(source).toContain("ErrorNotice");
   expect(source).toContain('aria-label="Sending the photo"');
 
-  // The vanity mirror: an arched portrait frame the spacer carries, with its
-  // idle prompt, and the authored camera failure whatever the session says.
+  // The vanity mirror: an arched portrait frame the spacer carries, and the
+  // authored camera failure whatever the session says.
   const styles = source.slice(source.indexOf("<style>"));
   expect(source).toContain("The mirror opens here.");
   expect(source).not.toContain("session.reason");
@@ -369,6 +369,55 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*background: var\(--sunken\)/);
   expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*max-width: min\(100%, calc\(68dvh \* 3 \/ 4\)\)/);
   expect(styles).toMatch(/\.mirror-frame::before\s*\{[^}]*padding-top: 133%/);
+
+  // Zero instructional bloat: no lead paragraph, no visible heading (the
+  // section names itself for the reader who arrives by landmark), and no
+  // camera hand-holding hint above the fallbacks.
+  expect(source).not.toContain("One selfie for the occasion");
+  expect(source).not.toContain("<h2");
+  expect(source).toContain('<section aria-label="Your selfie">');
+  expect(source).not.toContain("If that camera does not open");
+
+  // Both camera controls live inside the arch: the idle state centres the
+  // prompt and the front-camera CTA on the glass, and the live state
+  // overlays the shutter at the frame's bottom centre.
+  const mirror = source.slice(
+    source.indexOf('<div class="mirror-frame">'),
+    source.indexOf('{#if session.phase === "requesting"}'),
+  );
+  expect(mirror).toContain('class="mirror-idle"');
+  expect(mirror).toContain("The mirror opens here.");
+  expect(mirror.indexOf("The mirror opens here.")).toBeLessThan(mirror.indexOf("Open the front camera"));
+  expect(mirror).toContain('onclick={() => void openLens("selfie")}');
+  expect(mirror).toContain('class="primary take-btn"');
+  expect(mirror).toContain("Take the photo");
+  expect(mirror).toContain('onclick={() => void take()}');
+  expect(styles).toMatch(/\.mirror-idle\s*\{[^}]*position: absolute/);
+  expect(styles).toMatch(/\.mirror-idle\s*\{[^}]*align-items: center/);
+  expect(styles).toMatch(/\.take-btn\s*\{[^}]*position: absolute/);
+  expect(styles).toMatch(/\.take-btn\s*\{[^}]*bottom: /);
+  expect(styles).toMatch(/\.take-btn\s*\{[^}]*left: 50%/);
+
+  // The ready CTA sits below the mirror, and the two fallbacks share one
+  // compact row with nothing between the pills.
+  const below = source.slice(
+    source.indexOf('{#if session.phase === "requesting"}'),
+    source.indexOf('<details class="product-drawer">'),
+  );
+  const ready = below.indexOf("The selfie is ready.");
+  const check = below.indexOf("Check the dress code");
+  const gallery = below.indexOf("Choose a photo");
+  // The denial hint also says "Use the phone camera below.", so the picker
+  // label is found from the gallery pill onward.
+  const phone = below.indexOf("Use the phone camera", gallery);
+  expect(ready).toBeGreaterThanOrEqual(0);
+  expect(check).toBeGreaterThan(ready);
+  expect(gallery).toBeGreaterThan(check);
+  expect(phone).toBeGreaterThan(gallery);
+  const between = below.slice(gallery, phone);
+  expect(between.match(/<\/label>/g)?.length).toBe(1);
+  expect(between).not.toContain("<p");
+  expect(styles).toMatch(/\.row > \.file\s*\{[^}]*flex: 1 1 0/);
 
   // The pickers wear the button, and the native input hides inside the label.
   expect(styles).toMatch(/\.file\s*\{[^}]*background: var\(--surface\)/);
@@ -381,9 +430,11 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(styles).toMatch(/\.file input\s*\{[^}]*opacity: 0/);
   expect(styles).toMatch(/\.file input\s*\{[^}]*overflow: hidden/);
 
-  // The product drawer folds away, and the selfie's CTA starts the look.
+  // The product drawer folds away with its own summary as its only title,
+  // and the selfie's CTA starts the look.
   expect(source).toContain('<details class="product-drawer">');
   expect(source).toContain("Considering a specific piece?");
+  expect(source).not.toContain("A product");
   expect(source).toContain("Check the dress code");
   expect(source).toContain("startLook(");
   expect(source).toContain("storyOccasion");
