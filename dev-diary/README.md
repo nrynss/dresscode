@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T3.1 (Judge) landed (`b115ec8`) — **the pipeline has begun**. T3.2 (Pick a fix) dispatches next. T5.13 landed; T5.14 (visual verification, P5B's last task) is in flight. Config thresholds defer to T3.6 (owns will extend; absent `[judge]` section must error at load).
+**Current status:** **P5B is complete** (`0403b53`) — the UX overhaul landed end to end with its gates. **P3 is running**: T3.1 landed, T3.2 (Pick a fix) in flight, then T3.3 Measure → T3.4 Render → T3.5 Check → T3.6 fallback+config → T3.7 shop → T3.8 memory → T3.9 evaluation. T4.4 wires it to the app after T3.6.
 
 ---
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 1 / 9 | **The pipeline has begun** — T3.1 (Judge) landed. T3.2 (Pick a fix) dispatches next. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 4 / 5 | T5.13 landed — the vanity mirror, stepper, hero cards, arched comparator and fidelity popovers. T5.14 (visual verification) closes the phase. |
+| P5B | 5 / 5 | **Complete.** The overhaul landed: front door, mirror journey, comparator, brand mark, editorial shell, button system, Account/History upgrades, and the a11y matrix covering all 15 states. Before/after screenshots await the user's review (`/tmp/ui-explore/` vs `/tmp/ui-explore-after/`). |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.14 Visual verification — P5B is complete.** The a11y matrix grew from 13 to 15 states (30 mounted gate runs): the front door now waits for the loaded judge-sample buttons, capture gates the open product drawer, and render gates an open fidelity-popover explanation — both new states break-proven (stripping the popover's aria-label fails exactly those two tests, both themes). The closing screenshots live in `/tmp/ui-explore-after/` (47 renders + INDEX.md, light/dark/wide) against the before set at `/tmp/ui-explore/` — real photographs this time, via the media middleware; the comparator's dvh cap visibly fixes the before set's tallest-frame finding. No genuine screen failure on any landed surface; both disclosed deviations (the stepper's mid-flight state is a replay race, viewport-only screenshots) judged acceptable. Review CLEAN, break re-done independently. Landed as `0403b53`, gate green in the worktree and the main checkout, 54 unit + 38 a11y tests. **The overhaul is done; P3 carries the work from here.**
 
 - **T3.1 Judge — the pipeline's first task.** `internal/pipeline/judge.go`: one Clef request — the photo, a two-field state, one `noul` question per criterion in the data's wording, the `biggest_issue` choice — and probabilities become flags at thresholds passed as an argument (placeholders until T3.9 measures them; NaN and stale overrides refused loudly). Output is `Judgement{Flags []domain.Criterion, Issue}`: flagged criteria carried whole with the data's suggestion, the biggest issue with its label, no probability anywhere — they steer and die here. The no-YouCam promise is structural: the state has no field for an analysis, the package cannot name the YouCam client, and the test proves judge's whole request equals the recorded probe request on all 37 samples (the probe docs/clef.md records as sending none). An empty photo is refused before any call — Clef answers imageless requests confidently, and that answer must not be trusted. Thirteen of 273 cells disagree with the samples README at 0.5 (T3.9 owns moving the lines). Two review rounds; the reviewer recomputed the flag rule from seven raw recordings and reconciled all 273 answers; remediation pinned the no-photo ordering and corrected a count. Landed as `94a9a9b`+`b115ec8`, gate green in the worktree and the main checkout. For T3.6: the `[judge]` settings section (shape proposed in the task notes) lands there — its owns extend to internal/config/settings.go, and an absent section must error at load, never degrade to all-met. For T3.2: you inherit `Judgement`; `Issue.ID` can name a criterion the flags do not hold.
 

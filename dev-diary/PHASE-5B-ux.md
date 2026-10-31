@@ -252,7 +252,7 @@ requires:   T5.13
 fixture-ok: yes
 size:       S · light
 owns:       web/tests/a11y/
-status:     in-review:glm-5.3-flash
+status:     done:glm-5.3-flash
 ```
 Extend the accessibility and contrast gate matrix in `web/tests/a11y/` to cover the new interactive states (judge samples on home, collapsible drawers, fidelity explanation in the shop sheet), verify that every text pair (4.5:1) and boundary pair (3:1) holds with break-proofs in `/tmp`, and capture a fresh set of light, dark, and 768 px screenshots in `/tmp/ui-explore-after/` to prove the overhaul end-to-end.
 
