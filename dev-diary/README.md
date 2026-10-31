@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T3.3 (Measure) landed (`1b74a49`) — the pipeline spends analysis units only on what the chosen fix names, cached by photo hash. T3.4 (Render ★, the YouCam render call) dispatches next. T5.14 closed P5B; T3.2 landed. **One product decision pending for the user:** product.md says "colour tones for a shade match" but the shipped data takes shade-matching off the menu — amend product.md or charter a budgeted task.
+**Current status:** T3.5 (Check) landed — the pipeline is 5 of 9: judge, pick, measure, render, check all exist. T3.6 (fallback chain + the [judge]/[check] config) and T5.15 (declutter review) are in flight. **Product decisions pending for the user:** the colour-tones conflict (product.md vs data), the words fixture tension (phrase table vs regenerate), nude-lip renders unrecorded.
 
 ---
 
