@@ -22,7 +22,7 @@ Request and response bodies are JSON objects unless a section says otherwise. On
 
 No response, and no event, carries a probability, a score, a percentage, an age, a gender, a face ratio, or a skin analysis score. The Clef wording of a criterion (`clef`) stays on the server. The phone receives the suggestion.
 
-The fix picker may use face shape, hair type, hair length, and colour tones. Those values are not on this API. The phone does not receive the allowlist.
+The fix picker's allowlist is typed for face shape, hair type, hair length, and colour tones, but only face shape is ever measured: the shipped menus ask for it alone, and the shade fixes name no analysis, so the other three stay empty. Those values are not on this API. The phone does not receive the allowlist.
 
 Upload byte counts, erase progress counts, and a digest are not judgements. The app does not show them as a score.
 
