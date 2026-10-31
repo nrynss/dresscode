@@ -589,9 +589,14 @@ func TestJudgeRefusals(t *testing.T) {
 
 	t.Run("no photo is refused before any call", func(t *testing.T) {
 		// Clef answers a judge request that lost its image, and the
-		// answer is not one to trust (docs/clef.md).
-		client := &stubClient{resp: noulAnswers(map[string]float64{"a": 0.9, "b": 0.9}, "none")}
-		_, err := Judge(context.Background(), client, systemone.Image{ContentType: "image/jpeg"}, occ, Thresholds{Met: readingAt})
+		// answer is not one to trust (docs/clef.md). The capture pins
+		// the order, not just the wording: a judge that asked the
+		// model on an empty photo would leave a request here.
+		capture := &captureClient{inner: &stubClient{resp: noulAnswers(map[string]float64{"a": 0.9, "b": 0.9}, "none")}}
+		_, err := Judge(context.Background(), capture, systemone.Image{ContentType: "image/jpeg"}, occ, Thresholds{Met: readingAt})
+		if n := len(capture.seen); n != 0 {
+			t.Fatalf("%d requests went out, want the refusal before any call", n)
+		}
 		if err == nil || !strings.Contains(err.Error(), "photo") {
 			t.Fatalf("error %v, want it to name the photo", err)
 		}
