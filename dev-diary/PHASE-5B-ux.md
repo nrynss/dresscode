@@ -731,3 +731,22 @@ What to build:
 
 **Done when:** `./tools/check.sh` passes; `Before` and `After` sit cleanly at the bottom corners of the arch; the drag handle sits at collar level (`top: 72%`); `A fix`, `Shop the look`, and `Keep / Dismiss / Bought it` form one cohesive Result Card; `#/look/verdict` displays the Arched Mirror photo; `/tmp/ui-explore-after/` holds the refreshed screenshots in both themes.
 
+
+---
+
+### T5.24: A look that flags nothing is readable on screen
+```yaml
+requires:   T5.13
+fixture-ok: yes
+size:       S · light
+owns:       web/src/routes/look/render/, web/src/routes/look/verdict/, web/tests/a11y/
+status:     not-started
+```
+A look whose judge flags nothing — which is a real outcome, not an error — has no fix to name, so the server's ready body carries no fix object. Two shipped screens throw on exactly that: `web/src/routes/look/render/copy.ts:120-124` answers "The render could not be read." and `web/src/routes/look/verdict/copy.ts:51-55` answers "The verdict could not be read." Nothing in the app can show a clean look. `sample-interview` is the data that reached it (T4.6's `Test…SpendsNothing` pins the null body), and the same body answers for any paid look that flags nothing, so this is not a sample-only path — it is the most reassuring screen in the product missing from the one occasion it is most needed.
+
+What to build:
+
+1. **Read the no-fix look** in both screens: no fix hero, no `Shop the look` for a fix that does not exist, and a sentence that says the outfit already meets the dress code, in the product's own voice. It must pass the a11y and contrast gates, so add a mounted state for it (`web/tests/a11y/`) the way every other disclosure learned to.
+2. **The fixture** (`testdata/api/`): a recorded ready body with no fix, so the app's test and the server's test read the same shape. `docs/api.md:394` documents `fix` as `{id, changes, why}` with no null option, and the contract is frozen at P1 — **the wording is the user's decision, not this task's.** Raise it in the handoff log and build against whatever the user answers; a screen that tolerates the absent key is worth landing even before the line moves.
+
+**Done when:** a look with no fix renders a real screen in both themes at 375 px instead of an error, and the two screens' tests fail if the no-fix branch is removed.

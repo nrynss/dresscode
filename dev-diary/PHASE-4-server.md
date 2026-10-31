@@ -183,3 +183,48 @@ Notes:
 - Surprised (also in feedback.md): Keel `cost/sqlitestore.Open` rewrites the ceiling on every open, zero included, which makes "read the books" a write and killed the first sketch of opening empty and reading the ceiling back; Keel `config` cannot load part of a file, so the budget command resolves all ten key references to print two ceilings.
 
 Review: CLEAN, no must-fix. Both **Done when** clauses proved at the real thing — the flip test drives live HTTP through `srv.Handler()` on a second handle over the server's own file (`internal/server/ops_test.go:61`), and the share test spends against real `cost/sqlitestore` books, not a fake (`:198`). Gate green at the tip, after the rebase, and in the main checkout. Two findings accepted as non-blockers, both open for the next hand on this file: (1) `OpenSpend` rewrites the live ceiling from whatever `-config` it is handed, so `dresscode budget` is a read that writes — the operator caveat ("run it with the settings file the server booted from") is not yet in the command's help; (2) `checkUnitsBudget` restates `config.YouCamBudget.check()` and `opsFlags()` restates `config.Flags.Declarations()`, both because the config versions are unexported or carry the file default rather than `Default:false`. Landed as `4ce325b`.
+
+### T4.8: The server binary ★
+```yaml
+requires:   T4.4, T4.5, T4.6, T4.7
+fixture-ok: yes
+size:       M · mid
+owns:       cmd/dresscode/, internal/config/, internal/server/server.go
+status:     not-started
+```
+`dresscode serve` composes what P4 built and listens. Today nothing does: no production path calls `MountLooks`, `MountSamples`, the intake mounts or the deletion mount, and `cmd/dresscode` says so out loud ("not listening"). This task is the wiring, not new behaviour — every seam it joins is already exported and tested, and two of them already carry debt written down in this file.
+
+What to build:
+
+1. **The composition** (`cmd/dresscode/serve.go` or the equivalent): one database handle, the Keel stores on it, the runtimes, the mounts, in the order the constructors demand. `internal/server/server.go` gains the wiring it was built to host but has never hosted; keep its constructor honest — a server that cannot mount what it claims is a bug, not a warning.
+2. **The spend wiring T4.7 named** (`PHASE-4-server.md`, T4.7 Notes): YouCam meters over `Spend.Development` for every spend that is not a judge session and over `Spend.Judging` for the sessions that are, `Spend.UnitsLeft` passed as `LooksConfig.UnitsLeft`, and the settled spend landing in `Spend.Ledger` / `Spend.Dollars`. Open the same two `cost/sqlitestore` namespaces T4.7's file names, on the same database file, with the settings' ceilings — the books and the settings file must agree, which is why `OpenSpend` rewrites the ceiling on open.
+3. **The samples mount**, which T4.6 deferred rather than faked: `MountSamples` needs a samples directory, and that directory has the shape the recordings have — the second root is `<samplesDir>/../youcam/results`, so a production directory without that sibling fails the mount for the family render and the festival discard evidence. Decide the source (a `[paths]` setting or an argument) and name it in `internal/config`; the loader's refusal is already written to say which root failed.
+4. **The shutdown posture**: what a signal does to an in-flight look, what a restart does to an unfinished row (T4.4's `kindStore` recovery is the answer, so the binary must not start a second runner over the same kinds), and what the SSE subscribers see when the process stops. The event demo must not strand a look mid-render.
+5. **The operator caveats T4.7's review left**: `dresscode budget` is a read that writes, so its help says to run it with the settings file the server booted from.
+
+**Done when:** a test boots the composition over a temp file and every route the binary claims answers — including one opened sample and one paid look on the same server; `dresscode flag fresh_uploads_off on` reaches the running server's next request without a restart; and the spend books settle in the same namespaces `dresscode budget` reads.
+
+Notes:
+
+- Chartered from the P4 reviews, not from a plan: `MountSamples` being called only by tests, the meters and `UnitsLeft` unwired, and the second-root layout requirement are all written down in T4.6's and T4.7's Notes. This is where that debt is paid.
+
+---
+
+### T4.9: Erasure reaches every row, and the lists stay bounded
+```yaml
+requires:   T4.4, T4.6
+fixture-ok: yes
+size:       S · light
+owns:       internal/privacy/, internal/server/looks.go
+status:     not-started
+```
+Two gaps T4.6's review found while it was not looking for them. Both are product promises, not polish: the promise is that a person's data goes away when they ask, and that a free route cannot grow the account without limit.
+
+1. **A `jobs` row outlives every account deletion, for every kind.** `internal/privacy/privacy.go` erases sign-in, sessions, identities, users, looks, snapshots by cascade, media and analysis rows — and there is no `DELETE FROM jobs` anywhere in the repository. Keel's job store keeps its own table, so a born-finished sample row (which holds the recorded story plus minted ids and no user id) and a paid look's row both survive the erase. Find what identity Keel's `jobs` rows carry, and erase or prove-never-created every row an account's look touched. A row that survives because it never named the user is an answer, not an excuse: say which rows that is and why it holds nothing.
+2. **`GET /api/looks` has no `LIMIT` anywhere in `looks.go`**, and the free sample route adds a `looks` row per open with no gate token, no lease seat, no budget reservation and no per-user cap. Bound the list, and bound the repeats: decide whether a sample open should be idempotent per `(user, sample id)` — T4.6 stopped it rewriting the same bytes, which fixed the blob growth but not the row growth.
+
+**Done when:** a test erases an account that opened samples and ran a paid look, then finds no `jobs`, media, snapshot, look or analysis row naming anything it can reach; and the looks list answers a bounded page while an unbounded number of opens is refused or deduped by a stated rule.
+
+Notes:
+
+- Chartered from a review of another task. The `DELETE FROM jobs` finding came from the T4.6 round-2 reviewer noticing that the deletion path never mentions the job table; the sample/paid blur it also reported belongs to this file's T4.8 marker decision, so the two tasks read each other.
