@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T3.5 (Check) landed — the pipeline is 5 of 9: judge, pick, measure, render, check all exist. T3.6 (fallback chain + the [judge]/[check] config) and T5.15 (declutter review) are in flight. **Product decisions pending for the user:** the colour-tones conflict (product.md vs data), the words fixture tension (phrase table vs regenerate), nude-lip renders unrecorded.
+**Current status:** T5.15 landed (`8fbca94`) — the front door and picker are decluttered. T3.6 (fallback chain + config) in review; T5.16 dispatches next. **Product decisions pending for the user:** the colour-tones conflict (product.md vs data), the words fixture tension (phrase table vs regenerate), nude-lip renders unrecorded.
 
 ---
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 5 / 9 | T3.5 (Check) landed — discard-by-construction and the look-in-words line. T3.6 (fallback chain + config) dispatches next. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 5 / 9 | T5.10–T5.14 landed. T5.15–T5.18 added after the user's screenshot review to cut text bloat and add progressive disclosure (`<details>` expand/collapse sections) across all screens. T5.15 is ready now. |
+| P5B | 6 / 9 | T5.15 landed — compact fix pills with auto-save, lean front door, disclosures. T5.16 (capture declutter) dispatches next; the chain is serial. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend

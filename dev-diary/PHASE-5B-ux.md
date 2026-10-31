@@ -276,7 +276,7 @@ requires:   T5.14
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/app/shell.svelte, web/src/app/home.svelte, web/src/app/app.svelte, web/src/routes/occasion/, web/tests/a11y/
-status:     in-review
+status:     done
 ```
 Cut the wall of introductory text and duplicate button grids on the front door (`#/` and `#/occasion`): keep a single-line header, a 1-line lead, 5 occasion cards, compact 2–3 word Fix pill chips that auto-save on tap with one `Bring the look` CTA, a closed-by-default `Try a sample look` disclosure drawer, and `About` tucked into the quiet footer row.
 
