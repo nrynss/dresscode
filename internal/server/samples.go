@@ -1,7 +1,9 @@
 // Samples is this file: the five sample looks a judge opens for free.
 // GET /api/samples lists them; POST /api/samples/{id}/looks opens one.
 // An open spends nothing: the sample's selfie is registered into the
-// judge's own mediastore, the render its story showed is already a
+// judge's own mediastore - a repeat open reuses the picture that judge
+// already holds rather than writing the same bytes again - the render its
+// story showed is already a
 // mediastore blob, and the look is the story its stages recorded - the
 // flags, the pick, the measure answer, the render the check kept, the
 // shop list - so the judge's stream, verdict, renders and shop answer
@@ -73,6 +75,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -881,7 +884,22 @@ func (sm *sampleRuntime) publish(jobID string, frames []job.Progress) {
 
 // keep writes one recorded image into the judge's own mediastore, the
 // same store the intake and the runner write, private to its owner.
+//
+// A repeat open reuses the picture the owner already holds instead of
+// writing it again. A story's bytes are fixed data, so a second open of
+// the same sample asks for the same pictures, and a copy of a picture
+// this owner already has is a second blob, a second row and a second
+// write of the same bytes for one story: the five recorded stories are
+// 1,649,539 bytes of pictures between them, and without the reuse every
+// repeat open pays that again, with no gate token, no lease seat and no
+// budget reservation on this path to bound it. A picture the search does
+// not settle mints, which is what an open did before and is never wrong,
+// only less frugal.
 func (sm *sampleRuntime) keep(ctx context.Context, owner, group string, img systemone.Image) (string, error) {
+	want := sha256.Sum256(img.Bytes)
+	if mediaID, ok := sm.held(ctx, owner, group, int64(len(img.Bytes)), want); ok {
+		return mediaID, nil
+	}
 	mediaID, err := id.New()
 	if err != nil {
 		return "", fmt.Errorf("samples: mint the media id: %w", err)
@@ -895,6 +913,64 @@ func (sm *sampleRuntime) keep(ctx context.Context, owner, group string, img syst
 		return "", fmt.Errorf("samples: keep %s: %w", mediaID, err)
 	}
 	return mediaID, nil
+}
+
+// keepSearch is how many same-sized pictures of one owner and group a keep
+// reads before it writes its own. A group holds the judge's own uploads
+// beside a story's pictures, and the shortlist is a byte count rather than
+// an identity, so reading a whole library to avoid one duplicate costs
+// more than the duplicate. The newest rows come first, which is where a
+// story's own earlier copy is - a reuse adds no row, so nothing newer
+// lands in the group between two opens of one story - and the read stops
+// at the search. Past it a keep writes.
+const keepSearch = 8
+
+// held is the media id this owner already holds for exactly these bytes in
+// exactly this group, if the store holds one. The mediastore's index is a
+// table of the same SQLite file the look routes read, and it carries an
+// owner, a group and a byte count and no digest - the Store lists blobs to
+// deletion through its own index handle, not through a lookup by content -
+// so the rows give the shortlist and the store's own read gives the
+// identity: a candidate comes back only once its bytes hash to the story's.
+// Nothing is written here, and a search that finds nothing or fails is the
+// landed write rather than an error.
+func (sm *sampleRuntime) held(ctx context.Context, owner, group string, size int64, want [sha256.Size]byte) (string, bool) {
+	rows, err := sm.rt.srv.db.Reader().QueryContext(ctx,
+		`SELECT id FROM media WHERE owner = ? AND media_group = ? AND size_bytes = ?
+		 ORDER BY created_at DESC, id DESC LIMIT ?`,
+		owner, group, size, keepSearch)
+	if err != nil {
+		sm.log.Warn("server: samples: the shortlist", "err", err.Error())
+		return "", false
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var mediaID string
+		if err := rows.Scan(&mediaID); err != nil {
+			sm.log.Warn("server: samples: the shortlist row", "err", err.Error())
+			return "", false
+		}
+		if mediaID == "" {
+			continue
+		}
+		rc, _, err := sm.rt.media.Open(ctx, mediaID)
+		if err != nil {
+			continue
+		}
+		h := sha256.New()
+		copied, copyErr := io.Copy(h, io.LimitReader(rc, size))
+		rc.Close()
+		if copyErr != nil || copied != size {
+			continue
+		}
+		if bytes.Equal(h.Sum(nil), want[:]) {
+			return mediaID, true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		sm.log.Warn("server: samples: the shortlist", "err", err.Error())
+	}
+	return "", false
 }
 
 // renderGroup is the mediastore group one user's renders of one photo

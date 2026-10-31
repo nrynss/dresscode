@@ -5,8 +5,16 @@ package server
 // the selfie registered, the analysis rows its fix measures pre-existing,
 // the render the story showed already a blob - and plays back the
 // recorded stage state, so every route answers with zero model asks
-// and zero YouCam calls. The tests name where a replay cannot carry the
-// recorded example whole:
+// and zero YouCam calls. The analysis half of that sentence is an arm of
+// the route, not a fact about the five files: every shipped story holds
+// `analysis: []`, because a row must name the one recorded face read and
+// be of the very picture that read was of, and that picture (V06) is none
+// of the five sample people. TestACachedStoryMeasuresFromItsOwnReading
+// covers the arm on a mount-only story in a temporary directory, so the
+// prose above and the code below agree. A repeat open reuses the pictures
+// the judge already holds (TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld)
+// rather than writing the same bytes again. The tests name where a replay
+// cannot carry the recorded example whole:
 //
 //   - The ids the fixtures name: the sample open mints its own, and the
 //     look id and the job id are one id, so both fixture ids rename to
@@ -153,7 +161,19 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 		fixture  string
 		occasion string
 		flags    []string
-		fix      any // string, or nil for the null the contract answers
+		// fix is a string, or nil for the JSON null. The null is pinned
+		// deliberately and it is not right: docs/api.md:394 documents the
+		// ready body's `fix` as `{id, changes, why}` with no null option,
+		// and both shipped screens refuse to read one - web/src/routes/
+		// look/render/copy.ts:120-124 and web/src/routes/look/verdict/
+		// copy.ts:51-55 answer it with "The render/verdict could not be
+		// read". The server emits it because verdictBody sets `fix` only
+		// when a fix is found, so any look that flagged nothing has this
+		// shape, sample or paid: the sample route inherits it from landed
+		// behaviour and cannot fix the contract or the screens from here.
+		// A later hand that changes one of the three must change the other
+		// two and this pin; nothing here may quietly start answering `{}`.
+		fix      any
 		runnerUp string
 		shownFix string // empty: suggestion-only
 		words    string
@@ -170,6 +190,10 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 			shownFix: "family-gold-jhumkas", words: storyWords,
 			products: []string{"gold-jhumkas"}},
 		{id: "sample-interview", fixture: "sample-interview-look", occasion: "interview",
+			// The one story that flags nothing, so its ready body answers
+			// the null fix samplePin names: the contract does not admit it
+			// (docs/api.md:394) and both screens throw on it. Pinned as it
+			// is, not as it should be.
 			flags: []string{}, fix: nil, runnerUp: "",
 			products: []string{}},
 		{id: "sample-festival", fixture: "sample-festival-look", occasion: "festival",
@@ -214,6 +238,10 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 		}
 		switch want := pin.fix.(type) {
 		case nil:
+			// The null is what the server answers today for a look that
+			// flagged nothing, paid or sample, and what no recorded ready
+			// fixture carries. Asserted so a later hand cannot swap it for
+			// an object without saying so here as well.
 			if _, ok := body["fix"].(map[string]any); ok {
 				t.Fatalf("%s: fix %v, want null", pin.id, body["fix"])
 			}
@@ -579,14 +607,20 @@ func TestTheSampleJobIsDoneTheMomentItIsCreated(t *testing.T) {
 // TestSamplesAreNotSpendingRoutes pins the route's own contract: the
 // sample start accepts no spend handler, an unknown sample is a miss,
 // and samples_only - the judging switch - keeps the samples open while
-// it refuses the fresh look beside them.
+// it refuses the fresh look beside them. The refusal is asked of the
+// pattern the mount registers, routeSampleStart, and of the answer's own
+// words: a spend slot is looked up by pattern, so naming a concrete path
+// instead would pass on a typo and would still pass if the sample start
+// were ever mounted as a spending route under its real pattern.
 func TestSamplesAreNotSpendingRoutes(t *testing.T) {
 	t.Parallel()
 	env := newLookEnv(t, earringAnswers(), 8, nil)
-	if err := env.srv.SetSpendHandler("POST /api/samples/sample-family/looks", http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})); err == nil {
-		t.Fatal("the sample start accepted a spend handler")
-	}
 	mountSamples(t, env)
+	if err := env.srv.SetSpendHandler(routeSampleStart, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})); err == nil {
+		t.Fatalf("%s: the sample start accepted a spend handler", routeSampleStart)
+	} else if !strings.Contains(err.Error(), routeSampleStart) {
+		t.Fatalf("%s: refused with %q, want it to name the route", routeSampleStart, err.Error())
+	}
 	user, cookie := bootUser(t, env.handler)
 	env.productPictures(t, "gold-jhumkas", "lip-nude", "gold-chain", "shirt-dark-plain")
 
@@ -897,6 +931,42 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 						sid, i, attr.ID, attr.Value, rc.name, choice)
 				}
 			}
+			// The pair the recording read and the change it was asked to
+			// look for are its own: a check's answers are about the second
+			// picture it was sent, and its state carries the one question
+			// it was given. Both are read here rather than assumed, so a
+			// story cannot stand on a check and say nothing about which
+			// picture that check looked at.
+			if rc.render == "" || rc.request == "" {
+				t.Fatalf("%s: attempt %d: %s names no render picture or no requested change", sid, i, rc.name)
+			}
+			if _, err := os.Stat(filepath.Join(root, "testdata", "samples", rc.render)); err != nil {
+				t.Fatalf("%s: attempt %d: %s read %s as the render, which is not a recorded sample picture: %v",
+					sid, i, rc.name, rc.render, err)
+			}
+			// The pairing this invites to be misread, closed. Where the
+			// picture the story shows is not the picture the recording
+			// checked - family shows the earring flow's result of V04 while
+			// its recording read V05, and the two are different bytes - the
+			// story's own source must name the picture that was checked and
+			// carry that recording's request word for word. A reader shown
+			// "the check this story shows its render on" believes the
+			// picture on screen was checked; where it was not, the file says
+			// so in its own words. The request is quoted, not paraphrased,
+			// because it asks a wider thing than the fix alone ("Adds gold
+			// jhumkas and paints the lip red."), and an assertion that the
+			// recording's ask equals the shipped fix's change would fail on
+			// the honest file: quoting it is what keeps the pairing true.
+			if rc.render != at.Image {
+				if !strings.Contains(dec.Source, rc.render) {
+					t.Fatalf("%s: attempt %d: %s read %s, not the shown %s, and the source never names the picture that was checked",
+						sid, i, rc.name, rc.render, at.Image)
+				}
+				if !strings.Contains(dec.Source, rc.request) {
+					t.Fatalf("%s: attempt %d: the source does not carry %s's own request %q, so nothing tells the reader what that check was asked",
+						sid, i, rc.name, rc.request)
+				}
+			}
 		}
 		if shown == 0 {
 			for _, rc := range checks {
@@ -1080,6 +1150,176 @@ func TestARestartInterruptsAnUnfinishedPlaybackRow(t *testing.T) {
 	}
 }
 
+// TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld is the amplification pin.
+// A story's pictures are fixed data, so a second open of one sample asks
+// for bytes the judge already holds, and the open reuses that media id
+// instead of writing a second blob and a second row of the same picture:
+// without the reuse every repeat pays the whole of the set again, 1,649,539
+// bytes across the five, with no gate token and no budget reservation to
+// bound it. The reuse must not hand a look the wrong picture either, so
+// what each look reads is compared with the recorded bytes and not only
+// with an id. The look row still lands once per open, and the list route
+// that answers them has no LIMIT: that growth is the composition hand's,
+// named in the task's Notes.
+func TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	user, cookie := bootUser(t, env.handler)
+
+	first, _ := startSample(t, env, cookie, "sample-family", "")
+	held, bytes := ownedMedia(t, env, user)
+	if held != 2 {
+		t.Fatalf("%d pictures held after one open, want the selfie and the shown render", held)
+	}
+	second, _ := startSample(t, env, cookie, "sample-family", "")
+	if again, againBytes := ownedMedia(t, env, user); again != held || againBytes != bytes {
+		t.Fatalf("the second open grew the judge's pictures to %d rows and %d bytes from %d and %d: a repeat of fixed bytes holds them, it does not rewrite them",
+			again, againBytes, held, bytes)
+	}
+
+	// Both looks still read their own pictures, and the bytes are the
+	// recorded ones: a reuse that returned somebody else's same-sized
+	// picture would fail here rather than quietly serve a wrong face.
+	root := repoRoot(t)
+	selfieRaw := readFile(t, filepath.Join(samplesDir(t), "woman", "V04-family-function.jpg"))
+	renderRaw := readFile(t, filepath.Join(root, "testdata", "youcam", "results", "earring-jhumka-V04.jpg"))
+	pairs := map[string]bool{}
+	for _, lookID := range []string{first, second} {
+		body := bodyOf(t, env.get(t, cookie, "/api/looks/"+lookID))
+		selfieID, _ := body["selfie_id"].(string)
+		shown, _ := body["shown_render"].(map[string]any)
+		if shown == nil {
+			t.Fatalf("%s: the look lost its shown render: %v", lookID, body)
+		}
+		renderID, _ := shown["media_id"].(string)
+		if got := mediaBytes(t, env, cookie, selfieID); string(got) != string(selfieRaw) {
+			t.Fatalf("%s: the selfie it reads is %d bytes, not the recorded picture", lookID, len(got))
+		}
+		if got := mediaBytes(t, env, cookie, renderID); string(got) != string(renderRaw) {
+			t.Fatalf("%s: the render it reads is %d bytes, not the recorded result", lookID, len(got))
+		}
+		pairs[selfieID+"|"+renderID] = true
+	}
+	if len(pairs) != 1 {
+		t.Fatalf("the two opens named %d picture pairs, want one: the second read the first's media ids", len(pairs))
+	}
+
+	// Two opens of two different stories hold two selves, not one: the
+	// search is by content, so a second sample brings its own person and
+	// its own bytes.
+	startSample(t, env, cookie, "sample-date", "")
+	if grew, _ := ownedMedia(t, env, user); grew != held+1 {
+		t.Fatalf("%d pictures after a second sample, want the family pair plus the date selfie", grew)
+	}
+	if spent := env.budget.Spent(); spent != 0 {
+		t.Fatalf("the meter settled %d units, want zero", spent)
+	}
+}
+
+// TestACachedStoryMeasuresFromItsOwnReading covers the arm no shipped
+// story reaches. The honesty rules bind a cache row to the one face read
+// the recordings hold, and to the picture that read was of - V06 - so a
+// story of any of the five sample people can hold no analysis row at all,
+// and serveStart's cache write and the measure frame's cached answer run
+// on no path a judge can take today. The rule and the branch are real, so
+// they are proved here on a mount-only story built in the test's own
+// directory: its selfie IS the picture its row names. Nothing lands in
+// testdata/samples/cached/, where a story that showed a reading the
+// sample set never recorded would be the invention this file exists to
+// refuse.
+func TestACachedStoryMeasuresFromItsOwnReading(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	root := repoRoot(t)
+	uploaded, shape := recordedFaceAttrRead(t, root)
+
+	body := `{"kind":"sample-cache","id":"sample-family","occasion":"family-function",` +
+		`"name":"Family function","variant":"V06","selfie":"` + uploaded + `",` +
+		`"source":"A mount-only story for the measure arm. The selfie is the one picture the recorded face-attr flow read (testdata/youcam/face-attr-upload-src.json), so the analysis row it carries is a reading of this photo and the cache key holds it; the faceshape is that flow's recorded answer (testdata/youcam/http-face-attr-poll.json). The pick is the family fix that measures face-attr-analysis. It shows no render, because no check of this picture was ever recorded.",` +
+		`"judge":{"flags":["family-hair-finished"],"issue":"family-hair-finished"},` +
+		`"pick":{"fix":"family-tie-hair","runner_up":""},` +
+		`"analysis":[{"task":"face-attr-analysis","face_shape":"` + shape + `","read_from":"` + uploaded + `"}]}`
+
+	dir := sampleDirWithStory(t, body)
+	if err := env.srv.MountSamples(t.Context(), SamplesConfig{SamplesDir: dir}); err != nil {
+		t.Fatalf("mount the story that holds a reading: %v", err)
+	}
+	user, cookie := bootUser(t, env.handler)
+	ctx := t.Context()
+
+	lookID, _ := startSample(t, env, cookie, "sample-family", "")
+
+	// The route wrote the cache: the keep loop over the story's rows ran,
+	// under this judge, keyed to the photo hash the look itself carries.
+	var photoHash, task, face string
+	if err := env.srv.db.Reader().QueryRowContext(ctx,
+		`SELECT photo_hash, task, face_shape FROM analysis_cache WHERE user_id = ?`, user).Scan(&photoHash, &task, &face); err != nil {
+		t.Fatalf("the open wrote no analysis cache row for this judge: %v", err)
+	}
+	if task != "face-attr-analysis" || face != shape {
+		t.Fatalf("the cache row is %s/%q, want face-attr-analysis/%q", task, face, shape)
+	}
+	var lookHash string
+	if err := env.srv.db.Reader().QueryRowContext(ctx,
+		`SELECT photo_hash FROM looks WHERE id = ?`, lookID).Scan(&lookHash); err != nil {
+		t.Fatal(err)
+	}
+	if lookHash != photoHash {
+		t.Fatalf("the reading is keyed to %s and the look to %s, want one photo", photoHash, lookHash)
+	}
+
+	// The measure frame's answer for a story that holds a reading: cached.
+	// Not skipped, and never false, which would promise a measurement.
+	sm := env.srv.samplesOf()
+	st := sm.byID["sample-family"]
+	_, frames, err := sm.story(st, make([]string, len(st.Attempts)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var measure string
+	for _, f := range frames {
+		if f.Stage == "measure" {
+			measure = string(f.Detail)
+		}
+	}
+	if measure != `{"cached":true}` {
+		t.Fatalf("the measure frame of a story that holds a reading is %q, want {\"cached\":true}", measure)
+	}
+
+	// The look reads as a finished look of its own story, and the frame
+	// the route published carries the same answer the loader holds: the
+	// cache row is the story's reading, not a measurement.
+	lookBody := bodyOf(t, env.get(t, cookie, "/api/looks/"+lookID))
+	if ready, _ := lookBody["ready"].(bool); !ready {
+		t.Fatalf("the look never became ready: %v", lookBody)
+	}
+	if fix, _ := lookBody["fix"].(map[string]any); fix == nil || fix["id"] != "family-tie-hair" {
+		t.Fatalf("the look's pick %v, want family-tie-hair", lookBody["fix"])
+	}
+	if only, _ := lookBody["suggestion_only"].(bool); !only {
+		t.Fatalf("the story shows no render and the look is not suggestion-only: %v", lookBody)
+	}
+
+	// And it spent nothing to get there: the cached answer is the whole
+	// of the measure stage, so no provider was asked.
+	creates, uploads, polls, fetches := env.cam.count()
+	if creates != 0 || uploads != 0 || polls != 0 || fetches != 0 {
+		t.Fatalf("the cached arm spent youcam calls %d %d %d %d, want all zero", creates, uploads, polls, fetches)
+	}
+	for _, kind := range []string{"judge", "pick", "check"} {
+		if n := env.clef.count(kind); n != 0 {
+			t.Fatalf("%s asked %d times, want zero", kind, n)
+		}
+	}
+	if spent, reserved := env.budget.Spent(), env.budget.Reserved(); spent != 0 || reserved != 0 {
+		t.Fatalf("the meter settled %d and held %d, want zero", spent, reserved)
+	}
+	if seats := judgeSessionRows(t, env); seats != 0 {
+		t.Fatalf("%d judge-lease rows, want none", seats)
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Small readers
 
@@ -1221,14 +1461,21 @@ func recordedIssue(t *testing.T, root, variant, occasion string) string {
 
 // recCheck is one recorded render check read out of a Clef check
 // recording: the occasion it was read for, the original picture it read,
-// the criterion it was asked about, the model it ran on, the three gate
-// nouls it answered and the look choices it answered, in the attribute's
-// own id. A shown render's three facts and its look answers are this
-// recording's readings at the shipped check lines, not the story's claim.
+// the render picture it read beside that original, the change it was
+// asked about in its own words, the criterion it was asked about, the
+// model it ran on, the three gate nouls it answered and the look choices
+// it answered, in the attribute's own id. A shown render's three facts and
+// its look answers are this recording's readings at the shipped check
+// lines, not the story's claim. The two pictures and the request are read
+// too, because a check answers about the pair it was sent: the story that
+// shows a picture this recording did not read has to say which picture it
+// read, or a reader believes the shown one was checked.
 type recCheck struct {
 	name      string
 	occasion  string
 	original  string
+	render    string
+	request   string
 	model     string
 	criterion string
 	Gates     map[string]float64
@@ -1267,8 +1514,9 @@ func recordedChecks(t *testing.T, root string) map[string]recCheck {
 						File string `json:"file"`
 					} `json:"images"`
 					State struct {
-						Occasion  string `json:"occasion"`
-						Criterion string `json:"criterion"`
+						Occasion        string `json:"occasion"`
+						Criterion       string `json:"criterion"`
+						RequestedChange string `json:"requested_change"`
 					} `json:"state"`
 				} `json:"body"`
 			} `json:"request"`
@@ -1291,14 +1539,19 @@ func recordedChecks(t *testing.T, root string) map[string]recCheck {
 			occasion:  rec.Request.Body.State.Occasion,
 			model:     rec.Request.Body.Model,
 			criterion: rec.Request.Body.State.Criterion,
+			request:   rec.Request.Body.State.RequestedChange,
 			Gates:     map[string]float64{},
 			Look:      map[string]string{},
 		}
 		if len(rec.Request.Body.Images) > 0 {
 			// The original is the first picture, the render the second: a
 			// check reads the render against this sample's own selfie, so
-			// the first is the selfie the story must name.
+			// the first is the selfie the story must name and the second is
+			// the picture the answers are about.
 			rc.original = strings.TrimPrefix(rec.Request.Body.Images[0].File, "../samples/")
+		}
+		if len(rec.Request.Body.Images) > 1 {
+			rc.render = strings.TrimPrefix(rec.Request.Body.Images[1].File, "../samples/")
 		}
 		for qid, one := range rec.Response.Body.Result.Answers {
 			if attr, isLook := strings.CutPrefix(qid, "look."); isLook {
@@ -1480,6 +1733,120 @@ func sampleDirWithFile(t *testing.T, body string) string {
 		}
 	}
 	return dir
+}
+
+// sampleDirWithStory builds the samples directory the mount reads as the
+// repository lays it out: the story directory at <base>/samples and the
+// recorded provider results beside it at <base>/youcam/results, because a
+// story names a render as "../youcam/results/<name>.jpg" and the loader's
+// second picture root is that sibling - a samples directory without it has
+// no renders to show, which is the shape requirement the task's Notes
+// name. The directory holds the crafted story, the other four recorded
+// stories read from testdata, and the pictures all of them name, so a
+// story can be mounted as the whole set and opened through the routes
+// rather than only through the loader. Every byte is a copy of a
+// repository file into the test's own temporary directory: nothing here
+// lands in testdata.
+func sampleDirWithStory(t *testing.T, body string) string {
+	t.Helper()
+	base := t.TempDir()
+	dir := filepath.Join(base, "samples")
+	cached := filepath.Join(dir, "cached")
+	if err := os.MkdirAll(cached, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	name := sampleOf(body)
+	if err := os.WriteFile(filepath.Join(cached, name+".json"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// The four stories the crafted one does not replace, so the mount
+	// finds the set it expects.
+	names, err := filepath.Glob(filepath.Join(samplesDir(t), "cached", "*.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, path := range names {
+		if strings.TrimSuffix(filepath.Base(path), ".json") == name {
+			continue
+		}
+		if err := os.WriteFile(filepath.Join(cached, filepath.Base(path)), readFile(t, path), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// The pictures, in the two roots the loader reads: the people inside
+	// the samples directory, the recorded results in the sibling beside it.
+	root := filepath.Join(repoRoot(t), "testdata")
+	for _, rel := range []string{"samples/woman", "samples/man", "samples/anchors", "youcam/results"} {
+		dst := filepath.Join(dir, strings.TrimPrefix(rel, "samples/"))
+		if strings.HasPrefix(rel, "youcam/") {
+			dst = filepath.Join(base, rel)
+		}
+		for _, entry := range osMustReadDir(t, filepath.Join(root, rel)) {
+			if entry.IsDir() {
+				continue
+			}
+			raw := readFile(t, filepath.Join(root, rel, entry.Name()))
+			if err := os.MkdirAll(dst, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(dst, entry.Name()), raw, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return dir
+}
+
+// osMustReadDir is one directory's entries, or the test's failure.
+func osMustReadDir(t *testing.T, dir string) []os.DirEntry {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return entries
+}
+
+// ownedMedia counts the pictures one judge holds in the mediastore, rows
+// and bytes - the unit a repeat open would have grown. The rows are the
+// index's own table on the server's file, the same one a keep reads for its
+// shortlist.
+func ownedMedia(t *testing.T, env *lookEnv, user string) (int, int64) {
+	t.Helper()
+	var (
+		rows  int
+		bytes int64
+	)
+	if err := env.srv.db.Reader().QueryRowContext(t.Context(),
+		`SELECT COUNT(*), COALESCE(SUM(size_bytes), 0) FROM media WHERE owner = ?`, user).Scan(&rows, &bytes); err != nil {
+		t.Fatal(err)
+	}
+	return rows, bytes
+}
+
+// readFile is one recorded file's bytes, the answer a look's picture is
+// compared with.
+func readFile(t *testing.T, path string) []byte {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+// mediaBytes is what the media route gives this judge for one id: the
+// route they open a look through, not the store behind it.
+func mediaBytes(t *testing.T, env *lookEnv, cookie *http.Cookie, mediaID string) []byte {
+	t.Helper()
+	if !id.Valid(mediaID) {
+		t.Fatalf("media id %q", mediaID)
+	}
+	rec := do(t, env.handler, http.MethodGet, "/media/"+mediaID, cookie, nil, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("media %s status %d", mediaID, rec.Code)
+	}
+	return rec.Body.Bytes()
 }
 
 func flagIDsOf(t *testing.T, body map[string]any) []string {
