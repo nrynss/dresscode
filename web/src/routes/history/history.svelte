@@ -88,7 +88,7 @@
   {:else if switchState === undefined}
     <p class="hint" role="status">{openingSentence}</p>
   {:else}
-    <details class="disclosure">
+    <details class="disclosure notice-drawer">
       <summary>How style history works</summary>
       <p class="info-card">{switchState.notice}</p>
     </details>

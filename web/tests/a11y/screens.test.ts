@@ -7,8 +7,10 @@ import {
   mountApp,
   openAboutDialog,
   openDeleteDialog,
+  openEraseDrawer,
   openFixMenu,
   openFidelityExplanation,
+  openHistoryNotice,
   openProductDrawer,
   openPrivacyDrawer,
   openReasonsDrawer,
@@ -36,7 +38,12 @@ interface ScreenState {
 
 /** Every screen the app serves, plus the dialog, drawer, sheet and popover
  * states a reader reaches from them. Each state runs the gate in both forced
- * themes at the phone width. */
+ * themes at the phone width.
+ *
+ * A disclosure gets both its closed and its open state: axe prunes a closed
+ * `details` subtree whole, so content folded away from a reader who never taps
+ * is content the gate would stop judging if the open state were not mounted
+ * beside it. */
 const states: ScreenState[] = [
   {
     name: "the home screen with the lead",
@@ -140,6 +147,13 @@ const states: ScreenState[] = [
     ready: () => withText("label", "Style history"),
   },
   {
+    name: "the history screen with the notice disclosure open",
+    hash: "#/history",
+    before: () => resetHistory(),
+    ready: () => withText("label", "Style history"),
+    open: openHistoryNotice,
+  },
+  {
     name: "the history screen with the second visit shown",
     hash: "#/history",
     before: () => {
@@ -176,6 +190,12 @@ const states: ScreenState[] = [
     hash: "#account",
     ready: () => withText("h2", "Who sees what"),
     open: openPrivacyDrawer,
+  },
+  {
+    name: "the account screen with the erasure disclosure open",
+    hash: "#account",
+    ready: () => withText("h2", "Who sees what"),
+    open: openEraseDrawer,
   },
   {
     name: "the account screen with the history dialog open",

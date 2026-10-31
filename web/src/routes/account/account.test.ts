@@ -209,8 +209,10 @@ test("the shell link opens the account route", () => {
   // Both disclosures are closed by default: the privacy table and the
   // erasure instructions open only when asked. The SSR render check in the
   // privacy test above still sees every sentence, because a details
-  // carries its children in the HTML either way.
-  expect(account).not.toContain("<details open");
+  // carries its children in the HTML either way. The pattern, not the exact
+  // `<details open` prefix, is what catches an authored tag that carries the
+  // attribute after its class.
+  expect(account).not.toMatch(/<details\b[^>]*\bopen\b/);
   expect(account).toContain('class="disclosure privacy-drawer"');
   expect(account).toContain('class="disclosure erase-drawer"');
   // The nothing-automatic sentence lives inside the erasure disclosure, so

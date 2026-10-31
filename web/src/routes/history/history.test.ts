@@ -322,7 +322,11 @@ test("no digit anywhere and no id on the screen", () => {
   // occasion names themselves.
   expect(markup).toContain("How style history works");
   expect(markup).not.toContain("Past looks");
-  expect(screen).not.toContain("<details open");
+  // The pattern, not the exact `<details open` prefix, so a tag that carries
+  // the attribute after its class cannot slip past. The drawer class is the
+  // marker the mounted open state waits on, so the pin names it too.
+  expect(screen).not.toMatch(/<details\b[^>]*\bopen\b/);
+  expect(screen).toContain('class="disclosure notice-drawer"');
   // The heading and the switch share one bar, and the switch's own text
   // hides inside its label, so the control still carries its name.
   expect(screen).toContain('class="history-bar"');

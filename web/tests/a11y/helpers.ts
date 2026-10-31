@@ -210,6 +210,26 @@ export async function openPrivacyDrawer(): Promise<void> {
   await waitUntil(() => document.querySelector("details.privacy-drawer[open]"), "the who-sees-what disclosure opens");
 }
 
+/** Open the account screen's erasure disclosure, so the deletion sentences
+ * and the fresh-code button face the gate the way a reader who expands it sees
+ * them. The summary names itself with the heading inside, so the heading is
+ * the marker and its summary is the tap. */
+export async function openEraseDrawer(): Promise<void> {
+  const heading = withText("h3", "Delete the account");
+  expect(heading, "the delete-the-account heading").not.toBeNull();
+  (heading!.closest("summary") as HTMLElement).click();
+  await waitUntil(() => document.querySelector("details.erase-drawer[open]"), "the erasure disclosure opens");
+}
+
+/** Open the history screen's notice disclosure, so the explanation of what the
+ * switch keeps faces the gate the way a reader who expands it sees it. */
+export async function openHistoryNotice(): Promise<void> {
+  const summary = withText("summary", "How style history works");
+  expect(summary, "the history notice drawer summary").not.toBeNull();
+  (summary as HTMLElement).click();
+  await waitUntil(() => document.querySelector("details.notice-drawer[open]"), "the history notice disclosure opens");
+}
+
 /** Open a confirm dialog on the account screen. */
 export async function openDeleteDialog(title: string): Promise<void> {
   const trigger = withText("button", title);
