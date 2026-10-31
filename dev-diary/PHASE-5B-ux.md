@@ -494,3 +494,24 @@ Every edited string and every newly authored UI string across P5B is pinned belo
 | `product.md`, `web/src/routes/account/privacy.ts` | Analysis scope sentence (`T5.18`) | `YouCam analysis runs only when the fix needs it: face shape for a hairstyle.` |
 
 
+
+### T5.19: Account sign-in copy — one line
+```yaml
+requires:   T5.11
+fixture-ok: yes
+size:       XS · light
+owns:       product.md, web/src/routes/account/privacy.ts, web/src/routes/account/account.svelte, web/src/routes/account/account.test.ts
+status:     claimed:glm-5.3-flash
+```
+The user's copy decision (2026-10-31): the no-Google line goes away entirely, and the sign-in section's keeps-the-looks copy collapses to one sentence — `Sign in to keep your looks.`
+
+What to build:
+
+1. **product.md**: remove the line `No Google sign-in, and no social login.` (the user: "WE dont need this"). Replace `Signing in keeps the guest's looks.` with `Sign in to keep your looks.` Change nothing else in product.md.
+2. **privacy.ts**: update the readers atomically — remove the `noGoogle` reader and its screen usage, and point the keeps-looks reader at the new sentence (it throws on a missing sentence, so the pair must move together). Check whether the who-sees-what table references the removed line and keep that table's own eight sentences untouched.
+3. **account.svelte**: the sign-in section says exactly `Sign in to keep your looks.` (with the period, in the app's sentence style) — remove the separate keeps/device lines the old pair covered, and the noGoogle render.
+4. **account.test.ts**: update the pins to the new sentences; every other pin untouched.
+
+**Done when:** `./tools/check.sh` passes; the sign-in section's copy is the one line, sourced from product.md through the reader; no reference to Google, social login, or upgrade-in-place remains anywhere under web/src.
+
+*(User decision dictated verbatim on 2026-10-31.)*
