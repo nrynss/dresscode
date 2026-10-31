@@ -153,7 +153,7 @@ requires:   T4.4, T3.9
 fixture-ok: yes
 size:       S · mid
 owns:       internal/server/samples.go, testdata/samples/cached/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 The sample selfies with their analysis, judgements and renders already cached, so opening a sample spends nothing. A judge can still take a fresh selfie within the lease.
 
@@ -167,7 +167,7 @@ requires:   T4.4
 fixture-ok: yes
 size:       S · light
 owns:       internal/server/ops.go, cmd/dresscode/ (the ops commands)
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 `dresscode budget` prints units and dollars spent and left; `dresscode flag` flips fresh uploads, renders and samples-only without a restart. The judging share of units is refused to everything but judge leases.
 
