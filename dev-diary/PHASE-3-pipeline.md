@@ -251,7 +251,7 @@ requires:   T3.1, T3.5
 fixture-ok: yes
 size:       L · frontier
 owns:       internal/eval/, testdata/eval/, docs/evaluation.md
-status:     in-review
+status:     done
 ```
 On the sample set's ground truth (T0.4):
 

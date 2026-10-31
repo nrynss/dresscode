@@ -167,7 +167,7 @@ requires:   T4.4
 fixture-ok: yes
 size:       S · light
 owns:       internal/server/ops.go, cmd/dresscode/ (the ops commands)
-status:     in-review
+status:     done:glm-5.3-flash
 ```
 `dresscode budget` prints units and dollars spent and left; `dresscode flag` flips fresh uploads, renders and samples-only without a restart. The judging share of units is refused to everything but judge leases.
 
@@ -181,3 +181,5 @@ Notes:
 - `dresscode budget` prints four lines: the pool and each share as spent/left/ceiling in units, and the day's dollars (`$0.00` exact-cents; finer prices keep nine places with trailing zeros trimmed, so nothing rounds). `dresscode flag` with no arguments lists the three switches with position, change time and help; `dresscode flag <name> on|off` flips. Default paths are `data/dresscode.db` and `dresscode.toml` (`-db`/`-config` override). Both commands refuse a missing database file rather than creating one a server has never opened.
 - Nothing dialled, no unit moved, no key read: the tests' spend runs through meters over the rig's own books, the settings fixture carries variable names only, and the injected environment answers stand-ins. Grants beyond `owns`: none — every touched path is `internal/server/ops.go`, its test, and `cmd/dresscode/`.
 - Surprised (also in feedback.md): Keel `cost/sqlitestore.Open` rewrites the ceiling on every open, zero included, which makes "read the books" a write and killed the first sketch of opening empty and reading the ceiling back; Keel `config` cannot load part of a file, so the budget command resolves all ten key references to print two ceilings.
+
+Review: CLEAN, no must-fix. Both **Done when** clauses proved at the real thing — the flip test drives live HTTP through `srv.Handler()` on a second handle over the server's own file (`internal/server/ops_test.go:61`), and the share test spends against real `cost/sqlitestore` books, not a fake (`:198`). Gate green at the tip, after the rebase, and in the main checkout. Two findings accepted as non-blockers, both open for the next hand on this file: (1) `OpenSpend` rewrites the live ceiling from whatever `-config` it is handed, so `dresscode budget` is a read that writes — the operator caveat ("run it with the settings file the server booted from") is not yet in the command's help; (2) `checkUnitsBudget` restates `config.YouCamBudget.check()` and `opsFlags()` restates `config.Flags.Declarations()`, both because the config versions are unexported or carry the file default rather than `Default:false`. Landed as `4ce325b`.
