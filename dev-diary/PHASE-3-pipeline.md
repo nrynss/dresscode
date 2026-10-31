@@ -190,7 +190,7 @@ requires:   T3.6
 fixture-ok: yes
 size:       S · mid
 owns:       internal/pipeline/shop.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Products for the chosen fix from the user's own items and the occasion's basket, each labelled **exact product**, **approximate match** or **visual simulation**, with the rule for each written in the code's doc comment. Products the user kept before rank first when history is on.
 
