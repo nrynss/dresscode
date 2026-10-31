@@ -252,11 +252,21 @@ requires:   T5.13
 fixture-ok: yes
 size:       S · light
 owns:       web/tests/a11y/
-status:     claimed:glm-5.3-flash
+status:     in-review:glm-5.3-flash
 ```
 Extend the accessibility and contrast gate matrix in `web/tests/a11y/` to cover the new interactive states (judge samples on home, collapsible drawers, fidelity explanation in the shop sheet), verify that every text pair (4.5:1) and boundary pair (3:1) holds with break-proofs in `/tmp`, and capture a fresh set of light, dark, and 768 px screenshots in `/tmp/ui-explore-after/` to prove the overhaul end-to-end.
 
 **Done when:** `./tools/check.sh` passes; all screen states pass `a11yGate` and `contrastGate` in forced light and dark at 375 px; before/after screenshots confirm the visual overhaul across all 17 states and 768 px tablet width.
+
+Notes:
+
+- The mounted matrix went from 13 to 15 states, so 30 gate runs across forced light and dark at 375 px (38 a11y tests total with the layout and contrast files). Two states are new: the capture screen with the product drawer opened (`openProductDrawer` waits on `details.product-drawer[open]`) and the render screen with a fidelity explanation opened in the shop sheet (`openShopSheet` then a tap on the `exact product` label, waiting on the popover's `aria-label="What the label means"`). Two states the overhaul added were already mounted — the front door with the occasion cards and the recall banner on the picker — and two more are carried by states that show them whole: the stepper stands visible (all four stages ticked) on the finished-verdict state, and the comparator badges render always on the render state.
+- One honest-wait strengthening: the front-door state's marker was the samples section's hint paragraph, which is static markup — it proves nothing about `GET /api/samples`. The state now waits for a `.sample-row button`, so the gate judges the door with the judge samples actually loaded.
+- The stepper mid-flight (one active stage, `aria-current="step"`) is not honestly gateable: the recorded job events arrive as one body, so the replay runs to `done` in milliseconds and any wait for an active stage is a race. Its colours sit in pairs the tables already measure (accent-soft/accent active, dim/ground upcoming), and `verdict.test.ts` pins the stepper's structure; the mounted gate sees the finished stepper.
+- Contrast: no new pair. Both new states draw only measured pairs (drawer: `text`/`surface`, `line`/`surface`, `dim` labels; popover: `text`/`surface`, `line`/`surface`, a `line-soft` shadow). The drawn-pair guards already sweep every screen style block, and all four theme blocks pass the 4.5:1 text and 3:1 boundary tables unchanged — `tools/check.sh` needed no edit (nothing pins a test count).
+- Break-proofs, on a `/tmp` copy of the tree with `node_modules` symlinked, never committed: stripping `aria-label="What the label means"` from the sheet's `Popover.Content` fails the new fidelity state in both themes (`the fidelity explanation: expected null not to be null`, 10 s wait naming the marker), and renaming the drawer's `<summary>` fails the new drawer state in both themes at the helper's own expect (`the product drawer summary: expected null not to be null`). The copy was deleted afterwards.
+- Closing screenshots: `/tmp/ui-explore-after/` holds 47 shots — 20 light and 20 dark at 375×812 (one viewport each; the finished verdict and the front door each fit one viewport, so no second scrolled verdict shot), 7 wide at 768×1024, plus an `INDEX.md` that maps each file to the before set's numbering. The T5.13 dev media middleware served the real photographs, so the comparator, mirror and sheet show pictures. The before set in `/tmp/ui-explore/` was not touched.
+- Surprises, all interaction-flavoured and none needing a fix: the app's own chips refuse Playwright's `.check()` (the styled tick span covers the input — the label click is the path a finger takes, matching T5.12's finding), and when the fidelity popover is open it covers the sheet's Close button for actionability, while `locator.press("Escape")` fails with "Active element is no longer the expected input target" because bits-ui keeps focus in the popover — a raw Escape keypress closes it cleanly. Also pleasant: none of the fixed-position states tiled at 375 this time, so the before set's 376 px workaround was never needed; and at 768 the comparator's dvh cap keeps the whole arch inside the viewport, closing the before set's tallest-frame finding.
 
 ---
 

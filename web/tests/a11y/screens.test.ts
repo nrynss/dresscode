@@ -7,6 +7,8 @@ import {
   openAboutDialog,
   openDeleteDialog,
   openFixMenu,
+  openFidelityExplanation,
+  openProductDrawer,
   openSecondVisit,
   openShopSheet,
   useMock,
@@ -25,9 +27,9 @@ interface ScreenState {
   open?: () => Promise<void>;
 }
 
-/** Every screen the app serves, plus the dialog and sheet states a reader
- * reaches from them. Each state runs the gate in both forced themes at the
- * phone width. */
+/** Every screen the app serves, plus the dialog, drawer, sheet and popover
+ * states a reader reaches from them. Each state runs the gate in both forced
+ * themes at the phone width. */
 const states: ScreenState[] = [
   {
     name: "the home screen with the session read",
@@ -47,14 +49,13 @@ const states: ScreenState[] = [
     open: openFixMenu,
   },
   {
-    name: "the front door with the occasion cards and the samples ready",
+    name: "the front door with the occasion cards and the judge samples loaded",
     hash: "",
     ready: () => withText("label", "Family function"),
     open: async () => {
-      await waitUntil(
-        () => withText("p", "Open a sample selfie to see a finished look right away."),
-        "the sample looks section",
-      );
+      // The section's hint is static markup; the one-tap buttons are the
+      // honest marker that the samples list has come back.
+      await waitUntil(() => document.querySelector(".sample-row button"), "the sample buttons");
       await openFixMenu();
     },
   },
@@ -62,6 +63,12 @@ const states: ScreenState[] = [
     name: "the capture screen",
     hash: "#/capture",
     ready: () => withText("h2", "Your selfie"),
+  },
+  {
+    name: "the capture screen with the product drawer open",
+    hash: "#/capture",
+    ready: () => withText("h2", "Your selfie"),
+    open: openProductDrawer,
   },
   {
     name: "the verdict screen with the recorded look finished",
@@ -78,6 +85,15 @@ const states: ScreenState[] = [
     hash: "#/look/render",
     ready: () => withText("button", "Shop the look"),
     open: openShopSheet,
+  },
+  {
+    name: "the render screen with a fidelity explanation open in the shop sheet",
+    hash: "#/look/render",
+    ready: () => withText("button", "Shop the look"),
+    open: async () => {
+      await openShopSheet();
+      await openFidelityExplanation();
+    },
   },
   {
     name: "the history screen with the switch off",

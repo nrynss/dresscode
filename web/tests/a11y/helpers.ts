@@ -106,6 +106,27 @@ export async function openShopSheet(): Promise<void> {
   await waitUntil(() => withText("h3", "Gold jhumkas"), "the product in the sheet");
 }
 
+/** Open the capture screen's product drawer, so the fields inside it face the
+ * gate the way a reader who is considering a piece sees them. */
+export async function openProductDrawer(): Promise<void> {
+  const summary = withText("summary", "Considering a specific piece?");
+  expect(summary, "the product drawer summary").not.toBeNull();
+  (summary as HTMLElement).click();
+  await waitUntil(() => document.querySelector("details.product-drawer[open]"), "the product drawer opens");
+}
+
+/** Open a fidelity explanation beside its label in the open shop sheet: tap
+ * the product's label chip and wait for the named explanation popover. */
+export async function openFidelityExplanation(): Promise<void> {
+  const trigger = withText("button", "exact product");
+  expect(trigger, "the fidelity label in the sheet").not.toBeNull();
+  (trigger as HTMLElement).click();
+  await waitUntil(() => {
+    const pop = document.querySelector('[aria-label="What the label means"]');
+    return pop !== null && (pop.textContent ?? "").trim() !== "" ? pop : null;
+  }, "the fidelity explanation");
+}
+
 /** Turn the style history switch on and wait for the second visit. */
 export async function openSecondVisit(): Promise<void> {
   const historySwitch = firstInputOf("Style history");
