@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"math"
+	"slices"
 
 	keelconfig "github.com/nrynss/keel/config"
 	"github.com/nrynss/keel/cost"
@@ -64,6 +65,83 @@ type Settings struct {
 	Budgets Budgets `toml:"budgets"`
 	Lease   Lease   `toml:"lease"`
 	Flags   Flags   `toml:"flags"`
+	Judge   Judge   `toml:"judge"`
+	Check   Check   `toml:"check"`
+}
+
+// Judge holds the lines that turn Clef's probabilities into the judge's
+// flags. A criterion flags when its yes-probability sits under its line.
+// The values are placeholders until the evaluation measures them, so the
+// numbers live here, in the file, never in the pipeline.
+type Judge struct {
+	// Met is the met line for a criterion with no override. Required:
+	// an absent section must fail the load rather than read as zero,
+	// because a met line of zero flags nothing and judges every look
+	// met.
+	Met float64 `toml:"met" config:"required"`
+	// PerCriterion names a met line per criterion id, one the evaluation
+	// chose from that criterion's curve. Absent means every criterion
+	// reads Met.
+	PerCriterion map[string]float64 `toml:"per_criterion"`
+}
+
+// check refuses a line outside [0, 1]. TOML admits nan and inf literals,
+// and every comparison on a NaN refuses, so the conjunction is what
+// catches it.
+func (j Judge) check() error {
+	if !inUnit(j.Met) {
+		return fmt.Errorf("judge: met %v is not between 0 and 1", j.Met)
+	}
+	ids := make([]string, 0, len(j.PerCriterion))
+	for id := range j.PerCriterion {
+		ids = append(ids, id)
+	}
+	slices.Sort(ids)
+	for _, id := range ids {
+		if !inUnit(j.PerCriterion[id]) {
+			return fmt.Errorf("judge: per_criterion %q is %v, not between 0 and 1", id, j.PerCriterion[id])
+		}
+	}
+	return nil
+}
+
+// Check holds the render check's three lines and the model the check
+// runs on. The check was recorded on clef and on clef-flash, and the
+// evaluation owns picking one; the choice lives here.
+type Check struct {
+	// ChangeMade is the line for "was the requested change made".
+	// Required: a line of zero reads the gate as always passed.
+	ChangeMade float64 `toml:"change_made" config:"required"`
+	// SamePerson is the line for "is it the same person".
+	SamePerson float64 `toml:"same_person" config:"required"`
+	// CriterionMet is the line for the criterion the render served.
+	CriterionMet float64 `toml:"criterion_met" config:"required"`
+	// Model is the model the check runs on. Required: an empty model
+	// asks no model at all.
+	Model string `toml:"model" config:"required"`
+}
+
+// check refuses a line outside [0, 1], NaN included.
+func (c Check) check() error {
+	for _, line := range []struct {
+		name  string
+		value float64
+	}{
+		{"change_made", c.ChangeMade},
+		{"same_person", c.SamePerson},
+		{"criterion_met", c.CriterionMet},
+	} {
+		if !inUnit(line.value) {
+			return fmt.Errorf("check: %s %v is not between 0 and 1", line.name, line.value)
+		}
+	}
+	return nil
+}
+
+// inUnit reports whether v sits in [0, 1]. The conjunction, not a pair
+// of disjunctions, is what catches NaN.
+func inUnit(v float64) bool {
+	return v >= 0 && v <= 1
 }
 
 // Secrets are Keel references. The file never holds the values, a literal
@@ -231,6 +309,12 @@ func (s Settings) check() error {
 	j := s.Lease.Judge
 	if j.FreshSelfies < 1 || j.Renders < 1 {
 		return fmt.Errorf("lease.judge: fresh selfies %d, renders %d", j.FreshSelfies, j.Renders)
+	}
+	if err := s.Judge.check(); err != nil {
+		return err
+	}
+	if err := s.Check.check(); err != nil {
+		return err
 	}
 	return nil
 }

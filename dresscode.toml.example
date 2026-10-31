@@ -30,6 +30,22 @@ fresh_uploads_off = false
 renders_off = false
 samples_only = false
 
+[judge]
+# The lines that turn Clef's read into flags. A criterion flags when its
+# yes-probability sits under its line. per_criterion names a line per
+# criterion id; absent, every criterion reads met.
+# Placeholder value until the evaluation measures it.
+met = 0.5
+
+[check]
+# The lines that turn the render check's probabilities into facts, and
+# the model the check runs on.
+# Placeholder values until the evaluation measures them.
+change_made = 0.5
+same_person = 0.5
+criterion_met = 0.5
+model = "clef"
+
 [[secrets.youcam_api_key]]
 source = "env"
 var = "YOUCAM_API_KEY"
