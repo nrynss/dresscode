@@ -374,7 +374,7 @@ requires:   T5.16
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/look/, web/tests/a11y/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Eliminate the duplicate text and two-page hop between `#/look/verdict` and `#/look/render`: collapse the 4-step pipeline stepper once the look finishes, remove the duplicated `Why` sentence that repeats the missed criterion word-for-word, tuck the missed criteria list into a collapsible `<details>` disclosure, make the `Original` and `After the fix` corner badges inside the arch tappable, and remove the two redundant buttons below the arch.
 
