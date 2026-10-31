@@ -161,7 +161,7 @@ requires:   T3.5
 fixture-ok: yes
 size:       S · mid
 owns:       internal/pipeline/run.go
-status:     in-review
+status:     done
 ```
 The look as one Keel `job`: judge → pick → measure → render → check, then the runner-up once if the check fails, then the suggestion alone. Each stage publishes its event on `stream` in the T1.5 shapes. Resumes after a restart without repeating a paid step.
 
