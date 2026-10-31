@@ -514,6 +514,26 @@ Every edited string and every newly authored UI string across P5B is pinned belo
 | Account (`web/src/routes/account/account.svelte`) | Account erasure disclosure `<summary>` (closed by default) | `Delete the account` |
 | `product.md`, `web/src/routes/account/privacy.ts` | Analysis scope sentence (`T5.18`) | `YouCam analysis runs only when the fix needs it: face shape for a hairstyle.` |
 
+### 5. Native Mobile App Visual & Copy Polish (`T5.20`–`T5.23`)
+
+| Screen / Component | Element | Before | After |
+|---|---|---|---|
+| Shell (`web/src/app/shell.svelte`) | Fixed bottom tab bar labels (4 tabs with SVG icons) | Top text links `Bring the look · Style history · Account` | `Occasion` · `Mirror` · `History` · `Account` |
+| Front door (`web/src/routes/occasion/occasion.svelte`) | Occasion fieldset legend | `Choose an occasion` | `Occasion` |
+| Front door (`web/src/routes/occasion/occasion.svelte`) | Fix chips fieldset legend | `Fixes you are open to` | `Fixes to try` |
+| Front door (`web/src/routes/occasion/occasion.svelte`) | Primary CTA link below fix chips | `Bring the look` | `Continue` |
+| Front door (`web/src/app/app.svelte`) | Collapsible sample people strip `<summary>` | `Try a sample look` | `Sample looks` |
+| Capture (`web/src/routes/capture/capture.svelte`) | Idle mirror prompt paragraph | `The mirror opens here.` | *(removed — button + icon stand alone)* |
+| Capture (`web/src/routes/capture/capture.svelte`) | Idle mirror primary button | `Open the front camera` | `Open camera` |
+| Capture (`web/src/routes/capture/capture.svelte`) | Live mirror shutter overlay button | `Take the photo` | `Take photo` |
+| Capture (`web/src/routes/capture/capture.svelte`) | Gallery file picker pill | `Choose a photo` | `Choose photo` |
+| Capture (`web/src/routes/capture/capture.svelte`) | Native camera file picker pill | `Use the phone camera` | `Phone camera` |
+| Capture (`web/src/routes/capture/capture.svelte`) | Ready status hint + primary CTA | `The selfie is ready.` + `Check the dress code` | `Check look` *(hint removed; selfie previews in mirror)* |
+| Capture (`web/src/routes/capture/capture.svelte`) | Product drawer `<summary>` | `Considering a specific piece?` | `Try your own piece` |
+| Render swipe (`web/src/routes/look/render/swipe.svelte`) | Bottom-left / bottom-right corner pills | `Original` / `After the fix` | `Before` / `After` |
+| Verdict (`web/src/routes/look/verdict/verdict.svelte`) | Finished stepper disclosure `<summary>` | `Checked against the dress code` | `Progress` |
+| Verdict & Render (`verdict.svelte`, `render.svelte`) | Missed criteria disclosure `<summary>` | `What the dress code still asks for` | `Dress code notes` |
+
 
 
 ### T5.19: Account sign-in copy — one line
@@ -544,3 +564,150 @@ Notes:
 - `account.svelte`: the sign-in section above the email form is now the single `<p>{accounts.keepsLooks}</p>`; the hard-coded `<p>A new email address keeps the looks already on this device.</p>` companion and the `{accounts.noGoogle}` render are gone. The post-sign-in sentences (`This device now uses your account…`, `You are signed in…`) and the conflict copy were not in the decision's scope and stay.
 - Surprise, a pleasant one: `account.test.ts` needed zero edits. Its only grip on this copy is generic — `Object.values(accountSentences(product))` checked against both product.md and the rendered body — so the pins followed the readers on their own, and all 7 tests pass unmodified. Every other pin is untouched by construction.
 - The verification sweep: `grep -rni "google\|social login\|upgraded in place"` under `web/src` answers nothing. Two references to the old line do remain outside web/src and outside owns: `docs/api.md`'s route table still documents `No Google sign-in | no such path` (still true — no such route is mounted), and the diary's own historical entries name it. Both are reported, not edited. No digit was introduced anywhere in the diff.
+
+---
+
+### T5.20: Sans-serif UI typography, Fixed Bottom Tab Bar, Top Icon Bar and Global Accordion Card recipe ★
+```yaml
+requires:   T5.18, T5.19
+fixture-ok: yes
+size:       M · mid
+owns:       web/src/app/, web/src/routes/capture/upload.test.ts, web/src/routes/look/verdict/verdict.test.ts, web/src/routes/look/render/render.test.ts, web/tests/a11y/
+status:     not-started
+```
+Eliminate the "blog / newspaper" feel caused by setting Georgia serif on every button, pill, nav link, and disclosure, and replace the top/bottom text-link bars with a native mobile app shell: a Fixed Bottom Tab Bar with 4 SVG icon + label tabs (`Occasion`, `Mirror`, `History`, `Account`), a Top App Bar with a circular `←` icon back button and `About` dialog trigger, and a global bordered `.disclosure` accordion card recipe in `theme.css`.
+
+What to build:
+
+1. **Sans-serif UI Typography + Editorial Serif Display (`web/src/app/theme.css`):**
+   - In all 4 theme blocks (`:root`, `@media (prefers-color-scheme: dark)`, `:root[data-theme="dark"]`, `:root[data-theme="light"]`):
+     - Change `--font-ui` to `system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;`
+     - Add `--font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;`
+   - Add a rule `.wordmark, h1, h2, .dresscode-title, .sheet-title { font-family: var(--font-display); }` so only the brand wordmark and main screen/sheet titles use editorial serif, while all buttons, pills, tabs, inputs, badges, summaries, and body copy inherit crisp sans-serif (`--font-ui`).
+   - Add a global primary CTA helper rule (`button.primary, .btn-primary, a.primary-link { width: 100%; justify-content: center; }`, overridden for inline/overlay controls like `.take-btn` or dialog buttons where needed) so main screen CTAs span full mobile width.
+
+2. **Global Bordered Accordion Card Recipe (`.disclosure` in `web/src/app/theme.css`):**
+   - Define `.disclosure` globally in `theme.css` so no `<details class="disclosure">` anywhere in the app ever renders as raw floating text with a default browser triangle:
+     - `.disclosure`: `background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-control); min-inline-size: 0;`
+     - `.disclosure > summary`: `display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 2.75rem; padding: 0.6rem 0.9rem; cursor: pointer; color: var(--text); font-weight: 500; list-style: none; overflow-wrap: break-word;`
+     - `.disclosure > summary::-webkit-details-marker { display: none; }`
+     - `.disclosure > summary::after { content: "▾"; color: var(--dim); flex: none; }` and `.disclosure[open] > summary::after { rotate: 180deg; }`
+     - `.disclosure[open] > summary { border-bottom: 1px solid var(--line-soft); }`
+
+3. **Top App Bar & Fixed Bottom Tab Bar (`web/src/app/shell.svelte`, `web/src/app/app.svelte`, `web/src/app/theme.css`, `web/tests/a11y/theme-contrast.test.ts`):**
+   - **Top App Bar (`header.bar` in `shell.svelte`):**
+     - Left: when on a sub-route (`route !== "" && route !== "/"`), render a circular icon back link `<a class="icon-back" href="#/" aria-label="Back"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></a>` (`width: 2.75rem; height: 2.75rem; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); color: var(--text); display: inline-flex; align-items: center; justify-content: center;`) beside `<a class="brand" href="#/">...</a>`.
+     - Right: place the `About` `Dialog.Root` (`<Dialog.Trigger class="ghost">About</Dialog.Trigger>`) at the right end of `header.bar` (or keep `Dialog.Root` in `app.svelte` / `shell.svelte` and remove the `.quiet-row` bottom blog footer of text links `See the verdict · See the render · Style history` from `app.svelte`). Update `verdict.test.ts` and `render.test.ts` where they checked `app.svelte` for `See the verdict` / `See the render` so they check the route branches (`isVerdictHash`, `route === "/look/verdict"`, `<Verdict />`, `isRenderHash`, `route === "/look/render"`, `<Render />`).
+   - **Fixed Bottom Tab Bar (`nav.tab-bar` in `shell.svelte`):**
+     - Replace the top text-link `<nav>` with a fixed bottom tab bar (`position: fixed; bottom: 0; left: 0; right: 0; z-index: 15; background: var(--surface); border-top: 1px solid var(--line); padding: 0.25rem calc(0.5rem + env(safe-area-inset-right)) calc(0.25rem + env(safe-area-inset-bottom)) calc(0.5rem + env(safe-area-inset-left));`) containing a centered inner grid (`max-width: 40rem; margin: 0 auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.25rem;`) with **4 SVG icon + label tabs**:
+       1. **`Occasion`** (`href="#/"`, active when `route === "" || route === "/" || route === "/occasion"`, sparkle/calendar-arch SVG icon)
+       2. **`Mirror`** (`href={captureHash}`, active when `isCaptureHash(route)`, vanity mirror SVG icon; update `upload.test.ts` pin on `shell.svelte` from `"Bring the look"` to `"Mirror"`)
+       3. **`History`** (`href="#/history"`, active when `route === "/history"`, clock/history SVG icon)
+       4. **`Account`** (`href="#account"`, active when `route === "#account"`, person-circle SVG icon)
+     - Style each tab with `display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; min-height: 3.1rem; border-radius: var(--radius-control); color: var(--dim); text-decoration: none; font-size: 0.78rem; font-weight: 500;` and `[aria-current="page"]` with `color: var(--accent); background: var(--accent-soft);`.
+     - Add `["accent", "surface"]` and `["accent", "accent-soft"]` to `textPairs` in `web/tests/a11y/theme-contrast.test.ts` (both exceed 8.0:1 in light and dark), and increase `.shell` bottom padding to `calc(5.25rem + env(safe-area-inset-bottom))` so content never sits under the fixed tab bar.
+
+**Done when:** `./tools/check.sh` passes; all UI controls, pills, tabs, and body copy use `--font-ui` sans-serif while `.wordmark`, `h1`, and `h2` use `--font-display` serif; the Fixed Bottom Tab Bar shows 4 SVG icon + label tabs; the bottom blog link footer is gone; `.disclosure` styles every accordion as a bordered surface card row.
+
+---
+
+### T5.21: Visual Front Door — SVG Occasion Tile Icons, Clean Full Borders, Full-Width CTA & Sample People Photo Strip ★
+```yaml
+requires:   T5.20
+fixture-ok: yes
+size:       M · mid
+owns:       web/src/app/app.svelte, web/src/routes/occasion/, web/tests/a11y/
+status:     not-started
+```
+Transform the Front Door (`#/`) from plain text boxes into a visual mobile app home screen: custom SVG icons for all 5 Occasion tiles, clean full `2px solid var(--accent)` selection borders (replacing the curved left-border crescent sliver), a full-width `Continue` CTA, and circular sample-person photo thumbnails inside `Sample looks`.
+
+What to build:
+
+1. **Shorter Front Door Copy (`web/src/routes/occasion/occasion.svelte`, `web/src/app/app.svelte`, `web/src/routes/occasion/menu.test.ts`, `web/tests/a11y/screens.test.ts`, `web/tests/a11y/helpers.ts`):**
+   - `Choose an occasion` → **`Occasion`**
+   - `Fixes you are open to` → **`Fixes to try`**
+   - `Bring the look` CTA link → **`Continue`** (`display: flex; width: 100%; justify-content: center;`)
+   - `Try a sample look` `<summary>` → **`Sample looks`**
+   - Update `menu.test.ts`, `screens.test.ts`, and `helpers.ts` for the shortened labels.
+
+2. **Visual Occasion Tiles with Custom SVG Icons & Clean Selection Border (`web/src/routes/occasion/occasion.svelte`):**
+   - Add an inline SVG icon inside a soft circular badge (`<span class="occ-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--accent)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">...</svg></span>`, `.occ-icon { flex: none; width: 2.15rem; height: 2.15rem; border-radius: 999px; background: var(--accent-soft); display: inline-flex; align-items: center; justify-content: center; }`) for each of the 5 occasion ids:
+     - `date`: evening sparkle / wine glass SVG
+     - `family-function`: festive diya lamp / lotus SVG
+     - `interview`: tailored collar / briefcase SVG
+     - `festival`: festive lantern / star SVG
+     - `funeral`: quiet leaf / candle SVG
+   - Replace the crescent-sliver `border-left: 3px solid var(--accent)` on `fieldset.cards label:has(input:checked)` with a clean **full `border: 2px solid var(--accent)`** on `background: var(--accent-soft)`.
+
+3. **Circular Sample People Photo Strip (`web/src/app/app.svelte`):**
+   - Inside `<details class="samples disclosure"><summary>Sample looks</summary>`, render each sample button as a visual **Sample Person Chip** containing a circular photo thumbnail (`<img class="sample-avatar" src={sampleAvatar(sample.id)} alt="" aria-hidden="true" />`, `width: 2.25rem; height: 2.25rem; border-radius: 999px; object-fit: cover; border: 1px solid var(--line); flex: none;`) beside `{sample.name}` so `Sample looks` immediately reads as sample people to try rather than a duplicate text list of occasions.
+   - Map `sampleAvatar(id)` to the served mock/sample media paths (`/media/5e1f1e00000000000000000000000001` and `/media/9e4de400000000000000000000000002`) so every sample button renders a real face thumbnail in mock and dev.
+
+**Done when:** `./tools/check.sh` passes; all 5 Occasion tiles display custom SVG icons and a clean full `2px solid var(--accent)` border when selected; `Continue` spans full width; `Sample looks` shows circular face thumbnails on every sample button.
+
+---
+
+### T5.22: Interactive Vanity Mirror Capture — Selfie Preview in Arch, Inner Mirror Rim, Icon Picker Buttons & Shorter Labels ★
+```yaml
+requires:   T5.21
+fixture-ok: yes
+size:       M · mid
+owns:       web/src/routes/capture/, web/tests/a11y/
+status:     not-started
+```
+Make the Arched Vanity Mirror on `#/capture` behave like a real mirror: show the chosen/captured selfie inside the arch, add a subtle inner mirror rim and camera icon in the idle state, add Gallery/Camera SVG icons to the two picker pills, and apply the shorter one-line labels (`Open camera`, `Take photo`, `Choose photo`, `Phone camera`, `Check look`, `Try your own piece`).
+
+What to build:
+
+1. **Shorter Capture Labels & One-Line Picker Pills (`web/src/routes/capture/capture.svelte`, `web/src/routes/capture/upload.test.ts`, `web/tests/a11y/screens.test.ts`, `web/tests/a11y/helpers.ts`):**
+   - Remove the idle `<p class="mirror-prompt">The mirror opens here.</p>` and the ready `<p class="hint">The selfie is ready.</p>` paragraphs.
+   - Rename `Open the front camera` → **`Open camera`**
+   - Rename `Take the photo` → **`Take photo`**
+   - Rename `Choose a photo` → **`Choose photo`** (with an inline image/gallery SVG icon before the text — fits on **one line** at 375px!).
+   - Rename `Use the phone camera` → **`Phone camera`** (with an inline camera SVG icon before the text — fits on **one line** at 375px!).
+   - Rename `Check the dress code` → **`Check look`** (full-width `width: 100%` `.primary` button right below the mirror).
+   - Rename `Considering a specific piece?` → **`Try your own piece`** on `<details class="product-drawer disclosure">`.
+   - Remove the inline `<a class="back" href="#/">Back</a>` link from `capture.svelte` (the top bar's circular `←` button and bottom tab bar handle navigation).
+   - Update `upload.test.ts`, `screens.test.ts`, and `helpers.ts` (`openProductDrawer` and capture `ready` marker) to match the shortened strings.
+
+2. **Selfie Preview Inside the Arched Mirror & Inner Mirror Rim (`web/src/routes/capture/capture.svelte`):**
+   - Add a subtle inner arched rim inside `.mirror-frame` (e.g., an inset ring or `.mirror-idle` camera-sparkle SVG emblem in `stroke="var(--dim)"` above `Open camera`) so the empty mirror has visual depth instead of looking like a flat beige rectangle.
+   - When `bring(blob, "selfie")` prepares the selfie (or when a selfie is captured/selected), store a preview URL (`selfiePreview = URL.createObjectURL(prepared.blob)`, revoking any previous object URL on replacement or component destroy) and render `<img class="mirror-preview" src={selfiePreview} alt="Your selfie." />` (`position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;`) inside `.mirror-frame` whenever `selfiePreview` is present and `session.phase !== "live"`.
+
+**Done when:** `./tools/check.sh` passes; choosing or taking a selfie previews the photo inside the Arched Mirror; `Choose photo` and `Phone camera` carry SVG icons and each fit on a single line at 375px; `Try your own piece` wears the `.disclosure` accordion card style.
+
+---
+
+### T5.23: Unified Visual Look Screen — Before/After Bottom Pills, Lowered Handle, Cohesive Result Card, Verdict Mirror & Full Tour Verification ★
+```yaml
+requires:   T5.22
+fixture-ok: yes
+size:       M · mid
+owns:       web/src/routes/look/, web/tests/a11y/
+status:     not-started
+```
+Polish the Arched Comparator (`Before` / `After` moved to the bottom corners inside the arch so they never clip the top curve, drag handle lowered to collarbone level at `top: 72%` so it never covers the nose), combine the Suggested Fix, `Shop the look` preview trigger, and `Keep / Dismiss / Bought it` into one cohesive Result Card, show the Arched Mirror on `#/look/verdict` too, and capture the final verification tour in `/tmp/ui-explore-after/`.
+
+What to build:
+
+1. **Arched Comparator Layout & `Before` / `After` Pills (`web/src/routes/look/render/swipe.svelte`, `web/src/routes/look/render/render.test.ts`):**
+   - Rename the two badge buttons from `Original` / `After the fix` to **`Before`** and **`After`**.
+   - Move `.badge` from `top: 0.6rem` (where the buttons clipped across the top curve of the arch) to **`bottom: 0.75rem`** (`left: 0.75rem` for `.badge.original` and `right: 0.75rem` for `.badge.after`) inside `.frame`.
+   - Move `.handle` (`◂ ▸`) from `top: 50%` (which sat directly on the bridge of the nose) to **`top: 72%`** so the face, eyes, lips, and earrings remain completely unobstructed.
+   - Update `render.test.ts` swipe assertions for `Before` and `After`.
+
+2. **Cohesive Result Card, Styled Disclosures & Verdict Mirror (`web/src/routes/look/render/render.svelte`, `web/src/routes/look/verdict/verdict.svelte`, `web/src/routes/look/render/sheet.svelte`, `verdict.test.ts`, `render.test.ts`):**
+   - Remove the inline `<a class="back" href="#/">Back</a>` links from `verdict.svelte` and `render.svelte` (handled by the top bar's circular `←` icon button).
+   - Rename the disclosure `<summary>` labels:
+     - `Checked against the dress code` → **`Progress`**
+     - `What the dress code still asks for` → **`Dress code notes`**
+   - Inside `.disclosure` (`Progress` and `Dress code notes`), pad the expanded body (`padding: 0.65rem 0.9rem 0.85rem`) and style `.reasons-drawer ul` without raw browser bullet dots (`list-style: none; padding: 0.65rem 0.9rem 0.85rem; display: flex; flex-direction: column; gap: 0.45rem;`).
+   - Replace the crescent-sliver `border-left: 3px solid var(--accent)` on `.hero` and the disconnected buttons below it on `render.svelte` with a unified **Result Card (`.result-card`)** (`background: var(--surface); border: 2px solid var(--accent); border-radius: var(--radius-control); padding: 1rem; display: flex; flex-direction: column; gap: 0.85rem;`):
+     - Inside `.result-card`, keep `.hero` (`<h3 class="hero-label">A fix</h3>` + `<p class="hero-fix">{look.fix}</p>`), followed by the **`Shop the look`** trigger (`<ShopSheet lookId={look.lookId} />`, styled as a full-width secondary/ghost action row with a shopping-bag SVG icon), and the 3-segment **`Keep` / `Dismiss` / `Bought it`** `.verdict` bar at the bottom of the card.
+   - On `verdict.svelte` (`#/look/verdict`), also load `loadLook(storyLookId, ...)` and render the Arched Mirror (`<Swipe before={look.selfieUrl} after={look.render.url} />` when `look?.render` is ready, or the arched `<div class="mirror-frame"><img src={look.selfieUrl} ... /></div>` when `look` is available) at the top of `#/look/verdict` so the verdict screen is visual and photo-first in every state.
+
+3. **Full Tour Accessibility & Screenshot Verification (`web/tests/a11y/screens.test.ts`, `web/tests/a11y/helpers.ts`, `/tmp/ui-explore-after/`):**
+   - Update `screens.test.ts` and `helpers.ts` for `Progress` and `Dress code notes`, run `./tools/check.sh`, and re-capture the full verification screenshot tour in `/tmp/ui-explore-after/` (`light/`, `dark/`, `wide/`, `INDEX.md`) plus `/tmp/t517-full-tour/`.
+
+**Done when:** `./tools/check.sh` passes; `Before` and `After` sit cleanly at the bottom corners of the arch; the drag handle sits at collar level (`top: 72%`); `A fix`, `Shop the look`, and `Keep / Dismiss / Bought it` form one cohesive Result Card; `#/look/verdict` displays the Arched Mirror photo; `/tmp/ui-explore-after/` holds the refreshed screenshots in both themes.
+

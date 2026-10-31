@@ -127,7 +127,7 @@ keys and settings (T0.2) + occasions, menus, vocabulary (T0.3) + sample set (T0.
   -> shop (T3.7) + remember and recall (T3.8) -> evaluation (T3.9)
   -> look routes (T4.4) + samples for judges (T4.6)
   -> capture (T5.3) -> verdict and render (T5.4, T5.5) -> second visit (T5.6)
-  -> UX writing & mock media (T5.10) -> shell & account UX (T5.11) -> front door (T5.12) -> mirror capture & look UX (T5.13) -> visual verification (T5.14) -> progressive disclosure & declutter (T5.15..T5.18)
+  -> UX writing & mock media (T5.10) -> shell & account UX (T5.11) -> front door (T5.12) -> mirror capture & look UX (T5.13) -> visual verification (T5.14) -> progressive disclosure & declutter (T5.15..T5.19) -> native mobile app visual & copy polish (T5.20..T5.23)
   -> deploy (T6.1) -> README (T6.2) -> video (T6.4) -> submit (T6.5)
 ```
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | **9 / 9 — COMPLETE** | T3.9 (the evaluation ★) landed — every threshold measured from its curve (260/273 at 0.5 → 269/273 at chosen), every known-bad render rejected, stability zero flips, `model = "clef"` chosen on vocabulary (19/22 vs 17/22). The numbers live in docs/evaluation.md; the measured settings diff awaits T4.4's wiring. **The pipeline is built.** |
 | P4 | 5 / 7 | T4.4 (the look routes) landed — the app wires to the finished pipeline. Only T4.6 (judge samples) and T4.7 (budgets/flags) remain; both dispatch now. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 8 / 9 | T5.17 (unified look) landed — tappable badges, collapsible stepper and notes. Only T5.18 (History/Account + shade-match sync + screenshot pass) remains — it closes P5B. |
+| P5B | 9 / 14 | T5.10–T5.17 and T5.19 done; T5.18 (History/Account disclosure + shade-match sync) in flight; T5.20–T5.23 queued for native mobile app visual & copy polish (sans-serif UI, fixed bottom tab bar, SVG occasion icons & sample photo avatars, selfie preview in mirror, Before/After bottom pills, lowered handle, cohesive Result Card). |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
