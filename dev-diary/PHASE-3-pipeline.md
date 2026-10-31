@@ -78,7 +78,7 @@ requires:   T2.2, T3.2
 fixture-ok: yes
 size:       S · mid
 owns:       internal/pipeline/measure.go
-status:     in-review
+status:     done
 ```
 Run only the analysis the chosen fix names (colour tones for a shade; face shape, hair type and length for a hairstyle; nothing for clothes, jewellery, beard, lighting or smile). Cache by the normalised photo's hash; a cached result costs no unit. Ask Face Attributes for face shape only.
 
