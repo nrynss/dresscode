@@ -103,7 +103,7 @@ type Judgement struct {
 // the photo, the occasion's id and name, one noul question per criterion
 // in the data's wording, and the biggest-issue choice. It never receives
 // a YouCam analysis: the request is built from the photo and the occasion
-// alone, and this package does not import the YouCam client.
+// alone, and the judge does not import the YouCam client.
 //
 // A criterion with no photo to judge cannot be asked at all: Clef answers
 // a judge request that lost its image, and the answer is not one to trust
