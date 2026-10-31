@@ -3,12 +3,11 @@
 // An open spends nothing: the sample's selfie is registered into the
 // judge's own mediastore - a repeat open reuses the picture that judge
 // already holds rather than writing the same bytes again - the render its
-// story showed is already a
-// mediastore blob, and the look is the story its stages recorded - the
-// flags, the pick, the measure answer, the render the check kept, the
-// shop list - so the judge's stream, verdict, renders and shop answer
-// exactly as the recorded fixtures do, with no model ask, no YouCam call
-// and no unit settled. Nothing here dials.
+// story showed is already a mediastore blob, and the look is the story its
+// stages recorded - the flags, the pick, the measure answer, the render the
+// check kept, the shop list - so the judge's stream, verdict, renders and
+// shop answer exactly as the recorded fixtures do, with no model ask, no
+// YouCam call and no unit settled. Nothing here dials.
 //
 // The route is deliberately not a spending route: it takes no gate
 // token, no judge-lease seat and no budget reservation, so a judge who
@@ -19,9 +18,22 @@
 // The cached state is not a shipped database. Each sample's story is a
 // recorded fixture under the samples directory (cached/*.json), and the
 // rows are derived from it here, at open, under the judge's own user id
-// - the id every landed look route scopes its reads by - so account
-// deletion, look deletion and the user-scoped reads all treat an opened
-// sample like any other look.
+// - the id every landed look route scopes its reads by - so the
+// user-scoped reads and account deletion treat an opened sample like any
+// other look. One thing that is NOT true of a single look's deletion, and
+// it is said here rather than left to a comment nobody reads: an open
+// registers no renders row (only the paid path writes one), and the
+// privacy engine builds a look deletion's blob list from renders alone
+// (internal/privacy/jobs.go, inspectLook), so deleting one sample look
+// removes its looks row and zero bytes. Its pictures go with the selfie,
+// through photo deletion by selfie_id, or with the account, which sweeps
+// the owner's media. Writing the renders row here would make the old
+// sentence true and was tried on paper before being refused: the reuse
+// above hands one judge's two opens of one story the SAME render blob,
+// and look deletion erases by id with no check for a second live look
+// naming it, so erasing one would erase the other's picture. Reference
+// counting that erasure is internal/privacy's to write, not this file's.
+// Disclosed beside N8 in dev-diary/PHASE-4-server.md.
 //
 // The job is born finished. The contract freezes a sample's job read as
 // "already done" (docs/api.md), and the shipped app reads a look exactly
@@ -120,7 +132,12 @@ var sampleIDs = []string{
 type SamplesConfig struct {
 	// SamplesDir is the samples data directory: the sample people and,
 	// under cached/, the recorded story each open derives. Empty is
-	// refused.
+	// refused. The directory carries a shape as well as a content: a
+	// story names a recorded provider result as
+	// "../youcam/results/<name>.jpg", so the mount reads a second root,
+	// the sibling <SamplesDir>/../youcam/results, and a samples
+	// directory without that sibling refuses the mount - family's shown
+	// render and festival's discarded pass both live there.
 	SamplesDir string
 
 	// Now is the clock for look rows. Nil means time.Now.
@@ -615,19 +632,31 @@ func readSampleImage(dir, rel string) (systemone.Image, error) {
 	}
 	target, err := filepath.EvalSymlinks(full)
 	if err != nil {
-		return systemone.Image{}, err
+		return systemone.Image{}, missingSamplePicture(roots, rel, err)
 	}
 	if !contained(resolvedRoots(roots), target) {
 		return systemone.Image{}, fmt.Errorf("%q leads out of the sample roots", rel)
 	}
 	raw, err := os.ReadFile(target)
 	if err != nil {
-		return systemone.Image{}, err
+		return systemone.Image{}, missingSamplePicture(roots, rel, err)
 	}
 	if len(raw) == 0 {
 		return systemone.Image{}, fmt.Errorf("%s is empty", rel)
 	}
 	return systemone.Image{ContentType: "image/jpeg", Bytes: raw}, nil
+}
+
+// missingSamplePicture is a story's picture a read refused, said with the
+// two roots a story may read from. It names them because the commonest
+// reason a picture is not there is the mount's layout, not the story: a
+// directory handed to SamplesConfig without the recorded results beside it
+// fails here, over family's shown render, and a bare "no such file or
+// directory" for one jpeg path does not tell the caller that the sibling
+// root was missing. The layout rule belongs in the fault that proves it.
+func missingSamplePicture(roots []string, rel string, err error) error {
+	return fmt.Errorf("%q is not a picture this story can read: a story reads from two roots only, the sample people under %s and the recorded provider results under %s: %w",
+		rel, roots[0], roots[1], err)
 }
 
 // resolvedRoots is each root with the links it is made of followed, so a

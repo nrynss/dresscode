@@ -76,9 +76,11 @@ import (
 	"github.com/nrynss/dresscode/internal/config"
 	"github.com/nrynss/dresscode/internal/domain"
 	"github.com/nrynss/dresscode/internal/pipeline"
+	"github.com/nrynss/dresscode/internal/systemone"
 	"github.com/nrynss/keel/id"
 	"github.com/nrynss/keel/job"
 	jobsql "github.com/nrynss/keel/job/sqlitestore"
+	"github.com/nrynss/keel/stream"
 	"github.com/nrynss/keel/wire"
 )
 
@@ -241,9 +243,15 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 			// The null is what the server answers today for a look that
 			// flagged nothing, paid or sample, and what no recorded ready
 			// fixture carries. Asserted so a later hand cannot swap it for
-			// an object without saying so here as well.
-			if _, ok := body["fix"].(map[string]any); ok {
-				t.Fatalf("%s: fix %v, want null", pin.id, body["fix"])
+			// an object without saying so here as well, and asserted on the
+			// KEY and not only on its type: `fixBody` is a pointer with
+			// `omitempty` (looks.go), so a body that dropped the member
+			// entirely would satisfy "not an object" and the drift this pin
+			// exists to catch would pass. Presence and JSON null, or fail.
+			if v, ok := body["fix"]; !ok {
+				t.Fatalf("%s: the ready body carries no fix key at all, want the key present and JSON null", pin.id)
+			} else if v != nil {
+				t.Fatalf("%s: fix %v, want JSON null", pin.id, v)
 			}
 		case string:
 			fix, _ := body["fix"].(map[string]any)
@@ -1179,8 +1187,14 @@ func TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld(t *testing.T) {
 	}
 
 	// Both looks still read their own pictures, and the bytes are the
-	// recorded ones: a reuse that returned somebody else's same-sized
-	// picture would fail here rather than quietly serve a wrong face.
+	// recorded ones. What this block pins is that a reuse hands back the
+	// picture the story is about, compared byte for byte: it does NOT
+	// reach the two guards inside the search, because the five sample
+	// selfies are five distinct sizes, so no repeat open ever holds a
+	// same-sized stranger, and this env boots one judge, so the shared
+	// selfie group holds one owner. Those two guards - the owner and the
+	// digest - are pinned by name by
+	// TestASampleReuseHandsOutOnlyItsOwnJudgesPicture.
 	root := repoRoot(t)
 	selfieRaw := readFile(t, filepath.Join(samplesDir(t), "woman", "V04-family-function.jpg"))
 	renderRaw := readFile(t, filepath.Join(root, "testdata", "youcam", "results", "earring-jhumka-V04.jpg"))
@@ -1217,6 +1231,190 @@ func TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld(t *testing.T) {
 	}
 }
 
+// TestASampleReuseHandsOutOnlyItsOwnJudgesPicture pins the two guards the
+// reuse reads by, one mutation each, on the two cases the frugality pin
+// above cannot reach. `held` shortlists by owner, group and byte count,
+// newest first, and then requires the candidate's own bytes, read through
+// the store, to hash to the story's. Neither guard bites in
+// TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld: the five sample
+// selfies are five distinct sizes (date 261,068, family 278,400, festival
+// 270,896, funeral 371,047, interview 178,223), so a shortlist of one
+// judge's same-sized pictures never holds a stranger, and one judge per env
+// means the selfie group never holds a second owner - and the group is
+// `groupSelfie`, which intake.go shares with a judge's own uploads and does
+// not name per user, unlike a render's group. Both cases come in here.
+//
+// (a) The owner. A second judge who holds nothing opens the sample the
+// first judge already holds, picture for picture. Their selfie id differs,
+// their own read of it answers 200 with the story's bytes, and their
+// pictures are their own two rows; the first judge's id is not theirs to
+// read. The mutation this refuses is `owner = ?` dropped from the
+// shortlist: the first judge's row is the same group, the same count and
+// the same content, so an unscoped search hands it over, and the look then
+// names a picture its own reader cannot open - GET /media/{id} authorizes
+// a private blob against its owner (intake.go, authorizeOwner).
+//
+// (b) The digest. The second judge's own selfie group gains a newest-first
+// decoy of the SAME byte count as the story's selfie and different content.
+// A count is not an identity, so the reuse must read the candidate and
+// refuse it: the repeat open hands back the judge's own picture, never the
+// decoy, and writes nothing. The mutation this refuses is the hash
+// comparison dropped from `held`: the decoy is the first row the shortlist
+// reads, so a search that trusts its own byte count returns it, and the
+// look would show a face that is not the story's.
+func TestASampleReuseHandsOutOnlyItsOwnJudgesPicture(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	ctx := t.Context()
+	selfieRaw := readFile(t, filepath.Join(samplesDir(t), "woman", "V04-family-function.jpg"))
+
+	firstUser, firstCookie := bootUser(t, env.handler)
+	firstLook, _ := startSample(t, env, firstCookie, "sample-family", "")
+	firstSelfie := lookSelfieID(t, env, firstCookie, firstLook)
+
+	// (a) The second judge holds nothing, so their open writes their own
+	// copy of the same bytes rather than reading a judge before them.
+	secondUser, secondCookie := bootUser(t, env.handler)
+	if secondUser == firstUser {
+		t.Fatal("the second boot answered the first judge's user id")
+	}
+	if rows, bytes := ownedMedia(t, env, secondUser); rows != 0 || bytes != 0 {
+		t.Fatalf("the second judge holds %d pictures of %d bytes before opening, want none", rows, bytes)
+	}
+	secondLook, _ := startSample(t, env, secondCookie, "sample-family", "")
+	secondSelfie := lookSelfieID(t, env, secondCookie, secondLook)
+	if secondSelfie == firstSelfie {
+		t.Fatalf("the second judge's open handed back the first judge's selfie %s: the shortlist reads by owner, and a private blob belongs to the owner whose look names it", secondSelfie)
+	}
+	if rows, _ := ownedMedia(t, env, secondUser); rows != 2 {
+		t.Fatalf("the second judge holds %d pictures after one open, want their own selfie and their own render", rows)
+	}
+	if got := mediaBytes(t, env, secondCookie, secondSelfie); string(got) != string(selfieRaw) {
+		t.Fatalf("the second judge reads %d bytes for their selfie, want the recorded picture's %d", len(got), len(selfieRaw))
+	}
+	if cross := do(t, env.handler, http.MethodGet, "/media/"+firstSelfie, secondCookie, nil, nil); cross.Code == http.StatusOK {
+		t.Fatalf("the second judge read the first judge's picture %s with a 200", firstSelfie)
+	}
+
+	// (b) The decoy: the same byte count as the story's selfie, different
+	// bytes, and the newest row in this judge's own selfie group.
+	decoy := append([]byte(nil), selfieRaw...)
+	for i := 1024; i < 1124; i++ {
+		decoy[i] ^= 0xff
+	}
+	if len(decoy) != len(selfieRaw) {
+		t.Fatalf("the decoy is %d bytes, want the story's selfie size of %d", len(decoy), len(selfieRaw))
+	}
+	decoyID := env.seed(t, secondUser, groupSelfie, systemone.Image{
+		ContentType: "image/jpeg", Bytes: decoy,
+	})
+	// The shortlist's own read, so the pin below is a pin on the newest
+	// candidate and not on luck: the decoy has to be the first row `held`
+	// sees for this owner, group and count.
+	var newest string
+	if err := env.srv.db.Reader().QueryRowContext(ctx,
+		`SELECT id FROM media WHERE owner = ? AND media_group = ? AND size_bytes = ?
+		 ORDER BY created_at DESC, id DESC LIMIT 1`,
+		secondUser, groupSelfie, int64(len(selfieRaw))).Scan(&newest); err != nil {
+		t.Fatal(err)
+	}
+	if newest != decoyID {
+		t.Fatalf("the newest same-sized picture in this judge's selfie group is %s, want the decoy %s: the search reads newest first", newest, decoyID)
+	}
+
+	_, sowedBytes := ownedMedia(t, env, secondUser)
+	thirdLook, _ := startSample(t, env, secondCookie, "sample-family", "")
+	if got := lookSelfieID(t, env, secondCookie, thirdLook); got != secondSelfie {
+		t.Fatalf("the repeat open handed back %s, want this judge's own selfie %s: a same-sized decoy is the newest row in the group (%s), and a byte count is not an identity",
+			got, secondSelfie, decoyID)
+	}
+	if rows, bytes := ownedMedia(t, env, secondUser); rows != 3 || bytes != sowedBytes {
+		t.Fatalf("the repeat open left %d rows and %d bytes, want the judge's own picture, their render and the decoy (3 rows, %d bytes) and no write",
+			rows, bytes, sowedBytes)
+	}
+	if got := mediaBytes(t, env, secondCookie, lookSelfieID(t, env, secondCookie, thirdLook)); string(got) != string(selfieRaw) {
+		t.Fatalf("the repeated look reads %d bytes, not the recorded picture's %d", len(got), len(selfieRaw))
+	}
+	if spent := env.budget.Spent(); spent != 0 {
+		t.Fatalf("the meter settled %d units, want zero", spent)
+	}
+}
+
+// lookSelfieID is the selfie id one look names, as the look route answers
+// it to this judge.
+func lookSelfieID(t *testing.T, env *lookEnv, cookie *http.Cookie, lookID string) string {
+	t.Helper()
+	selfieID, _ := bodyOf(t, env.get(t, cookie, "/api/looks/"+lookID))["selfie_id"].(string)
+	if !id.Valid(selfieID) {
+		t.Fatalf("look %s names selfie id %q", lookID, selfieID)
+	}
+	return selfieID
+}
+
+// TestASampleMountNamesTheRootsWhenAPictureIsMissing pins the fault a
+// caller gets when the samples directory has the wrong SHAPE rather than
+// the wrong content: a story names its render "../youcam/results/...", so
+// the second root is a sibling of the directory handed to SamplesConfig and
+// a directory without it has no renders to read at all. The bare "no such
+// file or directory" for one jpeg names neither layout rule nor the sibling
+// it is missing, so the mount says which two roots a story reads from.
+func TestASampleMountNamesTheRootsWhenAPictureIsMissing(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	rt := env.srv.looksOf()
+
+	dir := sampleDirWithoutResults(t)
+	if _, err := loadSample(dir, "sample-family", rt); err == nil {
+		t.Fatal("the mount accepted a samples directory with no recorded results beside it")
+	} else if !strings.Contains(err.Error(), "two roots") ||
+		!strings.Contains(err.Error(), filepath.Join("youcam", "results")) {
+		t.Fatalf("refused with %q, want the fault to name both roots a story reads", err)
+	}
+}
+
+// sampleDirWithoutResults is a samples directory that holds the five
+// recorded stories and the sample people and NOTHING beside it: the
+// sibling <dir>/../youcam/results the loader's second root points at is
+// absent, which is the layout mistake the task's deferral note describes.
+func sampleDirWithoutResults(t *testing.T) string {
+	t.Helper()
+	base := t.TempDir()
+	dir := filepath.Join(base, "samples")
+	cached := filepath.Join(dir, "cached")
+	if err := os.MkdirAll(cached, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	names, err := filepath.Glob(filepath.Join(samplesDir(t), "cached", "*.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(names) != 5 {
+		t.Fatalf("%d recorded stories read, want the five", len(names))
+	}
+	for _, path := range names {
+		if err := os.WriteFile(filepath.Join(cached, filepath.Base(path)), readFile(t, path), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, rel := range []string{"samples/woman", "samples/man", "samples/anchors"} {
+		dst := filepath.Join(dir, strings.TrimPrefix(rel, "samples/"))
+		if err := os.MkdirAll(dst, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		for _, entry := range osMustReadDir(t, filepath.Join(repoRoot(t), "testdata", rel)) {
+			if entry.IsDir() {
+				continue
+			}
+			if err := os.WriteFile(filepath.Join(dst, entry.Name()),
+				readFile(t, filepath.Join(repoRoot(t), "testdata", rel, entry.Name())), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	return dir
+}
+
 // TestACachedStoryMeasuresFromItsOwnReading covers the arm no shipped
 // story reaches. The honesty rules bind a cache row to the one face read
 // the recordings hold, and to the picture that read was of - V06 - so a
@@ -1248,6 +1446,20 @@ func TestACachedStoryMeasuresFromItsOwnReading(t *testing.T) {
 	user, cookie := bootUser(t, env.handler)
 	ctx := t.Context()
 
+	// What this open PUBLISHES, not what a test recomputes. An open mints
+	// its job id inside itself, so no client can hold the topic before the
+	// story is played, and the stored job's Progress carries only the last
+	// frame - so the subscriber is taken by a job store that watches the
+	// record land, which is the line before the frames go out.
+	sm := env.srv.samplesOf()
+	rt := env.srv.looksOf()
+	catch := &publishedCatch{Store: sm.jobs, rt: rt, ctx: ctx}
+	sm.jobs = catch
+	t.Cleanup(func() {
+		catch.sub.Cancel()
+		sm.jobs = catch.Store
+	})
+
 	lookID, _ := startSample(t, env, cookie, "sample-family", "")
 
 	// The route wrote the cache: the keep loop over the story's rows ran,
@@ -1269,22 +1481,18 @@ func TestACachedStoryMeasuresFromItsOwnReading(t *testing.T) {
 		t.Fatalf("the reading is keyed to %s and the look to %s, want one photo", photoHash, lookHash)
 	}
 
-	// The measure frame's answer for a story that holds a reading: cached.
-	// Not skipped, and never false, which would promise a measurement.
-	sm := env.srv.samplesOf()
-	st := sm.byID["sample-family"]
-	_, frames, err := sm.story(st, make([]string, len(st.Attempts)))
-	if err != nil {
-		t.Fatal(err)
+	// The measure stage as this open published it: cached, for a story that
+	// holds a reading. Not skipped, and never false, which would promise a
+	// measurement. Read off the route's own broker, so what is pinned is the
+	// payload a subscriber of THIS look received on the wire - the frame the
+	// loader holds is checked by TestEveryCachedStoryIsWhatTheRecordingsSay,
+	// and a recomputation here would prove the compute and not the publish.
+	detail, stages := publishedFrame(t, catch.sub, "measure")
+	if detail != `{"cached":true}` {
+		t.Fatalf("the measure frame this open published is %q, want {\"cached\":true}: stages %v", detail, stages)
 	}
-	var measure string
-	for _, f := range frames {
-		if f.Stage == "measure" {
-			measure = string(f.Detail)
-		}
-	}
-	if measure != `{"cached":true}` {
-		t.Fatalf("the measure frame of a story that holds a reading is %q, want {\"cached\":true}", measure)
+	if strings.Join(stages, ",") != "judge,pick,measure,shop" {
+		t.Fatalf("the stages this open published are %v, want judge,pick,measure,shop", stages)
 	}
 
 	// The look reads as a finished look of its own story, and the frame
@@ -1805,6 +2013,69 @@ func osMustReadDir(t *testing.T, dir string) []os.DirEntry {
 		t.Fatal(err)
 	}
 	return entries
+}
+
+// publishedCatch is a job store that takes one live subscriber on the
+// route's own broker for each record it lands, before that record's frames
+// go out: sampleRuntime.land writes the row and then publishes, so a
+// subscriber registered here receives exactly the frames this open sent. It
+// exists because an open mints its job id inside itself, so no client can
+// hold the topic beforehand, and because the stored job's Progress carries
+// only the last frame - a test that recomputes the story proves the loader
+// and not the publish path.
+type publishedCatch struct {
+	job.Store
+	rt  *lookRuntime
+	ctx context.Context
+	sub *stream.Subscription
+}
+
+func (c *publishedCatch) Create(ctx context.Context, rec job.Record) error {
+	if err := c.Store.Create(ctx, rec); err != nil {
+		return err
+	}
+	c.sub = c.rt.broker.Subscribe(c.ctx, job.Topic(rec.ID))
+	return nil
+}
+
+// publishedFrame drains one subscription up to the terminal that closes a
+// story, and answers the detail the named stage carried in the frame the
+// open actually published, beside the stage order the subscriber received.
+// The wait is bounded because the story was played inside the request: the
+// events are already in the subscriber's buffer, so a frame that never
+// arrives is a frame the open never sent.
+func publishedFrame(t *testing.T, sub *stream.Subscription, stage string) (string, []string) {
+	t.Helper()
+	if sub == nil {
+		t.Fatal("the open landed no job record, so it published nothing to read")
+	}
+	var (
+		detail  string
+		stages  []string
+		seeking = true
+	)
+	for {
+		select {
+		case event, ok := <-sub.Events:
+			if !ok {
+				t.Fatalf("the topic closed before the terminal: %v", stages)
+			}
+			if event.Terminal {
+				return detail, stages
+			}
+			progress, isProgress := event.Data.(wire.ProgressEvent)
+			if !isProgress {
+				t.Fatalf("the published frame is %T, want wire.ProgressEvent", event.Data)
+			}
+			if progress.Stage == stage && seeking {
+				detail = string(progress.Detail)
+				seeking = false
+			}
+			stages = append(stages, progress.Stage)
+		case <-time.After(10 * time.Second):
+			t.Fatalf("the open's frames never reached its subscriber: %v", stages)
+		}
+	}
 }
 
 // ownedMedia counts the pictures one judge holds in the mediastore, rows
