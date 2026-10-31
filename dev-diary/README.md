@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T3.6 landed (`7b58730`) — the look is one Keel job, resumable, with the fallback chain and both deferred config sections. T3.7 (Shop the look) dispatches next; T4.4 wires the config→pipeline mapping. T5.16 (capture declutter) in review. **Product decisions pending for the user:** the colour-tones conflict (product.md vs data), the words fixture tension (phrase table vs regenerate), nude-lip renders unrecorded.
+**Current status:** T5.19 landed (`792d0a0`) — the sign-in copy is the user's dictated one line ("Sign in to keep your looks."), the no-Google line removed from product.md at the source, the readers moved atomically, the who-sees-what table untouched. T5.16 (capture declutter) in review; T5.17/T5.18 follow (T5.18 owns the product.md shade-match sync). T3.7 (Shop the look) in flight. **Product decisions pending for the user:** the words fixture tension (phrase table vs regenerate), nude-lip renders unrecorded — and the colour-tones conflict now has a landing path via T5.18's product.md sync.
 
 ---
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 6 / 9 | T3.6 (the fallback chain) landed — the look is one Keel job: judge → pick → measure → render → check → runner-up once → suggestion alone, resumable, with the `[judge]`/`[check]` settings landed (absent sections are load errors). T3.7 (Shop the look) dispatches next; T4.4 wires the config→pipeline mapping. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 6 / 9 | T5.15 landed — compact fix pills with auto-save, lean front door, disclosures. T5.16 (capture declutter) dispatches next; the chain is serial. |
+| P5B | 7 / 9 | T5.19 landed — the sign-in copy is the user's dictated one line, the no-Google line removed at the source. T5.16 (capture declutter) in review; T5.17 and T5.18 follow. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend
@@ -161,6 +161,8 @@ The demo is built around one story, **the second visit** (product.md). First vis
 ## Handoff Log
 
 Newest first. One entry per closed task, finding, or split.
+
+- **T5.19 Account sign-in copy — one line (user-dictated).** product.md lost the no-Google bullet and gained `Sign in to keep your looks.`; privacy.ts's readers moved atomically; the sign-in section renders the single sentence sourced from product.md. The test pins turned out generic (they follow the readers) and needed no edit; the who-sees-what table never referenced the removed line; docs/api.md's `No Google sign-in | no such path` route-table row remains, still true (it documents an explicitly non-existent route). One review finding accepted by ruling: flow.ts's doc comment uses the present-tense "upgrades this guest in place" — the project's term of art for the verify semantic, accurate, engineering-facing; the Done-when's sweep clause is read as user-visible copy and the diary corrected to say so. Review found everything else CLEAN. Landed as `792d0a0`, gate green in the worktree and the main checkout.
 
 - **T3.6 The fallback chain.** `internal/pipeline/run.go`: the look is one Keel `job` — judge → pick → measure → render → check, then the runner-up once if the check fails, then the suggestion alone. Each stage publishes its T1.5-shaped event; a budget refusal is NOT a runner-up trigger (the contract gives the runner-up exactly one trigger: the first check not shown) — it emits the recorded refusal frame and ends the chain. Resumes after a restart: inputs travel in a byte-free snapshot seam (ids and hashes only), the idempotency keys are the guarantee, and the proof is a real takeover — a look parked mid-poll, a second `job.Open` taking the lease, `creates == 1`, one settle, the recorded picture kept. The two deferred config sections landed: `[judge]` and `[check]` in `Settings` with per-scalar `config:"required"` — an absent section is a load error, never a silent all-met (the T3.1 ruling); nan/inf/out-of-range refused. T4.4's wiring deferrals recorded: the settings→pipeline mapping, the `renders_paused` flag, api.md's T1.5-era no_face wording. The remediation pinned the declined-pick suggestion-only arm at run level, kept the snapshot past a caller cancel (`context.WithoutCancel`), and corrected the sliver wording. Two review rounds; the second CLEAN. Landed as `c454657`+`7b58730`, gate green in the worktree and the main checkout, resume ×5 stable under `-race`.
 

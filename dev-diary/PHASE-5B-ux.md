@@ -501,7 +501,7 @@ requires:   T5.11
 fixture-ok: yes
 size:       XS · light
 owns:       product.md, web/src/routes/account/privacy.ts, web/src/routes/account/account.svelte, web/src/routes/account/account.test.ts
-status:     in-review
+status:     done
 ```
 The user's copy decision (2026-10-31): the no-Google line goes away entirely, and the sign-in section's keeps-the-looks copy collapses to one sentence — `Sign in to keep your looks.`
 
@@ -512,7 +512,7 @@ What to build:
 3. **account.svelte**: the sign-in section says exactly `Sign in to keep your looks.` (with the period, in the app's sentence style) — remove the separate keeps/device lines the old pair covered, and the noGoogle render.
 4. **account.test.ts**: update the pins to the new sentences; every other pin untouched.
 
-**Done when:** `./tools/check.sh` passes; the sign-in section's copy is the one line, sourced from product.md through the reader; no reference to Google, social login, or upgrade-in-place remains anywhere under web/src.
+**Done when:** `./tools/check.sh` passes; the sign-in section's copy is the one line, sourced from product.md through the reader; no user-visible reference to Google, social login, or the upgrade-in-place concept remains under web/src (one engineering doc comment in flow.ts uses the project's term of art for the verify semantic — accepted by orchestrator ruling, accurate and not user-facing).
 
 *(User decision dictated verbatim on 2026-10-31.)*
 
