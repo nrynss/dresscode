@@ -337,6 +337,9 @@ func validateFixes(file string, fixes []Fix, criteria map[string]struct{}) error
 		if blank(fix.ID) {
 			return fail(file, "a fix is missing an id")
 		}
+		if fix.ID == optionNone || fix.ID == issueCantTell {
+			return fail(file, "fix id %q is reserved", fix.ID)
+		}
 		if _, ok := seen[fix.ID]; ok {
 			return fail(file, "duplicate fix %q", fix.ID)
 		}

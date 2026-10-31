@@ -142,10 +142,7 @@ func Pick(ctx context.Context, client systemone.SystemOne, occ *domain.Occasion,
 	if len(j.Flags) == 0 {
 		return Choice{}, nil
 	}
-	menu, err := candidates(occ, optin, recall)
-	if err != nil {
-		return Choice{}, err
-	}
+	menu := candidates(occ, optin, recall)
 	if len(menu) == 0 {
 		return Choice{}, nil
 	}
@@ -180,7 +177,7 @@ func Pick(ctx context.Context, client systemone.SystemOne, occ *domain.Occasion,
 // A ticked or dismissed id that names no fix on this occasion is a
 // no-op: it cannot enter or remove a candidate, so stale memory ids are
 // tolerated rather than fatal.
-func candidates(occ *domain.Occasion, optin []string, recall *Recall) ([]domain.Fix, error) {
+func candidates(occ *domain.Occasion, optin []string, recall *Recall) []domain.Fix {
 	ticked := make(map[string]struct{}, len(optin))
 	for _, id := range optin {
 		ticked[id] = struct{}{}
@@ -201,7 +198,7 @@ func candidates(occ *domain.Occasion, optin []string, recall *Recall) ([]domain.
 		}
 		out = append(out, fix)
 	}
-	return out, nil
+	return out
 }
 
 // request builds the one Clef request. Every byte of it is traceable:

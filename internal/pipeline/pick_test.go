@@ -41,18 +41,6 @@ func storyJudgement(t *testing.T, occ *domain.Occasion) Judgement {
 	}
 }
 
-// fixByID is the occasion's menu entry for an id.
-func fixByID(t *testing.T, occ *domain.Occasion, id string) domain.Fix {
-	t.Helper()
-	for _, fix := range occ.Fixes {
-		if fix.ID == id {
-			return fix
-		}
-	}
-	t.Fatalf("occasion %q has no fix %q", occ.ID, id)
-	return domain.Fix{}
-}
-
 // allFixIDs is the occasion's whole menu, in the menu's order.
 func allFixIDs(occ *domain.Occasion) []string {
 	ids := make([]string, len(occ.Fixes))

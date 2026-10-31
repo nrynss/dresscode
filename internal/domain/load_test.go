@@ -317,6 +317,24 @@ func TestBrokenFile(t *testing.T) {
 		assertFileError(t, dir, "date.json", "Creators")
 	})
 
+	t.Run("fix id none is reserved", func(t *testing.T) {
+		t.Parallel()
+		dir := copyOccasions(t)
+		editOccasion(t, dir, "date.json", func(o *Occasion) {
+			fixPtr(t, o, "date-open-collar").ID = "none"
+		})
+		assertFileError(t, dir, "date.json", `fix id "none" is reserved`)
+	})
+
+	t.Run("fix id cant-tell is reserved", func(t *testing.T) {
+		t.Parallel()
+		dir := copyOccasions(t)
+		editOccasion(t, dir, "date.json", func(o *Occasion) {
+			fixPtr(t, o, "date-open-collar").ID = "cant-tell"
+		})
+		assertFileError(t, dir, "date.json", `fix id "cant-tell" is reserved`)
+	})
+
 	t.Run("duplicate fix id", func(t *testing.T) {
 		t.Parallel()
 		dir := copyOccasions(t)
