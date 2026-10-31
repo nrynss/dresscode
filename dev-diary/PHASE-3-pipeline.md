@@ -225,7 +225,7 @@ requires:   T2.3, T3.6
 fixture-ok: yes
 size:       M · mid
 owns:       internal/pipeline/memory.go
-status:     in-review
+status:     done
 ```
 With history on: after the user keeps, dismisses or buys, remember the look as text in the account's Lambo session. Before picking a fix: recall for the occasion and pass it to T3.2. With history off: nothing is read or written, and a test proves it.
 
@@ -251,7 +251,7 @@ requires:   T3.1, T3.5
 fixture-ok: yes
 size:       L · frontier
 owns:       internal/eval/, testdata/eval/, docs/evaluation.md
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 On the sample set's ground truth (T0.4):
 
