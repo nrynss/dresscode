@@ -39,8 +39,7 @@ Never sent to any model: face ratios, Skin Analysis scores, any age or attractiv
 ## Accounts (decided 30 Oct)
 
 - **Every visitor is a guest user.** A real user row, a server-side session, a signed cookie carrying only the session id. A guest can do everything, style history included.
-- **Sign in by emailed code** (Resend) to keep history across devices. Signing in keeps the guest's looks.
-- **No Google sign-in**, and no social login.
+- **Sign in by emailed code** (Resend) to keep history across devices. Sign in to keep your looks.
 - **Deletion finishes.** A photo, a look, the style history, or the whole account (after a fresh code). Account deletion removes your stored photos, looks, and style memory, continues if the server restarts, and reports when every part has confirmed.
 - **Nothing is deleted automatically.** Photos, renders and history stay until the user deletes them.
 

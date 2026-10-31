@@ -211,8 +211,6 @@
   <section class="block" aria-labelledby="sign-in">
     <h3 id="sign-in">Sign in</h3>
     <p>{accounts.keepsLooks}</p>
-    <p>A new email address keeps the looks already on this device.</p>
-    <p>{accounts.noGoogle}</p>
 
     {#if signedIn && didSwitch}
       <p>This device now uses your account. Earlier guest looks stayed separate.</p>

@@ -501,7 +501,7 @@ requires:   T5.11
 fixture-ok: yes
 size:       XS · light
 owns:       product.md, web/src/routes/account/privacy.ts, web/src/routes/account/account.svelte, web/src/routes/account/account.test.ts
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 The user's copy decision (2026-10-31): the no-Google line goes away entirely, and the sign-in section's keeps-the-looks copy collapses to one sentence — `Sign in to keep your looks.`
 
@@ -515,3 +515,11 @@ What to build:
 **Done when:** `./tools/check.sh` passes; the sign-in section's copy is the one line, sourced from product.md through the reader; no reference to Google, social login, or upgrade-in-place remains anywhere under web/src.
 
 *(User decision dictated verbatim on 2026-10-31.)*
+
+Notes:
+
+- The two product.md lines moved exactly as dictated: the `No Google sign-in` bullet is gone (line and all), and the sign-in bullet's second sentence reads `Sign in to keep your looks.` Nothing else in the file moved — the diff is one replaced line and one deleted line. The new sentence sits after "(Resend) to keep history across devices. ", and the reader's `indexOf` cannot confuse it with the bold-stripped `Sign in by emailed code` opening, so `productSentence("Sign in to keep your looks.")` returns exactly the dictated sentence.
+- `privacy.ts` moved atomically with it: the `noGoogle` field left the `accountSentences` interface and return, and `keepsLooks` now reads the new sentence. The who-sees-what side of the file is untouched: the table's own eight sentences (`privacyCopy`/`privacySentences`) never referenced the removed line — verified against product.md, the table lives under its own heading with no Google/social cell — and the sweep stays green.
+- `account.svelte`: the sign-in section above the email form is now the single `<p>{accounts.keepsLooks}</p>`; the hard-coded `<p>A new email address keeps the looks already on this device.</p>` companion and the `{accounts.noGoogle}` render are gone. The post-sign-in sentences (`This device now uses your account…`, `You are signed in…`) and the conflict copy were not in the decision's scope and stay.
+- Surprise, a pleasant one: `account.test.ts` needed zero edits. Its only grip on this copy is generic — `Object.values(accountSentences(product))` checked against both product.md and the rendered body — so the pins followed the readers on their own, and all 7 tests pass unmodified. Every other pin is untouched by construction.
+- The verification sweep: `grep -rni "google\|social login\|upgraded in place"` under `web/src` answers nothing. Two references to the old line do remain outside web/src and outside owns: `docs/api.md`'s route table still documents `No Google sign-in | no such path` (still true — no such route is mounted), and the diary's own historical entries name it. Both are reported, not edited. No digit was introduced anywhere in the diff.

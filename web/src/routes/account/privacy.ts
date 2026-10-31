@@ -62,14 +62,12 @@ export function privacySentences(markdown = source): string[] {
 /** Account sentences from product.md. The screen shows these beside the controls. */
 export function accountSentences(markdown = source): {
   keepsLooks: string;
-  noGoogle: string;
   deletion: string;
   notAutomatic: string;
   stays: string;
 } {
   return {
-    keepsLooks: productSentence("Signing in keeps the guest's looks.", markdown),
-    noGoogle: productSentence("No Google sign-in", markdown),
+    keepsLooks: productSentence("Sign in to keep your looks.", markdown),
     deletion: productSentence("Account deletion removes your stored photos", markdown),
     notAutomatic: productSentence("Nothing is deleted automatically.", markdown),
     stays: productSentence("Photos, renders and history stay until the user deletes them.", markdown),
