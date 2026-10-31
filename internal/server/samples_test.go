@@ -3,8 +3,8 @@ package server
 // The samples replay the recorded stories a judge opens for free. Each
 // open derives the sample's cached state under the judge's own user id -
 // the selfie registered, the analysis rows its fix measures pre-existing,
-// the render the story showed already a blob - and starts a playback of
-// the recorded stage state, so every route answers with zero model asks
+// the render the story showed already a blob - and plays back the
+// recorded stage state, so every route answers with zero model asks
 // and zero YouCam calls. The tests name where a replay cannot carry the
 // recorded example whole:
 //
@@ -25,33 +25,53 @@ package server
 //   - The look in words. The fixture composes "gold jhumkas"; the check
 //     joins the vocabulary's own order, "jhumkas, gold" - T4.4's named
 //     phrase-table tension, a data decision.
-//   - The full stream's frames are pinned on the playback itself. A
-//     playback finishes in milliseconds, so a subscriber that arrives
-//     after the terminal is answered with the retained terminal alone;
-//     the sample stream test pins that late-subscriber answer, and the
-//     landed look tests pin the broker's frame shape.
-//   - docs/api.md says the sample's job "is already done". The open starts
-//     the playback on the landed runner and answers; the runner's Result is
-//     a read, not a wait, and there is no wait to take without coupling a
-//     free route to a full paid queue. A client that reads the job in the
-//     instant after the 202 can still see running. The stream and the job
-//     read are the contract's shapes; the doc's word for the instant is
-//     the orchestrator's to settle.
+//   - The job is finished as it is created. The contract says a sample's
+//     job "is already done", and the shipped app reads a look exactly once
+//     - the render screen POSTs, navigates, asks and never asks again, and
+//     only the verdict screen follows a stream - so a sample that answered
+//     running would hang that screen. An open therefore writes its job row
+//     terminal into the job store itself and publishes the story's frames
+//     on the topic, taking no runner lease and entering no pipeline.
+//     TestTheSampleJobIsDoneTheMomentItIsCreated reads the look ONCE after
+//     the POST, with no polling and no stream, and gets the finished look;
+//     TestASampleStoryReachesAStreamSubscriber gets the frames. No sample
+//     test polls a job any more, and the late subscriber's answer - the
+//     retained terminal alone - stays pinned.
+//   - One story's measure frame deviates from the contract's wording, and
+//     the file says so: festival's picked fix names an analysis the sample
+//     set never read of its own picture, so the story holds no cached row
+//     and the stage says skipped. That is what the playback did - it
+//     measured nothing - whereas cached would claim a read that never
+//     happened and false would promise one that spends.
+//   - What a story may show is a rule, not a claim. A render is shown only
+//     when a check recording of it passed the change and the person, and
+//     the check's three facts are that recording's readings at the shipped
+//     check lines. The sample set records four render checks and every one
+//     of them is a family-function check of V04, so festival is the story
+//     that carries a genuine recorded render of its own selfie and does
+//     not show it: its chain names no check, holds no media id and reaches
+//     no screen.
 
 import (
+	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/nrynss/dresscode/internal/config"
 	"github.com/nrynss/dresscode/internal/domain"
 	"github.com/nrynss/dresscode/internal/pipeline"
 	"github.com/nrynss/keel/id"
 	"github.com/nrynss/keel/job"
+	jobsql "github.com/nrynss/keel/job/sqlitestore"
+	"github.com/nrynss/keel/wire"
 )
 
 // samplesDir is the samples data directory: the people and the cached
@@ -156,8 +176,7 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 			flags: []string{"festival-garment-festive", "festival-earring", "festival-necklace",
 				"festival-lip", "festival-hair", "festival-expression", "festival-light"},
 			fix: "festival-tie-hair", runnerUp: "festival-gold-chain",
-			shownFix: "festival-gold-chain", words: "chain, gold",
-			products: []string{"gold-chain"}},
+			products: []string{"festival-tie-hair"}},
 		{id: "sample-funeral", fixture: "sample-funeral-look", occasion: "funeral",
 			flags: []string{"funeral-garment-dark", "funeral-collar-plain", "funeral-beard-close",
 				"funeral-expression-still", "funeral-light-plain"},
@@ -170,8 +189,10 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 
 	for _, pin := range pins {
 		lookID, jobID := startSample(t, env, cookie, pin.id, pin.fixture)
-		env.waitDone(t, cookie, jobID)
 
+		// One read, no poll and no stream: the app's own path, which asks
+		// once and never again. The job was finished as it was written, so
+		// this read is the finished look.
 		lookRec := env.get(t, cookie, "/api/looks/"+lookID)
 		body := bodyOf(t, lookRec)
 		if got := body["occasion"]; got != pin.occasion {
@@ -301,7 +322,12 @@ func TestAJudgeStillHasTheWholeLeaseAfterTheSamples(t *testing.T) {
 
 	for _, sid := range sampleIDs {
 		_, jobID := startSample(t, env, cookie, sid, "")
-		env.waitDone(t, cookie, jobID)
+		// No poll and no stream: the sample's job is done the instant the
+		// open answers, which is what the contract's "already done" says
+		// and what the app's single read depends on.
+		if _, body := env.jobState(t, cookie, jobID); body["status"] != "done" {
+			t.Fatalf("%s: the job read %v, want done with no wait", sid, body)
+		}
 		if got := env.budget.Spent(); got != 0 {
 			t.Fatalf("%s spent %d units, want zero", sid, got)
 		}
@@ -360,38 +386,36 @@ func TestAJudgeStillHasTheWholeLeaseAfterTheSamples(t *testing.T) {
 }
 
 // TestTheSampleStreamAnswersLikeTheRecordedJob pins the frames a sample
-// publishes - the playback of the family story against its recorded
-// stream, the others' stage orders against the contract's frozen
-// sequence - and the late subscriber's answer: the retained terminal
-// alone.
+// plays - the story of the family recording against its recorded stream,
+// the others' stage orders against the contract's frozen sequence - and
+// the late subscriber's answer: the retained terminal alone.
 func TestTheSampleStreamAnswersLikeTheRecordedJob(t *testing.T) {
 	t.Parallel()
 	env := newLookEnv(t, earringAnswers(), 8, nil)
 	mountSamples(t, env)
 
-	// The playback of the family story, whole: the recorded frames in
+	// The story of the family recording, whole: the recorded frames in
 	// order, minus the two members a stream gains on the way out.
 	sm := env.srv.samplesOf()
 	st := sm.byID["sample-family"]
-	var frames []job.Progress
-	data, err := sm.playback(func(p job.Progress) { frames = append(frames, p) }, st, []string{"render-id"})
+	data, frames, err := sm.story(st, []string{"render-id"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	pinFrames(t, "job-events", frames, env.renames("look-id", "selfie-id", "render-id"))
 	var look map[string]any
 	if err := json.Unmarshal(data, &look); err != nil {
-		t.Fatalf("playback data %s: %v", data, err)
+		t.Fatalf("story data %s: %v", data, err)
 	}
 	if look["fix_id"] != "family-gold-jhumkas" || look["runner_up_id"] != "family-festive-top" {
-		t.Fatalf("playback pick %v %v", look["fix_id"], look["runner_up_id"])
+		t.Fatalf("story pick %v %v", look["fix_id"], look["runner_up_id"])
 	}
 	if look["suggestion_only"] != false || look["words"] != storyWords {
-		t.Fatalf("playback look words %v suggestion-only %v", look["words"], look["suggestion_only"])
+		t.Fatalf("story look words %v suggestion-only %v", look["words"], look["suggestion_only"])
 	}
 	shown, _ := look["shown"].(map[string]any)
 	if shown == nil || shown["media_id"] != "render-id" || shown["fix_id"] != "family-gold-jhumkas" {
-		t.Fatalf("playback shown %v", look["shown"])
+		t.Fatalf("story shown %v", look["shown"])
 	}
 
 	// The other four: the stage order the contract freezes, each on its
@@ -406,8 +430,8 @@ func TestTheSampleStreamAnswersLikeTheRecordedJob(t *testing.T) {
 		{"sample-funeral", []string{"judge", "pick", "measure", "render", "check", "render", "check", "shop"}},
 	} {
 		st := sm.byID[want.id]
-		var frames []job.Progress
-		if _, err := sm.playback(func(p job.Progress) { frames = append(frames, p) }, st, make([]string, len(st.Attempts))); err != nil {
+		_, frames, err := sm.story(st, make([]string, len(st.Attempts)))
+		if err != nil {
 			t.Fatal(err)
 		}
 		got := make([]string, 0, len(frames))
@@ -421,13 +445,134 @@ func TestTheSampleStreamAnswersLikeTheRecordedJob(t *testing.T) {
 
 	// A subscriber that arrives after the open reads the retained
 	// terminal, the broker's answer to a cursorless subscriber, and the
-	// job state reads done beside it.
+	// job state reads done beside it. No wait comes first: the story was
+	// played before the 202 was written.
 	_, cookie := bootUser(t, env.handler)
 	_, jobID := startSample(t, env, cookie, "sample-family", "")
-	env.waitDone(t, cookie, jobID)
 	streamFrames, _, _ := env.readFrames(t, cookie, jobID, nil)
 	if len(streamFrames) != 1 || streamFrames[0].Name != "done" {
 		t.Fatalf("a late subscriber read %v, want the terminal alone", streamFrames)
+	}
+	if _, body := env.jobState(t, cookie, jobID); body["status"] != "done" {
+		t.Fatalf("the job read %v, want done", body)
+	}
+}
+
+// TestASampleStoryReachesAStreamSubscriber is the other half of the born-
+// terminal mechanism: a subscriber that is listening when the story is
+// published receives every stage frame and then the terminal, the way it
+// would for a look that ran. It cannot be the route's own stream: the
+// open mints its id inside itself, so no client can hold the topic before
+// the story is played, which is why the frames are pinned on the publish
+// path the route uses, on the route's own broker.
+func TestASampleStoryReachesAStreamSubscriber(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	sm := env.srv.samplesOf()
+	rt := env.srv.looksOf()
+
+	st := sm.byID["sample-festival"]
+	data, frames, err := sm.story(st, make([]string, len(st.Attempts)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobID := mustID(t)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	sub := rt.broker.Subscribe(ctx, job.Topic(jobID))
+	defer sub.Cancel()
+	if err := sm.land(ctx, jobID, data, frames); err != nil {
+		t.Fatal(err)
+	}
+
+	// The stages, in the story's order, each one Keel's progress payload
+	// with this job's id and the stage's own detail; then the terminal.
+	var stages []string
+	for {
+		select {
+		case event, ok := <-sub.Events:
+			if !ok {
+				t.Fatalf("the topic closed before the terminal: %v", stages)
+			}
+			if event.Terminal {
+				if event.Name != string(job.StatusDone) {
+					t.Fatalf("the terminal is %q, want done", event.Name)
+				}
+				status, ok := event.Data.(wire.StatusEvent)
+				if !ok {
+					t.Fatalf("the terminal payload is %T, want wire.StatusEvent", event.Data)
+				}
+				if status.JobID != jobID || status.Status != string(job.StatusDone) {
+					t.Fatalf("the terminal payload %v", status)
+				}
+				if strings.Join(stages, ",") != "judge,pick,measure,render,check,render,check,shop" {
+					t.Fatalf("a listening subscriber read stages %v", stages)
+				}
+				return
+			}
+			if event.Name != wire.EventProgress {
+				t.Fatalf("frame %q, want progress", event.Name)
+			}
+			progress, ok := event.Data.(wire.ProgressEvent)
+			if !ok {
+				t.Fatalf("the progress payload is %T, want wire.ProgressEvent", event.Data)
+			}
+			if progress.JobID != jobID || progress.Stage == "" || len(progress.Detail) == 0 {
+				t.Fatalf("the progress payload %v", progress)
+			}
+			stages = append(stages, progress.Stage)
+		case <-time.After(10 * time.Second):
+			t.Fatalf("the story never reached its subscriber: %v", stages)
+		}
+	}
+}
+
+// TestTheSampleJobIsDoneTheMomentItIsCreated is the app's own path, with
+// nothing waited for: the POST, then one read of the look and one of the
+// job, no polling and no stream. The finished look is there at once, with
+// ready true, and the job that carries it is done - which is the only
+// answer the render screen can survive, because it asks once.
+func TestTheSampleJobIsDoneTheMomentItIsCreated(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	_, cookie := bootUser(t, env.handler)
+	env.productPictures(t, "gold-jhumkas")
+
+	lookID, jobID := startSample(t, env, cookie, "sample-family", "")
+	body := bodyOf(t, env.get(t, cookie, "/api/looks/"+lookID))
+	if ready, _ := body["ready"].(bool); !ready {
+		t.Fatalf("the first read of the look was not the finished look: %v", body)
+	}
+	if shown, _ := body["shown_render"].(map[string]any); shown == nil {
+		t.Fatalf("the finished look carries no shown render: %v", body)
+	}
+	_, jobBody := env.jobState(t, cookie, jobID)
+	if jobBody["status"] != "done" || jobBody["stage"] != "shop" {
+		t.Fatalf("the first read of the job %v, want done at shop", jobBody)
+	}
+
+	// The row was never anything but terminal, so a restart's recovery
+	// finds no playback unfinished: the sample opens leave no running and
+	// no queued row behind them.
+	for _, sid := range sampleIDs {
+		if sid == "sample-family" {
+			continue
+		}
+		startSample(t, env, cookie, sid, "")
+	}
+	var unfinished int
+	if err := env.srv.db.Reader().QueryRow(
+		`SELECT COUNT(*) FROM jobs WHERE status NOT IN ('done', 'error', 'cancelled', 'interrupted')`).
+		Scan(&unfinished); err != nil {
+		t.Fatal(err)
+	}
+	if unfinished != 0 {
+		t.Fatalf("%d unfinished job rows, want none: a sample job is born finished", unfinished)
+	}
+	if spent := env.budget.Spent(); spent != 0 {
+		t.Fatalf("the meter settled %d units, want zero", spent)
 	}
 }
 
@@ -461,8 +606,7 @@ func TestSamplesAreNotSpendingRoutes(t *testing.T) {
 		strings.NewReader(`{"occasion":"family-function","selfie_id":"`+selfieID+`"}`), headerJSON)
 	assertErr(t, refused, http.StatusForbidden, "samples_only", "Only samples are open.")
 
-	lookID, jobID := startSample(t, env, cookie, "sample-family", "")
-	env.waitDone(t, cookie, jobID)
+	lookID, _ := startSample(t, env, cookie, "sample-family", "")
 	body := bodyOf(t, env.get(t, cookie, "/api/looks/"+lookID))
 	if ready, _ := body["ready"].(bool); !ready {
 		t.Fatalf("the sample did not finish under samples_only: %v", body)
@@ -501,16 +645,24 @@ func TestSamplesNeedTheLookRoutes(t *testing.T) {
 
 // TestEveryCachedStoryIsWhatTheRecordingsSay is the honesty proof. Each
 // cached file is read again on its own, decoded into the type the mount
-// decodes it into, and every value it carries is checked against the
-// recording or the dataset it names: the miss list against the evaluation
-// ground truth AND against what the shipped judge lines read out of the
-// recorded Clef answer, the biggest issue against that same recording, the
-// shown render against the YouCam flow that made it (including the photo
-// it uploaded), the look answers against the fix's own declared
-// vocabulary, the analysis row against the recorded face-attr read and the
-// picture that read was of, and the suggestion-only stories against the
-// absence of any recorded render of their variant. A value no recording
-// supports fails here by name.
+// decodes it into, and every value it carries is traced to the recording
+// or the dataset it names, or derived by a rule the file states and this
+// test re-executes: the miss list against the evaluation ground truth AND
+// against what the shipped judge lines read out of the recorded Clef
+// answer, the biggest issue against that same recording, the runner-up
+// against the rule the source states, the shown render against the YouCam
+// flow that made it (including the photo it uploaded) AND against the
+// recorded check that showed it - the occasion it was read for, the
+// original it read, the criterion it was asked about, the model it ran on,
+// its three gate readings at the shipped check lines and its look answers -
+// and a story that shows nothing against the absence of any recorded check
+// that could have shown it. The three check booleans are read out of the
+// recording here, not trusted from the file: a shown render whose facts do
+// not equal its recording's readings at the shipped lines, or whose shown
+// flag is not what the discard rule makes of them, fails by name. So does a
+// story that claims a render no check of it was ever recorded, and so does
+// a reading the analysis cache could not hold. A value no recording
+// supports and no stated rule derives fails here.
 func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 	t.Parallel()
 	env := newLookEnv(t, earringAnswers(), 8, nil)
@@ -520,9 +672,12 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 		t.Fatalf("%d stories loaded, want %d", len(sm.list), len(sampleIDs))
 	}
 	root := repoRoot(t)
-	lines := testSettings().Judge
+	settings := testSettings()
+	lines := settings.Judge
+	checkLines := settings.Check
 	misses := groundTruthMisses(t, root)
 	youcamResults := youcamResultFiles(t, root)
+	checks := recordedChecks(t, root)
 
 	for _, sid := range sampleIDs {
 		// (a) The file decodes into the type the mount decodes it into,
@@ -579,8 +734,39 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 			t.Fatalf("%s: issue %q, the recording chose %q", sid, dec.Judge.Issue, got)
 		}
 
-		// (e) The analysis rows are recorded reads, and each names the
-		// picture the provider actually read.
+		// (e) The runner-up. Three stories state one rule and this test
+		// re-executes it against the judge recording's own readings; the
+		// fourth names the contract's recorded example instead, and is
+		// traced there. A story with no pick names neither.
+		flagged := make(map[string]bool, len(dec.Judge.Flags))
+		for _, fid := range dec.Judge.Flags {
+			flagged[fid] = true
+		}
+		switch sid {
+		case "sample-family":
+			fixture := fixture(t, "look")
+			var body struct {
+				Fix struct {
+					ID string `json:"id"`
+				} `json:"fix"`
+				RunnerUp string `json:"runner_up"`
+			}
+			if err := json.Unmarshal(fixture.Body, &body); err != nil {
+				t.Fatalf("sample-family: api/look.json: %v", err)
+			}
+			if dec.Pick.Fix != body.Fix.ID || dec.Pick.RunnerUp != body.RunnerUp {
+				t.Fatalf("sample-family: the pair is %s/%s, the recorded example says %s/%s",
+					dec.Pick.Fix, dec.Pick.RunnerUp, body.Fix.ID, body.RunnerUp)
+			}
+		default:
+			if want := derivedRunnerUp(occ, answers, flagged, dec.Pick.Fix); dec.Pick.RunnerUp != want {
+				t.Fatalf("%s: runner-up %q, the rule the file states gives %q", sid, dec.Pick.RunnerUp, want)
+			}
+		}
+
+		// (f) The analysis rows are recorded reads, each naming the picture
+		// the provider actually read - and that picture is the cache key, so
+		// it must be this story's own selfie or the row cannot be here.
 		for _, a := range dec.Analysis {
 			uploaded, shape := recordedFaceAttrRead(t, root)
 			if a.FaceShape != shape {
@@ -592,37 +778,133 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 			if filepath.Dir(a.ReadFrom) != filepath.Dir(dec.SelfiePath) {
 				t.Fatalf("%s: %s read %s, another person's face", sid, a.Task, a.ReadFrom)
 			}
+			if a.ReadFrom != dec.SelfiePath {
+				t.Fatalf("%s: %s read %s, not this story's own %s, and the cache is keyed by photo hash, so this story holds no reading of itself",
+					sid, a.Task, a.ReadFrom, dec.SelfiePath)
+			}
+		}
+		// The measure frame's rule, stated where it deviates: a story says
+		// cached when it holds a reading and skipped when it holds none, and
+		// it holds a reading only of its own picture. A pick that measures a
+		// task no recording read of this selfie therefore names no row, and
+		// its file must say the measure stage says skipped.
+		if pick := fixByID(occ, dec.Pick.Fix); pick != nil && len(pick.Analysis) > len(dec.Analysis) {
+			if !strings.Contains(dec.Source, "skipped") {
+				t.Fatalf("%s: fix %s measures %d analyses and the cache holds %d, and the file never says its measure stage says skipped",
+					sid, dec.Pick.Fix, len(pick.Analysis), len(dec.Analysis))
+			}
 		}
 
-		// (f) and (g). A shown attempt is a real recorded render of this
-		// sample's own selfie, its look answers are the fix's declared
-		// vocabulary, and a discard carries no check at all. A story with
-		// no shown attempt has no recorded render of its variant to show.
+		// (g) and (h). Every picture a story names - shown or not - is a
+		// recorded render of this sample's own selfie. A shown one is shown
+		// because a recorded check of it showed it: the check is the
+		// recording the story names, it was read for this occasion, of this
+		// selfie, about a criterion this fix serves, on the shipped check
+		// model, and the story's three facts and its shown flag are that
+		// recording's readings at the shipped lines. A story with no shown
+		// attempt has no recorded check that could have shown one.
 		var shown int
 		for i, at := range dec.Attempts {
-			if at.Shown {
-				shown++
-				fix := fixByID(occ, at.Fix)
-				if fix == nil {
-					t.Fatalf("%s: no fix %s", sid, at.Fix)
+			if at.Image == "" {
+				if at.Check != nil {
+					t.Fatalf("%s: attempt %d names no render and a check all the same", sid, i)
 				}
-				if !reflect.DeepEqual(at.Check.Attributes, declaredLook(fix)) {
-					t.Fatalf("%s: %s answers %v, the fix declares %v",
-						sid, at.Fix, at.Check.Attributes, declaredLook(fix))
+				continue
+			}
+			if !youcamResults[filepath.Base(at.Image)] {
+				t.Fatalf("%s: attempt %d names %s, which no YouCam recording saved", sid, i, at.Image)
+			}
+			if src := youcamSourceOf(t, root, at.Image); src != dec.SelfiePath {
+				t.Fatalf("%s: the render %s came from %q, not this sample's selfie %q",
+					sid, at.Image, src, dec.SelfiePath)
+			}
+			if !at.Shown {
+				// Evidence of a pass the check did not keep: no media id,
+				// no words, and no answer a check never gave.
+				if at.Check != nil {
+					t.Fatalf("%s: attempt %d: a discard carries check values no check ever gave", sid, i)
 				}
-				src := youcamSourceOf(t, root, at.Image)
-				if src != dec.SelfiePath {
-					t.Fatalf("%s: the render of %s came from %q, not this sample's selfie %q",
-						sid, at.Image, src, dec.SelfiePath)
+				continue
+			}
+			shown++
+			fix := fixByID(occ, at.Fix)
+			if fix == nil {
+				t.Fatalf("%s: no fix %s", sid, at.Fix)
+			}
+			if at.Check == nil {
+				t.Fatalf("%s: attempt %d is shown with no check to show it", sid, i)
+			}
+			if !reflect.DeepEqual(at.Check.Attributes, declaredLook(fix)) {
+				t.Fatalf("%s: %s answers %v, the fix declares %v",
+					sid, at.Fix, at.Check.Attributes, declaredLook(fix))
+			}
+			rc, ok := checks[at.Check.Recording]
+			if !ok {
+				t.Fatalf("%s: attempt %d is shown on %q, which is not a recorded render check",
+					sid, i, at.Check.Recording)
+			}
+			if rc.occasion != dec.Occasion {
+				t.Fatalf("%s: attempt %d stands on %s, a check of the %s occasion, not of %s",
+					sid, i, rc.name, rc.occasion, dec.Occasion)
+			}
+			if rc.original != dec.SelfiePath {
+				t.Fatalf("%s: attempt %d stands on %s, which read %s as the original, not this sample's own %s",
+					sid, i, rc.name, rc.original, dec.SelfiePath)
+			}
+			if rc.model != checkLines.Model {
+				t.Fatalf("%s: attempt %d stands on %s, read by %s, while the shipped check model is %s",
+					sid, i, rc.name, rc.model, checkLines.Model)
+			}
+			if !addresses(occ, at.Fix, map[string]bool{rc.criterion: true}) {
+				t.Fatalf("%s: attempt %d stands on %s, a check about %s, which fix %s does not serve",
+					sid, i, rc.name, rc.criterion, at.Fix)
+			}
+			// The three facts, read out of the recording at the shipped
+			// lines, and the discard rule applied to them.
+			changes := [3]struct {
+				id    string
+				line  float64
+				value bool
+			}{
+				{"change_made", checkLines.ChangeMade, at.Check.ChangeMade},
+				{"same_person", checkLines.SamePerson, at.Check.SamePerson},
+				{"criterion_met", checkLines.CriterionMet, at.Check.CriterionMet},
+			}
+			facts := map[string]bool{}
+			for _, one := range changes {
+				noul, ok := rc.Gates[one.id]
+				if !ok {
+					t.Fatalf("%s: attempt %d: %s answers no %s", sid, i, rc.name, one.id)
 				}
-			} else if at.Check != nil {
-				t.Fatalf("%s: attempt %d: a discard carries check values no check ever gave", sid, i)
+				met := noul >= one.line
+				facts[one.id] = met
+				if one.value != met {
+					t.Fatalf("%s: attempt %d: %s says %s is %v; %s reads %.4f against the shipped line %.5f, which is %v",
+						sid, i, sid, one.id, one.value, rc.name, noul, one.line, met)
+				}
+			}
+			if want := facts["change_made"] && facts["same_person"]; at.Shown != want {
+				t.Fatalf("%s: attempt %d: the story shows it %v, the discard rule on %s reads %v",
+					sid, i, at.Shown, rc.name, want)
+			}
+			for _, attr := range at.Check.Attributes {
+				choice, ok := rc.Look[attr.ID]
+				if !ok {
+					t.Fatalf("%s: attempt %d: %s answers no look.%s", sid, i, rc.name, attr.ID)
+				}
+				if choice != attr.Value {
+					t.Fatalf("%s: attempt %d: the story says %s is %q, %s read %q",
+						sid, i, attr.ID, attr.Value, rc.name, choice)
+				}
 			}
 		}
 		if shown == 0 {
-			for name := range youcamResults {
-				if strings.Contains(name, dec.Variant) {
-					t.Fatalf("%s: the story shows no render, but %s records one of %s", sid, name, dec.Variant)
+			for _, rc := range checks {
+				if rc.occasion != dec.Occasion || rc.original != dec.SelfiePath || rc.model != checkLines.Model {
+					continue
+				}
+				if rc.Gates["change_made"] >= checkLines.ChangeMade && rc.Gates["same_person"] >= checkLines.SamePerson {
+					t.Fatalf("%s: the story shows no render, but %s reads a render of it as shown", sid, rc.name)
 				}
 			}
 		}
@@ -658,6 +940,18 @@ func TestCachedRulesRefuseAnInventedStory(t *testing.T) {
 			  "pick":{"fix":"date-tie-hair","runner_up":""},
 			  "analysis":[{"task":"face-attr-analysis","face_shape":"Round","read_from":"man/V09-interview.jpg"}]}`,
 			`another person's face`},
+		{"a face read of another photo of the same person",
+			`{"kind":"sample-cache","id":"sample-date","source":"s","occasion":"date","name":"Date","variant":"V03","selfie":"woman/V03-date.jpg",
+			  "judge":{"flags":["date-hair-clear","date-lip-clear"],"issue":"date-lip-clear"},
+			  "pick":{"fix":"date-tie-hair","runner_up":""},
+			  "analysis":[{"task":"face-attr-analysis","face_shape":"Round","read_from":"woman/V05-family-function.jpg"}]}`,
+			`which is not this sample's own picture`},
+		{"a render naming a picture outside the two roots",
+			`{"kind":"sample-cache","id":"sample-date","source":"s","occasion":"date","name":"Date","variant":"V03","selfie":"woman/V03-date.jpg",
+			  "judge":{"flags":["date-hair-clear"],"issue":"date-hair-clear"},
+			  "pick":{"fix":"date-tie-hair","runner_up":""},
+			  "attempts":[{"fix":"date-tie-hair","attempt":"fix","shown":false,"image":"../outside.jpg"}]}`,
+			`is outside the sample roots`},
 		{"a discard that carries a check",
 			`{"kind":"sample-cache","id":"sample-date","source":"s","occasion":"date","name":"Date","variant":"V03","selfie":"woman/V03-date.jpg",
 			  "judge":{"flags":["date-lip-clear"],"issue":"date-lip-clear"},
@@ -665,12 +959,20 @@ func TestCachedRulesRefuseAnInventedStory(t *testing.T) {
 			  "attempts":[{"fix":"date-nude-lip","attempt":"fix","shown":false,
 			               "check":{"change_made":true,"same_person":false,"criterion_met":false,"attributes":[]}}]}`,
 			`names no check`},
+		{"a shown render whose check names no recording",
+			`{"kind":"sample-cache","id":"sample-family","source":"s","occasion":"family-function","name":"Family function","variant":"V04","selfie":"woman/V04-family-function.jpg",
+			  "judge":{"flags":["family-earring-festive"],"issue":"family-earring-festive"},
+			  "pick":{"fix":"family-gold-jhumkas","runner_up":""},
+			  "attempts":[{"fix":"family-gold-jhumkas","attempt":"fix","shown":true,"image":"woman/V05-family-function.jpg",
+			               "check":{"change_made":true,"same_person":true,"criterion_met":true,
+			                        "attributes":[{"id":"jewellery","value":"jhumkas"},{"id":"jewellery_colour","value":"gold"}]}}]}`,
+			`the check names no recording`},
 		{"a shown render whose check says it was discarded",
 			`{"kind":"sample-cache","id":"sample-family","source":"s","occasion":"family-function","name":"Family function","variant":"V04","selfie":"woman/V04-family-function.jpg",
 			  "judge":{"flags":["family-earring-festive"],"issue":"family-earring-festive"},
 			  "pick":{"fix":"family-gold-jhumkas","runner_up":""},
 			  "attempts":[{"fix":"family-gold-jhumkas","attempt":"fix","shown":true,"image":"woman/V05-family-function.jpg",
-			               "check":{"change_made":false,"same_person":true,"criterion_met":true,
+			               "check":{"recording":"check-clef-V04-to-V05","change_made":false,"same_person":true,"criterion_met":true,
 			                        "attributes":[{"id":"jewellery","value":"jhumkas"},{"id":"jewellery_colour","value":"gold"}]}}]}`,
 			`passed the change and the person`},
 		{"a look answer the fix does not change",
@@ -678,7 +980,7 @@ func TestCachedRulesRefuseAnInventedStory(t *testing.T) {
 			  "judge":{"flags":["family-earring-festive"],"issue":"family-earring-festive"},
 			  "pick":{"fix":"family-gold-jhumkas","runner_up":""},
 			  "attempts":[{"fix":"family-gold-jhumkas","attempt":"fix","shown":true,"image":"woman/V05-family-function.jpg",
-			               "check":{"change_made":true,"same_person":true,"criterion_met":true,
+			               "check":{"recording":"check-clef-V04-to-V05","change_made":true,"same_person":true,"criterion_met":true,
 			                        "attributes":[{"id":"lip_colour","value":"red"},{"id":"jewellery_colour","value":"gold"}]}}]}`,
 			`which fix family-gold-jhumkas does not change`},
 	} {
@@ -694,15 +996,13 @@ func TestCachedRulesRefuseAnInventedStory(t *testing.T) {
 // TestASamplePlaybackNeverResumesIntoThePaidPipeline holds the one claim
 // that keeps a restart from spending: a playback is a look job with no
 // snapshot, and the landed resume hook refuses a look it cannot rebuild,
-// so a killed sample is interrupted and never re-run through the paid
-// pipeline.
+// so a sample is interrupted and never re-run through the paid pipeline.
 func TestASamplePlaybackNeverResumesIntoThePaidPipeline(t *testing.T) {
 	t.Parallel()
 	env := newLookEnv(t, earringAnswers(), 8, nil)
 	mountSamples(t, env)
 	_, cookie := bootUser(t, env.handler)
 	lookID, jobID := startSample(t, env, cookie, "sample-family", "")
-	env.waitDone(t, cookie, jobID)
 
 	kind := lookKind(env.srv.looksOf())
 	if _, err := kind.Resume(job.Record{ID: jobID, RootID: lookID, Kind: pipeline.KindName}); err == nil {
@@ -712,6 +1012,71 @@ func TestASamplePlaybackNeverResumesIntoThePaidPipeline(t *testing.T) {
 	}
 	if spent := env.budget.Spent(); spent != 0 {
 		t.Fatalf("the meter settled %d units, want zero", spent)
+	}
+}
+
+// TestARestartInterruptsAnUnfinishedPlaybackRow walks the restart arm the
+// born-finished job leaves untravelled. A look-kind row that is running
+// with no snapshot is the shape an open would have left behind had it
+// started a job on the runner instead of landing one; a restart interrupts
+// it, the resume hook refuses it, and no replacement attempt is written, so
+// the paid pipeline runs for a sample neither now nor after a death.
+func TestARestartInterruptsAnUnfinishedPlaybackRow(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	ctx := t.Context()
+	rt := env.srv.looksOf()
+
+	jobID := mustID(t)
+	if _, err := env.srv.db.Writer().ExecContext(ctx,
+		`INSERT INTO jobs (id, kind, status, attempt, parent_id, root_id, progress, updated_at)
+		 VALUES (?, ?, 'running', 1, '', ?, '', 1)`,
+		jobID, pipeline.KindName, jobID); err != nil {
+		t.Fatalf("seed the unfinished playback: %v", err)
+	}
+
+	// The restart, the way the process runs one: a fresh store handle and a
+	// fresh runner over the same table, the same broker and the landed look
+	// kind - the idempotent kind with the resume hook, not a watered-down
+	// one.
+	store, err := jobsql.Open(ctx, jobsql.Config{DB: env.srv.db})
+	if err != nil {
+		t.Fatal(err)
+	}
+	kinds := map[string]job.Kind{pipeline.KindName: lookKind(rt)}
+	if _, err := job.Open(ctx, job.Config{
+		Broker: rt.broker,
+		Store:  kindStore{Store: store, kinds: kinds},
+		Kinds:  kinds,
+		Log:    slog.New(slog.DiscardHandler),
+		Now:    time.Now,
+	}); err != nil {
+		t.Fatalf("restart: %v", err)
+	}
+
+	var status string
+	var attempts int
+	if err := env.srv.db.Reader().QueryRowContext(ctx,
+		`SELECT status FROM jobs WHERE id = ?`, jobID).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status != "interrupted" {
+		t.Fatalf("the unfinished playback row is %s after a restart, want interrupted", status)
+	}
+	if err := env.srv.db.Reader().QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM jobs WHERE root_id = ?`, jobID).Scan(&attempts); err != nil {
+		t.Fatal(err)
+	}
+	if attempts != 1 {
+		t.Fatalf("%d attempts of the unfinished playback, want one: no replacement ran", attempts)
+	}
+	if spent := env.budget.Spent(); spent != 0 {
+		t.Fatalf("the meter settled %d units, want zero", spent)
+	}
+	creates, uploads, polls, fetches := env.cam.count()
+	if creates != 0 || uploads != 0 || polls != 0 || fetches != 0 {
+		t.Fatalf("the restart spent youcam calls %d %d %d %d, want all zero", creates, uploads, polls, fetches)
 	}
 }
 
@@ -854,7 +1219,151 @@ func recordedIssue(t *testing.T, root, variant, occasion string) string {
 	return one.Choice
 }
 
+// recCheck is one recorded render check read out of a Clef check
+// recording: the occasion it was read for, the original picture it read,
+// the criterion it was asked about, the model it ran on, the three gate
+// nouls it answered and the look choices it answered, in the attribute's
+// own id. A shown render's three facts and its look answers are this
+// recording's readings at the shipped check lines, not the story's claim.
+type recCheck struct {
+	name      string
+	occasion  string
+	original  string
+	model     string
+	criterion string
+	Gates     map[string]float64
+	Look      map[string]string
+}
+
+// recordedChecks builds the table of recorded render checks from every
+// check-*.json under testdata/clef, keyed by the recording name a story's
+// check carries. The sample set records four render checks, and every one
+// of them is a family-function check of V04 - two on the shipped check
+// model and two on clef-flash - so the honesty test reads each shown
+// render's facts back out of the recording its check names, at the shipped
+// check lines, and refuses a story whose facts disagree with it or whose
+// shown flag is not what the discard rule makes of them.
+func recordedChecks(t *testing.T, root string) map[string]recCheck {
+	t.Helper()
+	names, err := filepath.Glob(filepath.Join(root, "testdata", "clef", "check-*.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(names) != 4 {
+		t.Fatalf("%d recorded render checks, want the four the sample set records", len(names))
+	}
+	out := make(map[string]recCheck, len(names))
+	for _, path := range names {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("read check %s: %v", path, err)
+		}
+		var rec struct {
+			Exchange string `json:"exchange"`
+			Request  struct {
+				Body struct {
+					Model  string `json:"model"`
+					Images []struct {
+						File string `json:"file"`
+					} `json:"images"`
+					State struct {
+						Occasion  string `json:"occasion"`
+						Criterion string `json:"criterion"`
+					} `json:"state"`
+				} `json:"body"`
+			} `json:"request"`
+			Response struct {
+				Body struct {
+					Result struct {
+						Answers map[string]struct {
+							Noul   *float64 `json:"noul"`
+							Choice string   `json:"choice"`
+						} `json:"answers"`
+					} `json:"result"`
+				} `json:"body"`
+			} `json:"response"`
+		}
+		if err := json.Unmarshal(raw, &rec); err != nil {
+			t.Fatalf("decode check %s: %v", path, err)
+		}
+		rc := recCheck{
+			name:      rec.Exchange,
+			occasion:  rec.Request.Body.State.Occasion,
+			model:     rec.Request.Body.Model,
+			criterion: rec.Request.Body.State.Criterion,
+			Gates:     map[string]float64{},
+			Look:      map[string]string{},
+		}
+		if len(rec.Request.Body.Images) > 0 {
+			// The original is the first picture, the render the second: a
+			// check reads the render against this sample's own selfie, so
+			// the first is the selfie the story must name.
+			rc.original = strings.TrimPrefix(rec.Request.Body.Images[0].File, "../samples/")
+		}
+		for qid, one := range rec.Response.Body.Result.Answers {
+			if attr, isLook := strings.CutPrefix(qid, "look."); isLook {
+				rc.Look[attr] = one.Choice
+				continue
+			}
+			if one.Noul != nil {
+				rc.Gates[qid] = *one.Noul
+			}
+		}
+		out[rec.Exchange] = rc
+	}
+	return out
+}
+
+// derivedRunnerUp re-executes the rule the date, festival and funeral
+// stories state in their source for the runner-up no recording pairs: the
+// fix of the lowest-read flagged criterion the pick does not address and
+// that some fix on the menu addresses. A flagged criterion no fix on the
+// menu serves (funeral's expression-still and light-plain) is skipped, for
+// a runner-up that cannot render is no runner-up; a criterion the pick
+// already answers is skipped too. The read that decides is the recording's
+// own noul, so a threshold edit that reorders the flags reorders the pick.
+// A story with no pick and no flag names no runner-up, and the empty fix
+// says so.
+func derivedRunnerUp(occ *domain.Occasion, answers map[string]float64, flagged map[string]bool, fix string) string {
+	picked := fixByID(occ, fix)
+	serves := func(criterionID string) bool {
+		if picked == nil {
+			return false
+		}
+		return slices.Contains(picked.Criteria, criterionID)
+	}
+	// theFix is the menu fix that renders a criterion, the first to declare
+	// it: a criterion no fix names has no runner-up to reach.
+	theFix := func(criterionID string) string {
+		for i := range occ.Fixes {
+			if slices.Contains(occ.Fixes[i].Criteria, criterionID) {
+				return occ.Fixes[i].ID
+			}
+		}
+		return ""
+	}
+	bestFix, bestNoul := "", 0.0
+	for _, c := range occ.Criteria {
+		if !flagged[c.ID] || serves(c.ID) {
+			continue
+		}
+		noul, read := answers[c.ID]
+		if !read {
+			continue
+		}
+		fid := theFix(c.ID)
+		if fid == "" {
+			continue
+		}
+		if bestFix == "" || noul < bestNoul {
+			bestFix, bestNoul = fid, noul
+		}
+	}
+	return bestFix
+}
+
 // recordedFaceAttrRead is the recorded face-attr flow: the sample picture
+
 // it uploaded and the face shape it answered.
 func recordedFaceAttrRead(t *testing.T, root string) (uploaded, shape string) {
 	t.Helper()

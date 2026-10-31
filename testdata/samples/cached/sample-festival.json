@@ -4,7 +4,7 @@
   "name": "Festival",
   "occasion": "festival",
   "variant": "V14",
-  "source": "testdata/eval/ground-truth.json V14 (the miss list), which is also what the shipped judge lines read out of testdata/clef/judge-V14-festival.json; the biggest issue is that recording's own choice. The pick is the recorded issue's fix. Its face-shape row is the recorded face-attr read of the same sample person, not of this selfie: testdata/youcam/face-attr-upload-src.json uploaded woman/V06-family-function.jpg and testdata/youcam/http-face-attr-poll.json answered faceshape Oval; no face-attr read of V14 was ever made, and a sample never makes one. The runner-up's render is the genuine recorded necklace try-on of V14 (testdata/youcam/necklace-fetch.json, results/necklace-chain-V14.jpg), which the check showed after the first pass was discarded; its look answers are that fix's own declared vocabulary in testdata/occasions/festival.json. A discarded pass carries no check values, because none was recorded for it.",
+  "source": "testdata/eval/ground-truth.json V14 (the miss list), which is also what the shipped judge lines read out of testdata/clef/judge-V14-festival.json; the biggest issue is that recording's own choice. The pick is the fix of the recorded issue. The runner-up is the fix of the lowest-read flagged criterion the pick does not address and that some fix on the menu addresses: festival-necklace at 0.0304, whose fix is festival-gold-chain; the same rule gives date-tie-hair for V03 and funeral-short-beard for V18. Both passes are discards, and the story shows no render: no render check of the festival occasion was ever recorded, and a render is shown only when a recorded check of it passes the change and the person, so nothing here can be shown. Its runner-up picture is the genuine recorded necklace try-on of this selfie (testdata/youcam/necklace-fetch.json saved testdata/youcam/results/necklace-chain-V14.jpg, and testdata/youcam/necklace-upload-src.json uploaded woman/V14-festival.jpg to make it); it is named as evidence that the pass ran and what it made, and nothing more - no check of it exists, so no frame carries it, it is registered in no mediastore and it reaches no screen. The story holds no cached reading: the one recorded face-attr read is of woman/V06-family-function.jpg (testdata/youcam/face-attr-upload-src.json, answered Oval by testdata/youcam/http-face-attr-poll.json), and the analysis cache is keyed by photo hash, so a reading of V06 is not a reading of V14; a sample never measures, so festival's hair pass names no analysis and its measure stage says skipped. A discarded pass carries no check values, because none was recorded for it.",
   "selfie": "woman/V14-festival.jpg",
   "judge": {
     "flags": [
@@ -22,13 +22,7 @@
     "fix": "festival-tie-hair",
     "runner_up": "festival-gold-chain"
   },
-  "analysis": [
-    {
-      "task": "face-attr-analysis",
-      "face_shape": "Oval",
-      "read_from": "woman/V06-family-function.jpg"
-    }
-  ],
+  "analysis": [],
   "attempts": [
     {
       "fix": "festival-tie-hair",
@@ -38,17 +32,8 @@
     {
       "fix": "festival-gold-chain",
       "attempt": "runner_up",
-      "shown": true,
-      "image": "../youcam/results/necklace-chain-V14.jpg",
-      "check": {
-        "change_made": true,
-        "same_person": true,
-        "criterion_met": true,
-        "attributes": [
-          {"id": "necklace", "value": "chain"},
-          {"id": "necklace_colour", "value": "gold"}
-        ]
-      }
+      "shown": false,
+      "image": "../youcam/results/necklace-chain-V14.jpg"
     }
   ]
 }

@@ -1,13 +1,12 @@
 // Samples is this file: the five sample looks a judge opens for free.
 // GET /api/samples lists them; POST /api/samples/{id}/looks opens one.
 // An open spends nothing: the sample's selfie is registered into the
-// judge's own mediastore, the analysis rows its fix measures pre-exist
-// in the analysis cache, the render its story showed is already a
-// mediastore blob, and the look's job is a playback of the recorded
-// stage state - the flags, the pick, the measure answer, the render the
-// check kept, the shop list - so the judge's stream, verdict, renders
-// and shop answer exactly as the recorded fixtures do, with no model
-// ask, no YouCam call and no unit settled. Nothing here dials.
+// judge's own mediastore, the render its story showed is already a
+// mediastore blob, and the look is the story its stages recorded - the
+// flags, the pick, the measure answer, the render the check kept, the
+// shop list - so the judge's stream, verdict, renders and shop answer
+// exactly as the recorded fixtures do, with no model ask, no YouCam call
+// and no unit settled. Nothing here dials.
 //
 // The route is deliberately not a spending route: it takes no gate
 // token, no judge-lease seat and no budget reservation, so a judge who
@@ -20,10 +19,28 @@
 // rows are derived from it here, at open, under the judge's own user id
 // - the id every landed look route scopes its reads by - so account
 // deletion, look deletion and the user-scoped reads all treat an opened
-// sample like any other look. A playback job is a look-kind job with no
-// snapshot: the resume hook refuses a look with no snapshot, so a
-// restart interrupts a playback that had not finished and never runs
-// the paid pipeline in its place.
+// sample like any other look.
+//
+// The job is born finished. The contract freezes a sample's job read as
+// "already done" (docs/api.md), and the shipped app reads a look exactly
+// once: the render screen POSTs, navigates, asks for the look and never
+// asks again - it has no stream follower of its own, only the verdict
+// screen does - so a look that answered running would sit there pending
+// forever with nothing left to poll. An open therefore does not start a
+// playback on the looks runner at all. It plays the story into a buffer,
+// writes the job row straight into the same job store the runner uses,
+// terminal and carrying the finished look, and then publishes the
+// buffered frames and the terminal on the job's topic itself. That
+// mechanism was chosen over a wait because it makes both halves of the
+// contract true at once: the read is done the instant the 202 is, with
+// nothing to poll, and a subscriber that is listening still receives the
+// story's frames. It also takes no runner lease - a sample open claims
+// none of the look kind's slots and queues behind no paid look - and it
+// leaves a restart nothing unfinished, so a playback can never be
+// resumed into the paid pipeline. The frames are Keel's own progress and
+// terminal payloads on the looks broker, so a subscriber that arrives
+// after the story ends is answered with the retained terminal alone,
+// exactly as it would be for a look that ran.
 //
 // The cache is evidence, not a wish list. Every value a story carries
 // comes either from a recorded provider reply or from data the
@@ -33,11 +50,19 @@
 // a number whose source nobody can point at is a number that was made
 // up. loadSample turns that into rules it can check: the flags are the
 // variant's miss list, the selfie is that variant's picture for its
-// occasion, an analysis row names the picture the provider actually read
-// and must be the same person, a shown render carries the check and only
-// the look answers its fix declares changing, and a discarded render
-// carries no check at all, since none was recorded for it. What the
-// recordings do not tell, the story does not say.
+// occasion, a cached reading names the picture the provider read and
+// that picture must be the story's own selfie, since the analysis cache
+// is keyed by photo hash, a shown render carries the check that showed
+// it and names the recording of that check, and a discarded render
+// carries no check at all - though it may still name the picture it
+// made, as evidence of the pass, because a render that was made and then
+// discarded is a recorded render no check ever showed. A picture is read
+// from two roots only, the samples directory and the recorded YouCam
+// results beside it; a story that names anything else is refused, not
+// resolved. What the recordings do not tell, the story does not say:
+// festival's gold chain is a genuine recorded try-on of its own selfie,
+// it is named in that story, and it is not shown, because no render check
+// of the festival occasion was ever recorded.
 
 package server
 
@@ -47,7 +72,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -62,7 +86,9 @@ import (
 	"github.com/nrynss/dresscode/internal/systemone"
 	"github.com/nrynss/keel/id"
 	"github.com/nrynss/keel/job"
+	jobsql "github.com/nrynss/keel/job/sqlitestore"
 	"github.com/nrynss/keel/mediastore"
+	"github.com/nrynss/keel/stream"
 	"github.com/nrynss/keel/wire"
 )
 
@@ -101,9 +127,14 @@ type SamplesConfig struct {
 	Log *slog.Logger
 }
 
-// sampleCheck is one recorded render check: the three facts, and the
-// look answers the check read, in the vocabulary's own order.
+// sampleCheck is one recorded render check: the check recording the
+// shown render stands on, the three facts it read, and the look answers
+// the check gave, in the vocabulary's own order. The recording is named
+// because three booleans with no recording behind them are three
+// booleans nobody can check, and the facts are only facts because a
+// model read a pair of pictures and gave them.
 type sampleCheck struct {
+	Recording    string                     `json:"recording"`
 	ChangeMade   bool                       `json:"change_made"`
 	SamePerson   bool                       `json:"same_person"`
 	CriterionMet bool                       `json:"criterion_met"`
@@ -112,10 +143,17 @@ type sampleCheck struct {
 
 // sampleAttempt is one recorded render-and-check pass. A shown attempt
 // carries the recorded render image and the check that kept it; a
-// discarded one names neither. A discard holds no check values on
+// discarded one carries no check. A discard holds no check values on
 // purpose: the sample set records no check of a discarded render for
 // these stories, and a byte the check never answered cannot be written
 // into the cache and read back as if it had.
+//
+// A discard may still name the picture it made. The picture is evidence
+// of the pass, not a render the judge is shown: it rides no frame, is
+// registered in no mediastore and appears on no screen, and the pipeline
+// never lands it, because a render the check did not keep is discarded.
+// Naming it is what lets a story say "this try-on is real and this check
+// was never recorded for it" instead of having to pretend one of the two.
 type sampleAttempt struct {
 	Fix     string       `json:"fix"`
 	Attempt string       `json:"attempt"`
@@ -128,9 +166,12 @@ type sampleAttempt struct {
 
 // sampleAnalysis is one cached YouCam read the story stands on: the
 // task, the one value the seam decodes for it, and the photo the
-// provider actually read. That photo is never the sample's own unless
-// the recording says so: a sample cannot measure, so a reading it carries
-// is one a real call made of some picture, and the file names which.
+// provider actually read. The read must be of this story's own selfie:
+// the analysis cache is keyed by photo hash, so a reading of any other
+// picture is not a cache hit here, however close the person, and a
+// sample cannot measure to make it one. A story whose fix measures a task
+// the sample set never read of this selfie therefore names no row at all,
+// and says so in its source.
 type sampleAnalysis struct {
 	Task      string `json:"task"`
 	FaceShape string `json:"face_shape"`
@@ -172,7 +213,13 @@ type sampleState struct {
 // sampleRuntime is everything the sample routes read. One server holds
 // one.
 type sampleRuntime struct {
-	rt   *lookRuntime
+	rt *lookRuntime
+	// jobs is the job store, the same table the looks runner records
+	// into. An open writes its playback's terminal row here directly -
+	// not through the runner, which would take a lease and run the job -
+	// and the landed look routes read the row back through the runner's
+	// own store.
+	jobs job.Store
 	log  *slog.Logger
 	now  func() time.Time
 	list []*sampleState
@@ -185,8 +232,8 @@ var (
 )
 
 // MountSamples attaches the sample list and the sample start. Call it
-// after MountLooks: an open starts its playback on the looks runner and
-// answers through the landed look routes, so the look mount is a
+// after MountLooks: an open answers through the landed look routes, and
+// its story is played onto the looks broker, so the look mount is a
 // requirement, not an order of convenience. A second call refuses.
 func (s *Server) MountSamples(ctx context.Context, cfg SamplesConfig) error {
 	if s == nil || s.db == nil || s.mux == nil {
@@ -225,7 +272,15 @@ func (s *Server) MountSamples(ctx context.Context, cfg SamplesConfig) error {
 		list = append(list, st)
 		byID[sid] = st
 	}
-	sm := &sampleRuntime{rt: rt, log: log, now: now, list: list, byID: byID}
+	// A second handle on the jobs table, the way the deletion mount opens
+	// its own: one table, one schema, and each mount reads what it needs.
+	// The look routes reach these rows through the runner's handle, whose
+	// store is the same table.
+	jobs, err := jobsql.Open(ctx, jobsql.Config{DB: s.db})
+	if err != nil {
+		return fmt.Errorf("server: samples: %w", err)
+	}
+	sm := &sampleRuntime{rt: rt, jobs: jobs, log: log, now: now, list: list, byID: byID}
 	s.mux.Handle(routeSamples, http.HandlerFunc(sm.serveList))
 	s.mux.Handle(routeSampleStart, http.HandlerFunc(sm.serveStart))
 	samplesBy[s] = sm
@@ -351,11 +406,12 @@ func loadSample(dir, sid string, rt *lookRuntime) (*sampleState, error) {
 		}
 	}
 
-	// The analysis cache: exactly what the picked fix measures, with a
-	// value for each read. A fix that names no analysis names no row -
-	// and a fix that names one gets every row, because a playback that
-	// claimed cached:false would have to run the measurement to make it
-	// true, and this path never spends.
+	// The analysis cache: a row is one the story stands on only when the
+	// provider read this picture. A fix that names no analysis names no
+	// row, and a fix that names one the recordings never read of this
+	// selfie holds no row either - the measure stage then says skipped,
+	// because the playback holds no reading and ran no measurement. The
+	// rows that are there must be the fix's own, once each, with a value.
 	fix := fixByID(occ, st.Pick.Fix)
 	named := map[string]bool{}
 	if fix != nil {
@@ -390,14 +446,19 @@ func loadSample(dir, sid string, rt *lookRuntime) (*sampleState, error) {
 			return nil, fmt.Errorf("%s: analysis %s read %s, another person's face",
 				sid, a.Task, a.ReadFrom)
 		}
-	}
-	if len(seen) != len(named) {
-		return nil, fmt.Errorf("%s: the cache holds %d of the pick's %d analyses", sid, len(seen), len(named))
+		// The same person is not the same photo, and the cache is keyed
+		// by photo hash: a reading of a sister picture is a miss for this
+		// one, so it is not a row this story may hold.
+		if a.ReadFrom != st.SelfiePath {
+			return nil, fmt.Errorf("%s: analysis %s read %s, which is not this sample's own picture, so the cache holds no reading of it",
+				sid, a.Task, a.ReadFrom)
+		}
 	}
 
 	// The attempts: the pick's first pass, then the runner-up's when
-	// there is one. A shown attempt carries its recorded render and a
-	// look the vocabulary offers; a discarded one names no image.
+	// there is one. A shown attempt carries its recorded render, the check
+	// that showed it and the look that vocabulary offers; a discarded one
+	// carries no check, and at most the picture it made.
 	want := []struct{ fix, name string }{{st.Pick.Fix, "fix"}, {st.Pick.RunnerUp, "runner_up"}}
 	if len(st.Attempts) > 0 && st.Pick.Fix == "" {
 		return nil, fmt.Errorf("%s: attempts without a pick", sid)
@@ -411,17 +472,26 @@ func loadSample(dir, sid string, rt *lookRuntime) (*sampleState, error) {
 			return nil, fmt.Errorf("%s: attempt %d is %s/%s, want %s/%s",
 				sid, i, at.Fix, at.Attempt, want[i].fix, want[i].name)
 		}
-		if at.Shown == (at.Image == "") {
-			return nil, fmt.Errorf("%s: attempt %d: a shown render carries its image and a discarded one names none", sid, i)
+		if at.Shown && at.Image == "" {
+			return nil, fmt.Errorf("%s: attempt %d: a render the check showed carries its image", sid, i)
 		}
 		if !at.Shown {
 			// A discard keeps nothing: no media id, no words and no
 			// check. The contract's discarded frame is {"fix","shown":
 			// false} and the look body carries no render at all, so a
 			// discard with check values would be recording an answer no
-			// check ever gave.
+			// check ever gave. Its picture may still be named, as the
+			// evidence that the pass ran and what it made; it is read
+			// here so a story cannot name a picture that is not there,
+			// and it is kept nowhere else - no frame names it, no
+			// mediastore holds it, no screen shows it.
 			if at.Check != nil {
 				return nil, fmt.Errorf("%s: attempt %d: a discarded render names no check", sid, i)
+			}
+			if at.Image != "" {
+				if _, err := readSampleImage(dir, at.Image); err != nil {
+					return nil, fmt.Errorf("%s: attempt %d: %w", sid, i, err)
+				}
 			}
 			continue
 		}
@@ -431,7 +501,14 @@ func loadSample(dir, sid string, rt *lookRuntime) (*sampleState, error) {
 		}
 		at.image = img
 		if at.Check == nil {
-			return nil, fmt.Errorf("%s: attempt %d: a shown render carries its check", sid, i)
+			return nil, fmt.Errorf("%s: attempt %d: a shown render carries the check that showed it", sid, i)
+		}
+		// The check behind a shown render is a recording, and the story
+		// names which one: three booleans with no recording behind them
+		// are three booleans nobody can check. The name is one file in the
+		// recorded checks' own directory, and the honesty test reads it.
+		if at.Check.Recording == "" || strings.ContainsAny(at.Check.Recording, `/\\`) {
+			return nil, fmt.Errorf("%s: attempt %d: the check names no recording in the check directory", sid, i)
 		}
 		// The pipeline's own discard rule, read back as a loading rule:
 		// a render is shown when the change was made and it is the same
@@ -487,11 +564,60 @@ func (st *sampleState) fixOf() *domain.Fix {
 	return fixByID(st.occ, st.Pick.Fix)
 }
 
-// readSampleImage reads one recorded image, paths relative to the
-// samples directory. The recordings are data, not user input; the paths
-// name the sample people and the recorded results.
+// sampleRoots are the two places a cached story may read a picture from,
+// and the only two: the samples directory, which holds the sample people,
+// and the recorded YouCam results kept beside it, which hold the renders
+// the recorded flows saved. The cache is data on disk rather than user
+// input, but a path in it is still a path, and one that walked out of both
+// roots would have the server open anything its own user can read. The
+// recorded results are a root because honest evidence lives there:
+// family's jhumkas and festival's chain are YouCam results, named as such
+// with the one "../youcam/results/" shape, and no other member of any
+// story reaches outside the samples directory.
+func sampleRoots(dir string) []string {
+	root := filepath.Clean(dir)
+	return []string{root, filepath.Clean(filepath.Join(root, "..", "youcam", "results"))}
+}
+
+// contained reports whether a cleaned path is one of the roots or lives
+// under one, with the separator included so a sibling directory named
+// "samples-old" is not read as inside "samples".
+func contained(roots []string, path string) bool {
+	for _, root := range roots {
+		if path == root || strings.HasPrefix(path, root+string(filepath.Separator)) {
+			return true
+		}
+	}
+	return false
+}
+
+// readSampleImage reads one recorded image, its path relative to the
+// samples directory, and refuses a path that leaves the sample roots.
+// The join is cleaned before it is judged, so a "../" chain is contained
+// by what it resolves to and not by how it is spelled; the file the
+// server actually opens is resolved again, because a link can lead out of
+// the roots with a path that stays inside them on paper.
 func readSampleImage(dir, rel string) (systemone.Image, error) {
-	raw, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(rel)))
+	if rel == "" {
+		return systemone.Image{}, fmt.Errorf("no picture is named")
+	}
+	path := filepath.FromSlash(rel)
+	if filepath.IsAbs(path) {
+		return systemone.Image{}, fmt.Errorf("%q is an absolute path, outside the sample roots", rel)
+	}
+	roots := sampleRoots(dir)
+	full := filepath.Join(roots[0], path)
+	if !contained(roots, full) {
+		return systemone.Image{}, fmt.Errorf("%q is outside the sample roots", rel)
+	}
+	target, err := filepath.EvalSymlinks(full)
+	if err != nil {
+		return systemone.Image{}, err
+	}
+	if !contained(resolvedRoots(roots), target) {
+		return systemone.Image{}, fmt.Errorf("%q leads out of the sample roots", rel)
+	}
+	raw, err := os.ReadFile(target)
 	if err != nil {
 		return systemone.Image{}, err
 	}
@@ -499,6 +625,22 @@ func readSampleImage(dir, rel string) (systemone.Image, error) {
 		return systemone.Image{}, fmt.Errorf("%s is empty", rel)
 	}
 	return systemone.Image{ContentType: "image/jpeg", Bytes: raw}, nil
+}
+
+// resolvedRoots is each root with the links it is made of followed, so a
+// target under a linked samples directory is still read as inside it. A
+// root that cannot be resolved is judged as it is spelled.
+func resolvedRoots(roots []string) []string {
+	out := make([]string, 0, len(roots))
+	for _, root := range roots {
+		real, err := filepath.EvalSymlinks(root)
+		if err != nil {
+			out = append(out, root)
+			continue
+		}
+		out = append(out, real)
+	}
+	return out
 }
 
 func issueOffered(occ *domain.Occasion, id string) bool {
@@ -567,10 +709,12 @@ func (sm *sampleRuntime) serveList(w http.ResponseWriter, r *http.Request) {
 }
 
 // serveStart opens one sample: the recorded state derived under this
-// judge's user id, the playback job started, 202 with the one id the
-// look and its job share. The route takes no gate token, no lease seat
-// and no budget reservation: a sample costs nothing, and the judge's
-// allowances are waiting for their own selfie.
+// judge's user id, the story landed as a job that is finished as it is
+// written, 202 with the one id the look and its job share. The route takes
+// no gate token, no lease seat and no budget reservation: a sample costs
+// nothing, and the judge's allowances are waiting for their own selfie.
+// Nor does it take the look kind's slot or queue behind a paid look: the
+// job is written, not run.
 func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 	user, ok := caller(w, r)
 	if !ok {
@@ -584,7 +728,9 @@ func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	// The sample's selfie, registered under this judge: the bytes the
-	// story recorded, the owner the reads require.
+	// story recorded, the owner the reads require. Only the picture a
+	// discarded pass left behind is not registered: it is evidence, not a
+	// render, and no frame and no screen names it.
 	selfieID, err := sm.keep(ctx, user.ID, groupSelfie, st.selfie)
 	if err != nil {
 		sm.log.Error("server: samples: the selfie", "err", err.Error())
@@ -613,7 +759,9 @@ func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 
 	// The analysis the story stands on, into the cache under this
 	// judge and this photo: the reads the pick carries and the measure
-	// stage would otherwise run.
+	// stage would otherwise run. A story holds a row only when the
+	// recording read this very picture, which is why the measure stage can
+	// say cached for the rows it has and skipped for the reads it has not.
 	for _, a := range st.Analysis {
 		if err := sm.rt.Keep(ctx, user.ID, hash, a.Task, domain.Allowlist{FaceShape: a.FaceShape}); err != nil {
 			sm.log.Error("server: samples: the analysis cache", "err", err.Error())
@@ -622,27 +770,37 @@ func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// The look's job: the recorded stages, played back on the looks
-	// runner under the look kind, so the job routes dispatch it to the
-	// look runtime like any other look.
-	jobID, err := sm.rt.jobs.StartKind(ctx, pipeline.KindName, func(ctx context.Context, progress func(job.Progress)) ([]byte, error) {
-		return sm.playback(progress, st, renders)
-	})
+	// The look's job: the recorded story, played into a buffer and landed
+	// as a terminal row of the look kind, so the job read behind the 202 is
+	// already done and the stream still carries the stages.
+	jobID, err := id.New()
 	if err != nil {
-		sm.log.Error("server: samples: start", "err", err.Error())
+		sm.log.Error("server: samples: the job id", "err", err.Error())
+		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
+		return
+	}
+	data, frames, err := sm.story(st, renders)
+	if err != nil {
+		sm.log.Error("server: samples: the story", "err", err.Error())
+		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
+		return
+	}
+	if err := sm.land(ctx, jobID, data, frames); err != nil {
+		sm.log.Error("server: samples: land the story", "job_id", jobID, "err", err.Error())
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
 		return
 	}
 
-	// The look row, the id the answer names. It lands after the job
-	// minted the id, the order pipeline.Start keeps, and a failure here
-	// cancels the job and hands back nothing: no row, no readable look,
-	// and the playback stops before its first frame matters.
+	// The look row, the id the answer names. It lands after the job row,
+	// the order pipeline.Start keeps. A failure here leaves a finished job
+	// row that names no look: every look route scopes its reads by the
+	// looks table and the job dispatcher answers only what it can see, so
+	// the orphan row is unreadable, nothing was spent, and the answer hands
+	// back nothing.
 	if _, err := sm.rt.srv.db.Writer().ExecContext(ctx,
 		`INSERT OR IGNORE INTO looks (id, user_id, selfie_id, photo_hash, occasion, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
 		jobID, user.ID, selfieID, hash, st.Occasion, sm.now().Unix()); err != nil {
 		sm.log.Error("server: samples: keep the look", "job_id", jobID, "err", err.Error())
-		sm.cancel(jobID)
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
 		return
 	}
@@ -651,13 +809,74 @@ func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// cancel stops a look whose row never landed, the way a failed start
-// does. A playback this small has usually finished already; Cancel
-// answers ErrUnknownJob for it and that is no fault.
-func (sm *sampleRuntime) cancel(jobID string) {
-	if err := sm.rt.jobs.Cancel(jobID); err != nil && !errors.Is(err, job.ErrUnknownJob) {
-		sm.log.Error("server: samples: cancel the unrecorded look", "job_id", jobID, "err", err.Error())
+// story is the recorded playback into a buffer instead of onto a live
+// topic: the stage frames a subscriber would be played, in order, and the
+// finished look the job's data carries. It is the same function a runner
+// would have been handed; nothing in it reads a client or a store, so
+// nothing in it can spend.
+func (sm *sampleRuntime) story(st *sampleState, renders []string) ([]byte, []job.Progress, error) {
+	frames := make([]job.Progress, 0, 8)
+	data, err := sm.playback(func(p job.Progress) { frames = append(frames, p) }, st, renders)
+	if err != nil {
+		return nil, nil, err
 	}
+	return data, frames, nil
+}
+
+// land writes one story as the job it finished being, then plays its
+// frames onto the job's topic and closes the topic with the terminal.
+//
+// The record is the shape Keel's runner leaves behind for a look that
+// finished on its own: the look kind, so the job dispatcher hands its reads
+// to the look runtime like any other look; attempt one, its own root, so
+// the look routes' attempt walk finds one finished attempt and no
+// replacement; the last stage as the progress snapshot, so the job read
+// names the stage the story reached; the look as the data, so the verdict
+// is ready the moment the row is; and no error. The row is written before
+// the frames are published, so a read never sees a story mid-flight, and
+// the row is never anything but terminal, so a restart's recovery finds
+// nothing to interrupt and the resume hook is never offered a playback.
+func (sm *sampleRuntime) land(ctx context.Context, jobID string, data []byte, frames []job.Progress) error {
+	rec := job.Record{
+		ID:        jobID,
+		Kind:      pipeline.KindName,
+		Status:    job.StatusDone,
+		Attempt:   1,
+		RootID:    jobID,
+		Data:      data,
+		UpdatedAt: sm.now(),
+	}
+	if len(frames) > 0 {
+		rec.Progress = frames[len(frames)-1]
+	}
+	if err := sm.jobs.Create(ctx, rec); err != nil {
+		return fmt.Errorf("samples: land the story: %w", err)
+	}
+	sm.publish(jobID, frames)
+	return nil
+}
+
+// publish plays one story onto its job topic, in the payloads Keel's
+// runner publishes: one progress event per stage, then the done terminal
+// the broker retains for the subscriber that arrives after the story ended.
+func (sm *sampleRuntime) publish(jobID string, frames []job.Progress) {
+	for _, p := range frames {
+		sm.rt.broker.Publish(job.Topic(jobID), stream.Event{
+			Name: wire.EventProgress,
+			Data: wire.ProgressEvent{
+				JobID:   jobID,
+				Stage:   p.Stage,
+				Current: p.Current,
+				Total:   p.Total,
+				Detail:  p.Detail,
+			},
+		})
+	}
+	sm.rt.broker.Publish(job.Topic(jobID), stream.Event{
+		Name:     string(job.StatusDone),
+		Data:     wire.StatusEvent{JobID: jobID, Status: string(job.StatusDone)},
+		Terminal: true,
+	})
 }
 
 // keep writes one recorded image into the judge's own mediastore, the
@@ -744,10 +963,16 @@ func (sm *sampleRuntime) playback(progress func(job.Progress), st *sampleState, 
 	// their own looks, and the story's pick is the recorded one.
 	emitSample(progress, "pick", samplePickFrame{Fix: st.Pick.Fix, RunnerUp: st.Pick.RunnerUp})
 
-	// Measure. The cache rows were derived before the job started, so
-	// the answer is the read's own: skipped when the fix measures
-	// nothing, cached when it does - never false, because a false here
-	// would be a promise to measure, and measuring spends.
+	// Measure. The cache rows were derived before the job was written, so
+	// the frame answers with the read the playback actually holds: cached
+	// when it holds one, skipped when it holds none - never false, because
+	// a false here would be a promise to measure, and measuring spends.
+	// The contract ties skipped to a fix that names no analysis; one story
+	// deviates from that wording and says so in its own source, because its
+	// fix names an analysis no recording ever read of its picture. Saying
+	// cached would claim a read that never happened, and saying false would
+	// spend to make it true, so the frame says what the playback does: it
+	// measured nothing.
 	if st.Pick.Fix != "" {
 		var frame sampleMeasureFrame
 		if len(st.Analysis) == 0 {
@@ -761,8 +986,11 @@ func (sm *sampleRuntime) playback(progress func(job.Progress), st *sampleState, 
 	}
 
 	// Render and check, the pick's pass and, when the first was
-	// discarded, the runner-up's. A discarded render names no media id,
-	// so the phone cannot show it.
+	// discarded, the runner-up's. A discarded pass streams the contract's
+	// discard frame - {"fix","shown":false} and nothing else: no media id
+	// the phone could show, no words the check never said - even when the
+	// story names the picture that pass made, because naming a picture is
+	// not showing one.
 	shown := -1
 	for i := range st.Attempts {
 		at := &st.Attempts[i]
