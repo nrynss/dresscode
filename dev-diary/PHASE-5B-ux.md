@@ -270,6 +270,146 @@ Notes:
 
 ---
 
+### T5.15: Front door & Occasion picker declutter — compact fix pills, auto-save and collapsible sample drawer ★
+```yaml
+requires:   T5.14
+fixture-ok: yes
+size:       M · mid
+owns:       web/src/app/shell.svelte, web/src/app/home.svelte, web/src/app/app.svelte, web/src/routes/occasion/, web/tests/a11y/
+status:     not-started
+```
+Cut the wall of introductory text and duplicate button grids on the front door (`#/` and `#/occasion`): keep a single-line header, a 1-line lead, 5 occasion cards, compact 2–3 word Fix pill chips that auto-save on tap with one `Bring the look` CTA, a closed-by-default `Try a sample look` disclosure drawer, and `About` tucked into the quiet footer row.
+
+What to build:
+
+1. **Single-Row Header & Lean Lead (`web/src/app/shell.svelte`, `web/src/app/home.svelte`, `web/src/app/app.svelte`):**
+   - In `shell.svelte`, keep the brand mark + `Dresscode` on the left and the nav links on the right on a single line at 375 px (`gap: 0.25rem 0.65rem; font-size: 0.95rem`).
+   - In `home.svelte`, remove `<p class="session">{here}</p>` and `Opening a session.` from the home screen (session status already lives on `Account`). Replace the 2-sentence lead with one concise line: `<p class="lead">See the dress code before they do.</p>`.
+   - Move the `About` `<Dialog.Root>` trigger out of the middle of the front door and into the `.quiet-row` footer at the bottom of `app.svelte` (styled as a quiet ghost trigger beside `See the verdict`, `See the render`, `Style history`).
+   - Wrap the judge samples section in `app.svelte` inside a closed-by-default `<details class="samples disclosure">` with `<summary>Try a sample look</summary>` (remove the separate `<h3>Sample looks</h3>` and `<p class="hint">Open a sample selfie...</p>` paragraph; inside the open `<details>`, render the `.sample-row` buttons directly).
+
+2. **Decluttered Occasion Picker, Compact Fix Pills & Auto-Save (`web/src/routes/occasion/occasion.svelte`, `web/src/routes/occasion/menu.ts`, `web/src/routes/occasion/menu.test.ts`):**
+   - In `occasion.svelte`, remove `<h2>Occasion</h2>` and the 3-line instruction paragraph (`"Pick an occasion. Then tick the fixes you are open to..."`). Let `<fieldset class="cards"><legend>Choose an occasion</legend>` lead directly.
+   - In `menu.ts`, add a pure helper `fixChipLabel(fix: OccasionFix): string` that maps each fix ID (or `fix.changes`) to a compact 2–3 word pill label (keeping `fix.changes` untouched on the wire and keeping zero `memoryWords` in `.svelte` files!):
+     - `*-gold-jhumkas` → `"Gold jhumkas"`
+     - `*-gold-chain` → `"Gold chain"`
+     - `*-red-lip` → `"Red lip"`
+     - `date-nude-lip` → `"Even nude lip"`
+     - `interview-nude-lip`, `funeral-nude-lip` → `"Quiet nude lip"`
+     - `*-festive-top` → `"Festive mandarin top"`
+     - `date-open-collar` → `"Open-collar shirt"`
+     - `interview-buttoned-shirt` → `"Buttoned shirt"`
+     - `funeral-dark-shirt` → `"Dark buttoned shirt"`
+     - `*-tie-hair` → `"Hair tied back"`
+     - `interview-short-hair` → `"Short, neat hair"`
+     - `*-short-beard` (except funeral) → `"Short, even beard"`
+     - `funeral-short-beard` → `"Short, close beard"`
+     - `festival-full-beard` → `"Full, even beard"`
+     - `*-closed-smile` → `"Calm smile"`
+     - fallback: `fix.changes`
+   - Render `fieldset.menu` as a compact wrapping pill grid (`display: flex; flex-wrap: wrap; gap: 0.5rem`) where each `<label>` pill shows `<span class="tick" aria-hidden="true"></span> {fixChipLabel(fix)}`.
+   - **Auto-save on tap:** When an occasion is selected, record it as the active occasion in `menu.ts`; when any fix pill is toggled, immediately call `writeOptIn(selected, chosen)` in the background (with error reporting via `ErrorNotice`). Remove the separate `Save` button and `"Saved for …"` confirmation paragraph, leaving a single primary CTA: `<a class="btn-primary bring" href="#/capture">Bring the look</a>`.
+   - Update `web/tests/a11y/helpers.ts` and `screens.test.ts` so the home and occasion states match the decluttered DOM (e.g. open `details.samples` before waiting on `.sample-row button`, and wait on `withText("p", "See the dress code before they do.")` on home).
+
+**Done when:** `./tools/check.sh` passes; the front door shows only the 1-line lead, the 5 occasion cards, compact 2–3 word auto-saving fix pills + 1 `Bring the look` CTA when an occasion is chosen, and the `Try a sample look` collapsible drawer below.
+
+---
+
+### T5.16: Vanity mirror Capture declutter — in-mirror camera CTA and compact fallbacks ★
+```yaml
+requires:   T5.15
+fixture-ok: yes
+size:       S · mid
+owns:       web/src/routes/capture/, web/tests/a11y/
+status:     not-started
+```
+Remove all instructional paragraphs and redundant headings from `#/capture`, move `Open the front camera` and `Take the photo` directly inside the arched vanity mirror viewfinder, and place the two file-input fallbacks side by side in one compact row.
+
+What to build:
+
+1. **In-Mirror Camera Controls & Zero Instructional Bloat (`web/src/routes/capture/capture.svelte`, `web/src/routes/capture/upload.test.ts`):**
+   - Delete `<p class="lead">One selfie for the occasion, and any product you are considering.</p>`.
+   - Delete the visible `<h2>Your selfie</h2>` heading above the mirror (use `aria-label="Your selfie"` on `<section>`).
+   - Delete `<p class="hint">If that camera does not open, use the phone camera.</p>`.
+   - Inside `.mirror-frame`:
+     - When `session.phase !== "live" && session.phase !== "requesting"`, center `<p class="mirror-prompt">The mirror opens here.</p>` and the primary `<button type="button" class="primary" disabled={busy} onclick={() => void openLens("selfie")}>Open the front camera</button>` directly inside the arched mirror!
+     - When `session.phase === "live"`, overlay `<button type="button" class="primary take-btn" disabled={busy} onclick={() => void take()}>Take the photo</button>` anchored at the bottom center of `.mirror-frame`.
+   - When `selfie` is registered, show the primary `<button type="button" class="primary" disabled={busy || starting} onclick={() => void checkDressCode()}>Check the dress code</button>` right below the mirror (with a brief `<p class="hint">The selfie is ready.</p>`).
+   - Place the two file-picker labels (`Choose a photo` and `Use the phone camera`) side by side in a 2-column `.row` below the mirror.
+   - Inside `<details class="product-drawer"><summary>Considering a specific piece?</summary>`, remove the redundant `<h2>A product</h2>` heading (the summary already titles the section).
+   - Update `screens.test.ts` capture state `ready` marker from `withText("h2", "Your selfie")` to `withText("button", "Open the front camera")`.
+
+**Done when:** `./tools/check.sh` passes; `#/capture` leads immediately with the arched mirror containing `Open the front camera`, a 2-column `Choose a photo` / `Use the phone camera` row below, and the closed `Considering a specific piece?` drawer.
+
+---
+
+### T5.17: Unified Look screen — collapsible stepper, tappable comparator badges and collapsible dress-code notes ★
+```yaml
+requires:   T5.16
+fixture-ok: yes
+size:       M · mid
+owns:       web/src/routes/look/, web/tests/a11y/
+status:     not-started
+```
+Eliminate the duplicate text and two-page hop between `#/look/verdict` and `#/look/render`: collapse the 4-step pipeline stepper once the look finishes, remove the duplicated `Why` sentence that repeats the missed criterion word-for-word, tuck the missed criteria list into a collapsible `<details>` disclosure, make the `Original` and `After the fix` corner badges inside the arch tappable, and remove the two redundant buttons below the arch.
+
+What to build:
+
+1. **Tappable Corner Badges & No Extra Buttons Below the Arch (`web/src/routes/look/render/swipe.svelte`, `web/src/routes/look/render/render.test.ts`):**
+   - Turn the top-left `Original` and top-right `After the fix` badges inside `.frame` into `<button type="button" class="badge original" onclick={showOriginal}>Original</button>` and `<button type="button" class="badge after" onclick={showRender}>After the fix</button>` (with `min-height: 2.75rem`, `background: var(--surface)`, `border: 1px solid var(--line)`, `color: var(--text)`, `z-index: 2` above the range input so taps reach the buttons while dragging the arch still drives the range input).
+   - Remove the `<div class="actions">` row (`Show the original` / `Show the render` buttons) below the arch, and update `render.test.ts` assertions accordingly.
+
+2. **Single Compact Fix Card & Collapsible Dress-Code Notes (`web/src/routes/look/render/render.svelte`, `web/src/routes/look/verdict/verdict.svelte`, `verdict.test.ts`, `render.test.ts`):**
+   - **Delete the duplicate `<h3>Why</h3> <p>{...why}</p>`** from both `render.svelte` and `verdict.svelte` (it repeats `reasons[0]` word-for-word).
+   - Inside `.hero`, show `<h3 class="hero-label">Suggested fix</h3>` (or `<h3>A fix</h3>`) and `<p class="hero-fix">{look.fix}</p>` — concise, single-sentence highlight.
+   - Wrap the missed criteria list (`What the dress code still asks for` + `<ul>{#each reasons...}</ul>`) in a closed-by-default collapsible `<details class="disclosure reasons-drawer"><summary>What the dress code still asks for</summary><ul>...</ul></details>` so the screen stays focused on the photo and the fix unless the user expands the full criteria list.
+   - On `verdict.svelte`, when `finished` is true, wrap the completed `<ol class="stages">` stepper inside a closed-by-default `<details class="disclosure stages-drawer"><summary>Checked against the dress code</summary><ol class="stages">...</ol></details>` (while `inProgress` is true, render `<ol class="stages">` directly outside `<details>` so the live progress is immediately visible).
+   - Update `verdict.test.ts` and `render.test.ts` to match the decluttered markup.
+
+**Done when:** `./tools/check.sh` passes; neither Verdict nor Render prints the same sentence twice; missed criteria and finished pipeline steps fold into clean `<details>` disclosures; `Original` and `After the fix` pills inside the arch replace the extra buttons below it.
+
+---
+
+### T5.18: History & Account progressive disclosure, product.md shade-match sync and screenshot pass ★
+```yaml
+requires:   T5.17
+fixture-ok: yes
+size:       M · mid
+owns:       product.md, web/src/routes/account/, web/src/routes/history/, web/tests/a11y/
+status:     not-started
+```
+Reduce cognitive load on `#/history` and `#account` using progressive disclosure (`<details>` sections closed by default for `How style history works`, `Who sees what`, and `Delete the account`), cut duplicate explanatory sentences in Account, align `product.md`'s analysis sentence with the shipped `faceShape` scope (closing the T3.3 product finding), and refresh the closing screenshot set in `/tmp/ui-explore-after/`.
+
+What to build:
+
+1. **Resolve the `product.md` Analysis Wording (`product.md`, `web/src/routes/account/privacy.ts`, `web/src/routes/account/account.test.ts`):**
+   - In `product.md`:
+     - Line 15: change `YouCam analysis runs only when the fix needs it: colour tones for a shade match, face shape and hair type for a hairstyle.` to `YouCam analysis runs only when the fix needs it: face shape for a hairstyle.`
+     - Line 34: change `allowlisted attributes (face shape, hair type and length, colour tones)` to `allowlisted attributes (face shape)`
+   - Verify `privacy.ts` and `account.test.ts` pass with the updated `product.md` sentence.
+
+2. **History Progressive Disclosure (`web/src/routes/history/history.svelte`, `web/src/routes/history/history.test.ts`):**
+   - Put `<h2 id="history-heading">Style history</h2>` and `<label class="switch">` in a single horizontal header bar (`.history-bar`: `display: flex; align-items: center; justify-content: space-between`), and visually hide the duplicate text inside `<label class="switch"><input ... /><span class="sr-only">Style history</span></label>` so `"Style history"` is not printed twice side-by-side while `firstInputOf("Style history")` still finds the label!
+   - Wrap `<p class="info-card">{switchState.notice}</p>` inside a closed-by-default `<details class="disclosure"><summary>How style history works</summary><p class="info-card">{switchState.notice}</p></details>` so the 4-line explanation is tucked away until tapped.
+   - Remove the redundant `<h3>Past looks</h3>` subheading above the occasion cards.
+
+3. **Account Progressive Disclosure & Copy Deduplication (`web/src/routes/account/account.svelte`, `web/src/routes/account/account.test.ts`):**
+   - Under `Sign in`:
+     - Keep `<p>{accounts.keepsLooks}</p>` (`"Signing in keeps the guest's looks."`) and remove the duplicate `<p>A new email address keeps the looks already on this device.</p>` paragraph.
+     - Move `<p>{accounts.noGoogle}</p>` inside the `Who sees what` disclosure block so the sign-in form has only 1 short sentence above the email input.
+   - **`Who sees what` (`<details class="disclosure">`):**
+     - Remove the `open` attribute so `Who sees what` is **collapsed by default** (hiding 9 paragraphs of pipeline architecture until tapped). Note: in SSR (`render(Account)` in `account.test.ts`), `<details>` still renders its children in the HTML string, so `account.test.ts` still verifies every sentence from `product.md`!
+   - **Deletion (`<section aria-labelledby="deletion">`):**
+     - Keep `<p>{accounts.stays}</p>` (`"Photos, renders and history stay until the user deletes them."`) and move `<p>{accounts.notAutomatic}</p>` inside the `Delete the account` disclosure so the Deletion section has only 1 sentence above the items.
+     - Wrap the `Delete the account` subsection (`<h3>Delete the account</h3>`, `{accounts.deletion}`, fresh-code instructions, `Email a fresh code`, and fresh-code OTP input) inside a closed-by-default `<details class="disclosure"><summary>Delete the account</summary>...</details>` so account-erasure instructions only open when requested.
+
+4. **Accessibility Matrix & Closing Screenshots (`web/tests/a11y/screens.test.ts`, `web/tests/a11y/helpers.ts`):**
+   - Add an `open` step in `screens.test.ts` for the `Who sees what` disclosure state on Account, verify all mounted states pass `a11yGate` and `contrastGate` in forced light and dark at 375 px, and re-capture the screenshots in `/tmp/ui-explore-after/` (`light/`, `dark/`, `wide/`, `INDEX.md`).
+
+**Done when:** `./tools/check.sh` passes; `Who sees what`, `Delete the account`, and `How style history works` are collapsed by default; duplicate paragraphs on Account and History are gone; `product.md` matches the shipped analysis scope; `/tmp/ui-explore-after/` holds the updated decluttered screenshots.
+
+---
+
 ## Canonical Copy & String Specification
 
 Every edited string and every newly authored UI string across P5B is pinned below. None of these strings contain a digit (`/\d/`) or any banned grading/memory word (`/\b(score|probability|percent|gender|attractiveness|ratio)\b/i`, `/\bmemory\b|\bremember(?:s|ing|ed)?\b|\brecall(?:s|ed|ing)?\b|jhumkas|second visit/i` in static `.svelte` markup).
@@ -324,4 +464,19 @@ Every edited string and every newly authored UI string across P5B is pinned belo
 | Shop sheet (`web/src/routes/look/render/sheet.svelte`, `copy.ts`) | Fidelity explanation: `exact product` | `This is the exact piece you brought or the occasion named, tried on directly.` |
 | Shop sheet (`web/src/routes/look/render/sheet.svelte`, `copy.ts`) | Fidelity explanation: `approximate match` | `This piece is a close catalog match for the fix shown in the render.` |
 | Shop sheet (`web/src/routes/look/render/sheet.svelte`, `copy.ts`) | Fidelity explanation: `visual simulation` | `The render shows the effect on your photo, paired with a shopping suggestion.` |
+
+### 4. Progressive Disclosure & Declutter Strings (`T5.15`–`T5.18`)
+
+| Screen / Component | Element | Exact String |
+|---|---|---|
+| Front door (`web/src/app/home.svelte`) | Single-line lead (`p.lead`) | `See the dress code before they do.` |
+| Front door (`web/src/app/app.svelte`) | Collapsible sample looks `<summary>` | `Try a sample look` |
+| Occasion (`web/src/routes/occasion/menu.ts` `fixChipLabel`) | Compact pill labels | `Gold jhumkas`, `Gold chain`, `Red lip`, `Even nude lip`, `Quiet nude lip`, `Festive mandarin top`, `Open-collar shirt`, `Buttoned shirt`, `Dark buttoned shirt`, `Hair tied back`, `Short, neat hair`, `Short, even beard`, `Short, close beard`, `Full, even beard`, `Calm smile` |
+| Verdict (`web/src/routes/look/verdict/verdict.svelte`) | Finished stepper `<summary>` | `Checked against the dress code` |
+| Verdict & Render (`verdict.svelte`, `render.svelte`) | Missed criteria `<summary>` | `What the dress code still asks for` |
+| History (`web/src/routes/history/history.svelte`) | Privacy notice `<summary>` | `How style history works` |
+| Account (`web/src/routes/account/account.svelte`) | Privacy disclosure `<summary>` (closed by default) | `Who sees what` |
+| Account (`web/src/routes/account/account.svelte`) | Account erasure disclosure `<summary>` (closed by default) | `Delete the account` |
+| `product.md`, `web/src/routes/account/privacy.ts` | Analysis scope sentence (`T5.18`) | `YouCam analysis runs only when the fix needs it: face shape for a hairstyle.` |
+
 

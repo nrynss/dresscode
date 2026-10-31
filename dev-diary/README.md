@@ -127,7 +127,7 @@ keys and settings (T0.2) + occasions, menus, vocabulary (T0.3) + sample set (T0.
   -> shop (T3.7) + remember and recall (T3.8) -> evaluation (T3.9)
   -> look routes (T4.4) + samples for judges (T4.6)
   -> capture (T5.3) -> verdict and render (T5.4, T5.5) -> second visit (T5.6)
-  -> UX writing & mock media (T5.10) -> shell & account UX (T5.11) -> front door (T5.12) -> mirror capture & look UX (T5.13) -> visual verification (T5.14)
+  -> UX writing & mock media (T5.10) -> shell & account UX (T5.11) -> front door (T5.12) -> mirror capture & look UX (T5.13) -> visual verification (T5.14) -> progressive disclosure & declutter (T5.15..T5.18)
   -> deploy (T6.1) -> README (T6.2) -> video (T6.4) -> submit (T6.5)
 ```
 
@@ -145,7 +145,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P3 | 3 / 9 | T3.3 (Measure) landed — the pipeline measures only what the chosen fix names, cached by photo hash. T3.4 (Render ★) dispatches next. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
-| P5B | 5 / 5 | **Complete.** The overhaul landed: front door, mirror journey, comparator, brand mark, editorial shell, button system, Account/History upgrades, and the a11y matrix covering all 15 states. Before/after screenshots await the user's review (`/tmp/ui-explore/` vs `/tmp/ui-explore-after/`). |
+| P5B | 5 / 9 | T5.10–T5.14 landed. T5.15–T5.18 added after the user's screenshot review to cut text bloat and add progressive disclosure (`<details>` expand/collapse sections) across all screens. T5.15 is ready now. |
 | P6 | 0 / 6 | Waits for P3–P5B. |
 
 ### Units and spend

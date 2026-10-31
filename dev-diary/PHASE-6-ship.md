@@ -16,7 +16,7 @@ Anything outward is the user's call: making the repository public, publishing th
 
 ### T6.1: Deploy on this machine ★
 ```yaml
-requires:   T4.6, T5.6, T5.14
+requires:   T4.6, T5.6, T5.18
 fixture-ok: no
 size:       M · mid
 owns:       deploy/
