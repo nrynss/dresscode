@@ -142,7 +142,7 @@ The demo is built around one story, **the second visit** (product.md). First vis
 | P0 | 8 / 8 | Done. |
 | P1 | 5 / 5 | Done. The API contract is frozen. |
 | P2 | 7 / 9 | T2.2 landed. Only the live siblings (T2.1b, T2.2b) remain — they need the user present for live runs. |
-| P3 | 3 / 9 | T3.3 (Measure) landed — the pipeline measures only what the chosen fix names, cached by photo hash. T3.4 (Render ★) dispatches next. |
+| P3 | 5 / 9 | T3.5 (Check) landed — discard-by-construction and the look-in-words line. T3.6 (fallback chain + config) dispatches next. |
 | P4 | 4 / 7 | T4.4 waits on the pipeline. T4.6 waits on the evaluation. |
 | P5 | 9 / 9 | **Complete.** The app is finished on mock data: shell, capture, verdict, render, history, account, accessibility gates, and the 3:1 control boundaries. Phone camera and phone install still need you. |
 | P5B | 5 / 9 | T5.10–T5.14 landed. T5.15–T5.18 added after the user's screenshot review to cut text bloat and add progressive disclosure (`<details>` expand/collapse sections) across all screens. T5.15 is ready now. |

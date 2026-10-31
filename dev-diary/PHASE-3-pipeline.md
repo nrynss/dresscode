@@ -133,7 +133,7 @@ requires:   T2.1, T3.4
 fixture-ok: yes
 size:       M · frontier
 owns:       internal/pipeline/check.go
-status:     in-review
+status:     done
 ```
 One Clef request with the original and the render: change made, same person, criterion met (`noul`), and one `choice` per look attribute. Join the winning attribute options into the look-in-words line ("gold jhumkas, red lip, open collar"), leaving out "none" and "can't tell". Failing change-made or same-person discards the render, whatever else it scored.
 
@@ -161,7 +161,7 @@ requires:   T3.5
 fixture-ok: yes
 size:       S · mid
 owns:       internal/pipeline/run.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 The look as one Keel `job`: judge → pick → measure → render → check, then the runner-up once if the check fails, then the suggestion alone. Each stage publishes its event on `stream` in the T1.5 shapes. Resumes after a restart without repeating a paid step.
 
