@@ -8,7 +8,7 @@ The machinery is `internal/eval/`; the ground truth is `testdata/eval/ground-tru
 
 - **Judging: 269 of 273 criterion answers correct (98.5%)** against the sample set's ground truth, at the shipped lines. A flat 0.5 line reads 260 (95.2%). Every line is on its own curve's measured best plateau.
 - **Render check: every known bad render discarded, no honest render lost.** On the recorded proxies — the different-person negative and the honest second-visit pair, on both models — the shipped lines decide all four reads correctly, with at least 0.42 of margin on every gate.
-- **Look vocabulary: 19 of 22 attribute answers true** on the honest render and the discarded proxy with the chosen model (clef). The three misses are words the vocabulary cannot say yet, not misreadings.
+- **Look vocabulary: 19 of 22 attribute answers true** on the honest render and the discarded proxy with the chosen model (clef). Three misses sit on the discarded proxy render whose words die with it; of the honest render's misses, the expression gap is a word the vocabulary cannot say yet — the hair and lip reads are misreadings the vocabulary can say (the table below is exact).
 - **Stability: eleven recorded answers of one judge request are identical to the last digit.** Nothing flips across calls; what varies is between photos, not between calls.
 
 ## Method
@@ -24,7 +24,7 @@ The same sweep runs per gate on the render check, over the honest pair (V04 agai
 
 ## Judging
 
-**At 0.5** — the reading docs/clef.md counts, an anchor and not a setting — 260 of 273 cells agree with the ground truth, and the thirteen off-side cells are exactly the ones docs/clef.md names: V02's light; V21's, P09's, P13's and P16's beards; V06's and P12's expressions; V08's light and beard; P11's garment; V09's and V12's collars; V16's light. The curves show them: every one of the thirteen sits inside a plateau where the right line reads it correctly, and the sweep moves nine of them.
+**At 0.5** — the reading docs/clef.md counts, an anchor and not a setting — 260 of 273 cells agree with the ground truth, and the thirteen off-side cells are exactly the ones docs/clef.md names: V02's light; V21's, P09's, P13's and P16's beards; V06's and P12's expressions; V08's light and beard; P11's garment; V09's and V12's collars; V16's light. The curves show them: every one of the thirteen sits inside a plateau where the right line reads it correctly, and the sweep moves ten of them.
 
 **The chosen settings** (`[judge]` in `dresscode.toml`):
 
