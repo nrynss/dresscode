@@ -55,14 +55,18 @@ func TestRenderPhrase(t *testing.T) {
 		t.Fatalf("phrase %q (err %v), want %q", said, err, "a jhumka set")
 	}
 
-	for _, broken := range []struct{ name, template string }{
-		{"unclosed", "{jewellery_colour jhumkas"},
-		{"empty placeholder", "{} jhumkas"},
-		{"stray close", "jhumkas}"},
-		{"nested brace", "{jewellery_{colour}}"},
+	for _, broken := range []struct{ name, template, reason string }{
+		{"unclosed", "{jewellery_colour jhumkas", "no closing }"},
+		{"empty placeholder", "{} jhumkas", "empty {} placeholder"},
+		{"stray close", "jhumkas}", "no opening {"},
+		{"nested brace", "{jewellery_{colour}}", "braces inside a placeholder"},
 	} {
-		if _, err := RenderPhrase(broken.template, resolve); err == nil {
+		_, err := RenderPhrase(broken.template, resolve)
+		if err == nil {
 			t.Fatalf("%s: template %q rendered", broken.name, broken.template)
+		}
+		if !strings.Contains(err.Error(), broken.reason) {
+			t.Fatalf("%s: error %v, want it to name %q", broken.name, err, broken.reason)
 		}
 	}
 }

@@ -38,6 +38,16 @@ One choice question per attribute. Every list includes `none` and `can't tell`. 
 
 `hair_colour` is described and never rendered. A hair-colour fix would have to pick one target colour, which would be a guess. The public AI Hair Color page does not print a task path, so none was invented. Hairstyle v2.1 can match a preset colour on some templates; this menu does not use that.
 
+## The phrase table
+
+The words on the screen are data, not code. Two tables in the occasions files hold them, the loader validates both, and the pipeline composes from them.
+
+The **display-phrase table** (`vocabulary.json`, `phrases`) holds the wording the look-in-words line speaks for one option. Attribute id, then option value, then the phrase. An option with no entry is spoken as its own bare label - the join the line has always made. A phrase may carry `{attribute}` placeholders that embed another attribute's winner from the same answer set: the jhumkas phrase is `{jewellery_colour} jhumkas`, which reads "gold jhumkas". A placeholder whose attribute says nothing - `none`, `can't tell`, or unanswered - vanishes and the gap closes, so the same phrase reads "jhumkas" with no colour. An attribute whose winner a phrase embeds is spoken for: it does not also stand in the line on its own. A colour whose item said nothing is embedded by nothing and keeps its bare label. The loader refuses a phrase naming an attribute or option the vocabulary does not have, a phrase for `none` or `can't tell` (the line never speaks those), a blank phrase, a malformed template (an unclosed brace, an empty placeholder, a stray or nested brace), and a phrase referencing its own attribute.
+
+The **display table** (`display` on a fix) holds the fix's own wording. `name` is what the shop list shows for a visual simulation of this fix; without it the entry copies the fix's `changes` sentence, as it always has. `words` is the fix in words the remembered sentences keep; without it the sentence falls back to the id's own name with the occasion's prefix cut and the hyphens spaced (`family-gold-jhumkas` reads "gold jhumkas"). `changes` itself is untouched: the pick menu and the render check read it. The loader refuses a display that names nothing, and refuses two fixes of one occasion whose sentences the memory could not tell apart - one fix, one sentence, or a recalled fact reads back as the wrong fix.
+
+The shipped seeds reproduce the fixtures' existing English: the jhumkas phrase (the look line's "gold jhumkas") and the family smile's display name ("Closed-mouth smile", the shop fixture's own word). Everything else is proposed wording for the user's review, carried in the T3.10 report.
+
 The family-function story is two vocabulary changes, not one. Kept: `jewellery` jhumkas and `jewellery_colour` gold (`family-gold-jhumkas`). Dismissed: `lip_colour` red (`family-red-lip`). "Last family function you kept the gold jhumkas and dismissed the red lip." A festival red lip is a different fix (`festival-red-lip`), so a dismissal there is not the family one.
 
 ## What a fix may render
@@ -185,4 +195,4 @@ Beard styles are marketed as men's styles. The menu still offers the fix only wh
 
 ## For the sign-off
 
-The questions to mark up are the Clef lines and the suggestions, the choice of red as the only family-function lip fix, and the festive-top mandarin collar. Strike a criterion rather than softening it into a score.
+The questions to mark up are the Clef lines and the suggestions, the choice of red as the only family-function lip fix, the festive-top mandarin collar, and the phrase table's wordings - the display phrases the look line speaks, the display names the shop suggestions wear, and the fix-in-words the remembered sentences carry. Strike a criterion rather than softening it into a score.
