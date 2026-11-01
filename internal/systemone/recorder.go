@@ -92,16 +92,16 @@ type RecorderConfig struct {
 // failure, nothing stored when the call did not work.
 //
 // It refuses before the inner client runs, so a wasted call is never
-// paid for: a name that cannot be a file, a request the model would
-// refuse, a name another call is holding, a recording already on disk,
-// and every image decision. The image decisions are the reference a
-// resolver names, which must exist and must hold the bytes that went
-// out, and the digest file a written image would land in, which must be
-// either absent or exactly those bytes. What only a reply can decide is
-// refused after the call and before any byte of it reaches disk: an
-// inner error stores nothing, and a reply the replay could not serve, or
-// that answers a question the request never asked, is refused on the
-// reader's own bytes before any of it reaches disk.
+// paid for, in this order: a context already cancelled, a name that
+// cannot be a file, a request the model would refuse, a name another call
+// is holding, a recording already on disk, and every image decision. The
+// image decisions are the reference a resolver names, which must exist
+// and must hold the bytes that went out, and the digest file a written
+// image would land in, which must be either absent or exactly those
+// bytes. What only a reply can decide waits for the call and is refused
+// before a byte of it is written: an inner error stores nothing, a reply
+// the replay could not serve is refused on the reader's own bytes, and so
+// is a reply that answers a question the request never asked.
 //
 // Safe for concurrent use. Two calls naming one exchange are refused,
 // and a recording and its images are each published by an exclusive
