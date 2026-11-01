@@ -330,9 +330,12 @@ test("the screen and the shell link show no digit", () => {
     .replace(/<[^>]+>/g, " ");
   expect(staticText).not.toMatch(/\d/);
   expect(staticText).toContain("The verdict");
-  expect(staticText).toContain("What the dress code still asks for");
+  expect(staticText).toContain("Dress code notes");
   expect(staticText).toContain("A fix");
-  expect(staticText).toContain("Checked against the dress code");
+  expect(staticText).toContain("Progress");
+  expect(staticText).not.toContain("What the dress code still asks for");
+  expect(staticText).not.toContain("Checked against the dress code");
+  expect(staticText).not.toContain("Back");
   expect(staticText).not.toContain("Why");
   expect(screen).toContain("stageWord(");
   expect(screen).toContain("pausedSentence");
@@ -343,6 +346,18 @@ test("the screen and the shell link show no digit", () => {
   expect(screen).not.toContain("stream.current");
   expect(screen).not.toContain("stream.total");
   expect(screen).not.toContain("stream.reconnects");
+  // The way back is the top bar's circular button, not an inline link.
+  expect(screen).not.toContain('class="back"');
+  expect(screen).not.toContain(">Back<");
+  // The screen opens on the photograph, in every state the look reaches: the
+  // arched comparator when the render stands, the selfie in the arched
+  // mirror frame until it does. The pictures are read beside the job, not
+  // after it.
+  expect(screen).toContain("loadLook");
+  expect(screen).toContain("{#if look?.render}");
+  expect(screen).toContain("<Swipe before={look.selfieUrl} after={look.render.url} />");
+  expect(screen).toContain('<div class="mirror-frame"><img src={look.selfieUrl} alt="Your selfie." /></div>');
+  expect(markup).toContain("mirror-frame");
   expect(markup).not.toContain("lookId");
   expect(markup).not.toContain("jobId");
 
@@ -351,7 +366,7 @@ test("the screen and the shell link show no digit", () => {
   // look finishes the steps fold into their own drawer; while it runs the
   // stepper stands directly on the screen.
   expect(screen).toContain('<details class="disclosure stages-drawer">');
-  expect(screen).toContain("<summary>Checked against the dress code</summary>");
+  expect(screen).toContain("<summary>Progress</summary>");
   expect(screen).toContain('{@render stages()}');
   expect(screen).toContain('<ol class="stages"');
   expect(screen).toContain("aria-current=");
@@ -359,7 +374,7 @@ test("the screen and the shell link show no digit", () => {
   // the hero carries the fix alone — the why sentence repeated reasons[0]
   // word for word, so it is gone.
   expect(screen).toContain('<details class="disclosure reasons-drawer">');
-  expect(screen).toContain("<summary>What the dress code still asks for</summary>");
+  expect(screen).toContain("<summary>Dress code notes</summary>");
   expect(screen).toContain('<div class="hero">');
   expect(screen).toContain('<h3 class="hero-label">A fix</h3>');
   expect(screen).toContain('<p class="hero-fix">{verdict.fix}</p>');
@@ -373,6 +388,14 @@ test("the screen and the shell link show no digit", () => {
   expect(heroStyles).toMatch(/\.hero\s*\{[^}]*border-radius: var\(--radius-control\)/);
   expect(heroStyles).toMatch(/\.primary-link\s*\{[^}]*color: var\(--on-accent\)/);
   expect(heroStyles).toMatch(/\.primary-link\s*\{[^}]*background: var\(--accent\)/);
+  expect(heroStyles).toMatch(/\.stages-drawer > ol\s*\{[^}]*padding: 0\.65rem 0\.9rem 0\.85rem/);
+  expect(heroStyles).toMatch(/\.reasons-drawer ul\s*\{[^}]*list-style: none/);
+  expect(heroStyles).toMatch(/\.reasons-drawer ul\s*\{[^}]*padding: 0\.65rem 0\.9rem 0\.85rem/);
+  // The mirror is the arch the capture screen holds: a clipped portrait box.
+  expect(heroStyles).toMatch(/\.mirror-frame\s*\{[^}]*border-radius: 999px 999px var\(--radius-panel\) var\(--radius-panel\)/);
+  expect(heroStyles).toMatch(/\.mirror-frame\s*\{[^}]*border: 2px solid var\(--line\)/);
+  expect(heroStyles).toMatch(/\.mirror-frame\s*\{[^}]*overflow: hidden/);
+  expect(heroStyles).toMatch(/\.mirror-frame img\s*\{[^}]*object-fit: cover/);
   // The pulse is motion the reader asked for, never one forced on them.
   expect(heroStyles).toMatch(
     /@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?animation: stage-pulse/,

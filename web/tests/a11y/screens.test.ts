@@ -6,6 +6,7 @@ import { storyLookId } from "../../src/routes/look/render/load";
 import { resetOccasionMenu } from "../../src/routes/occasion/menu";
 import {
   gate,
+  lookPicture,
   mountApp,
   openAboutDialog,
   openDeleteDialog,
@@ -36,6 +37,16 @@ interface ScreenState {
   before?: () => void | Promise<void>;
   ready?: () => Element | null;
   open?: () => Promise<void>;
+}
+
+/** A ready marker that also waits for the look's photograph: the verdict and
+ * render screens are photo-first, so the gate judges them with the mirror
+ * (or the comparator) on the page, not the opening frame. */
+function withPicture(marker: () => Element | null): () => Element | null {
+  return () => {
+    const found = marker();
+    return found !== null && lookPicture() !== null ? found : null;
+  };
 }
 
 /** Every screen the app serves, plus the dialog, drawer, sheet and popover
@@ -114,47 +125,47 @@ const states: ScreenState[] = [
   {
     name: "the verdict screen with the recorded look finished",
     hash: "#/look/verdict",
-    ready: () => withText("h3", "A fix"),
+    ready: withPicture(() => withText("h3", "A fix")),
   },
   {
     name: "the verdict screen with the finished stepper drawer open",
     hash: "#/look/verdict",
-    ready: () => withText("h3", "A fix"),
+    ready: withPicture(() => withText("h3", "A fix")),
     open: openStagesDrawer,
   },
   {
     name: "the verdict screen with a look that flags nothing",
     hash: "#/look/verdict",
     before: () => preferFixture("GET", `/api/looks/${storyLookId}`, "look-nofix.json"),
-    ready: () => withText("p", cleanSentence),
+    ready: withPicture(() => withText("p", cleanSentence)),
   },
   {
     name: "the verdict screen with the missed-criteria drawer open",
     hash: "#/look/verdict",
-    ready: () => withText("h3", "A fix"),
+    ready: withPicture(() => withText("h3", "A fix")),
     open: openReasonsDrawer,
   },
   {
     name: "the render screen with the swipe and the verdict buttons",
     hash: "#/look/render",
-    ready: () => withText("button", "Shop the look"),
+    ready: withPicture(() => withText("button", "Shop the look")),
   },
   {
     name: "the render screen with the missed-criteria drawer open",
     hash: "#/look/render",
-    ready: () => withText("button", "Shop the look"),
+    ready: withPicture(() => withText("button", "Shop the look")),
     open: openReasonsDrawer,
   },
   {
     name: "the render screen with the shop sheet open",
     hash: "#/look/render",
-    ready: () => withText("button", "Shop the look"),
+    ready: withPicture(() => withText("button", "Shop the look")),
     open: openShopSheet,
   },
   {
     name: "the render screen with a fidelity explanation open in the shop sheet",
     hash: "#/look/render",
-    ready: () => withText("button", "Shop the look"),
+    ready: withPicture(() => withText("button", "Shop the look")),
     open: async () => {
       await openShopSheet();
       await openFidelityExplanation();

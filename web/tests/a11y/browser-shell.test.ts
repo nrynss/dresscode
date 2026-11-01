@@ -834,3 +834,420 @@ for (const theme of ["light", "dark"] as const) {
     },
   );
 }
+
+/** The render screen's drawn geometry, measured the way a reader sees it: the
+ * arched comparator with its two pills at the bottom corners and its handle
+ * at collar level, the whole page never wider than the phone at any position
+ * of the swipe — both ends included, where the old centred handle overflowed
+ * a 375 px screen by two pixels — and the cohesive result card holding the
+ * fix, the shop row and the verdict bar inside one accent-edged box. jsdom
+ * lays nothing out, so these are measured here and nowhere else. No
+ * assertion reads image bytes. */
+interface Pill {
+  text: string;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  insetBottom: string;
+  insetLeft: string;
+  insetRight: string;
+}
+
+interface CardChild {
+  name: string;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+}
+
+interface ComparatorReading {
+  theme: string | undefined;
+  clientWidth: number;
+  scrollWidth: number;
+  frame: { left: number; top: number; right: number; bottom: number; width: number; height: number; radius: string };
+  pills: Pill[];
+  handle: { left: number; right: number; centerY: number; collarDelta: number };
+  card: {
+    left: number;
+    right: number;
+    top: number;
+    bottom: number;
+    borders: { top: number; right: number; bottom: number; left: number; style: string; colour: string };
+    accent: string;
+    children: CardChild[];
+    column: number;
+    shopWidth: number;
+    segments: { text: string; width: number }[];
+  };
+}
+
+async function measureComparator(): Promise<ComparatorReading> {
+  return JSON.parse(
+    await evaluate<string>(`(() => {
+    const round = (n) => Math.round(n * 10) / 10;
+    const doc = document.documentElement;
+    const frame = document.querySelector(".frame");
+    if (!frame) throw new Error("no comparator on the render screen");
+    const fb = frame.getBoundingClientRect();
+    const fcs = getComputedStyle(frame);
+    const handle = document.querySelector(".handle");
+    if (!handle) throw new Error("no handle on the comparator");
+    const hb = handle.getBoundingClientRect();
+    const borderTop = parseFloat(fcs.borderTopWidth);
+    const borderBottom = parseFloat(fcs.borderBottomWidth);
+    const collar = fb.top + borderTop + 0.72 * (fb.height - borderTop - borderBottom);
+    const pills = [...document.querySelectorAll(".badge")].map((pill) => {
+      const b = pill.getBoundingClientRect();
+      const cs = getComputedStyle(pill);
+      return {
+        text: (pill.textContent ?? "").trim(),
+        left: round(b.left),
+        right: round(b.right),
+        top: round(b.top),
+        bottom: round(b.bottom),
+        insetBottom: cs.bottom,
+        insetLeft: cs.left,
+        insetRight: cs.right,
+      };
+    });
+    const card = document.querySelector(".result-card");
+    if (!card) throw new Error("no result card on the render screen");
+    const cb = card.getBoundingClientRect();
+    const ccs = getComputedStyle(card);
+    const probe = document.createElement("span");
+    probe.style.display = "none";
+    document.body.append(probe);
+    probe.style.color = "var(--accent)";
+    const accent = getComputedStyle(probe).color;
+    probe.remove();
+    const children = [...card.querySelectorAll(":scope > *")].map((el) => {
+      const b = el.getBoundingClientRect();
+      const name = el.classList.contains("hero")
+        ? "hero"
+        : el.classList.contains("verdict")
+          ? "verdict"
+          : el.tagName.toLowerCase();
+      return { name, left: round(b.left), right: round(b.right), top: round(b.top), bottom: round(b.bottom) };
+    });
+    const shop = card.querySelector(".shop-trigger");
+    if (!shop) throw new Error("no shop trigger in the result card");
+    const shopBox = shop.getBoundingClientRect();
+    const segments = [...card.querySelectorAll(".verdict button")].map((button) => {
+      const b = button.getBoundingClientRect();
+      return { text: (button.textContent ?? "").trim(), width: round(b.width) };
+    });
+    const column =
+      cb.width -
+      parseFloat(ccs.paddingLeft) -
+      parseFloat(ccs.paddingRight) -
+      parseFloat(ccs.borderLeftWidth) -
+      parseFloat(ccs.borderRightWidth);
+    return JSON.stringify({
+      theme: doc.dataset.theme,
+      clientWidth: doc.clientWidth,
+      scrollWidth: doc.scrollWidth,
+      frame: {
+        left: round(fb.left),
+        top: round(fb.top),
+        right: round(fb.right),
+        bottom: round(fb.bottom),
+        width: round(fb.width),
+        height: round(fb.height),
+        radius: fcs.borderTopLeftRadius,
+      },
+      pills,
+      handle: {
+        left: round(hb.left),
+        right: round(hb.right),
+        centerY: round(hb.top + hb.height / 2),
+        collarDelta: round(hb.top + hb.height / 2 - collar),
+      },
+      card: {
+        left: round(cb.left),
+        right: round(cb.right),
+        top: round(cb.top),
+        bottom: round(cb.bottom),
+        borders: {
+          top: parseFloat(ccs.borderTopWidth),
+          right: parseFloat(ccs.borderRightWidth),
+          bottom: parseFloat(ccs.borderBottomWidth),
+          left: parseFloat(ccs.borderLeftWidth),
+          style: ccs.borderTopStyle,
+          colour: ccs.borderTopColor,
+        },
+        accent,
+        children,
+        column: round(column),
+        shopWidth: round(shopBox.width),
+        segments,
+      },
+    });
+  })()`),
+  ) as ComparatorReading;
+}
+
+async function tapPill(label: string): Promise<void> {
+  await evaluate(`(() => {
+    const pill = [...document.querySelectorAll("button.badge")].find(
+      (el) => (el.textContent ?? "").trim() === ${JSON.stringify(label)},
+    );
+    if (!pill) throw new Error("no ${label} pill on the comparator");
+    pill.click();
+    return true;
+  })()`);
+  await waitInDocument(
+    `document.querySelector(".divider")?.style.left === ${JSON.stringify(label === "Before" ? "100%" : "0%")}`,
+    `the split at the ${label} end`,
+  );
+}
+
+function expectPillsAndHandle(reading: ComparatorReading, width: number): void {
+  expect(reading.clientWidth, "the phone column is the width under test").toBe(width);
+  expect(reading.scrollWidth, "no tapped state widens the page").toBeLessThanOrEqual(width);
+
+  // The two pills sit at the bottom corners of the arch, inside its box.
+  expect(reading.pills.map((pill) => pill.text), "the comparator's two pills").toEqual(["Before", "After"]);
+  for (const pill of reading.pills) {
+    expect(pill.left, `${pill.text} starts inside the arch`).toBeGreaterThanOrEqual(reading.frame.left - 1);
+    expect(pill.right, `${pill.text} ends inside the arch`).toBeLessThanOrEqual(reading.frame.right + 1);
+    expect(pill.top, `${pill.text} sits below the arch's top curve`).toBeGreaterThan(reading.frame.top);
+    expect(pill.bottom, `${pill.text} ends inside the arch`).toBeLessThanOrEqual(reading.frame.bottom + 1);
+    expect(pill.bottom, `${pill.text} sits at the bottom of the arch`).toBeGreaterThanOrEqual(reading.frame.bottom - 60);
+  }
+  // The corners are pinned by the computed insets: Before from the left
+  // edge, After from the right edge, both off the bottom.
+  expect(reading.pills[0]!.insetLeft, "Before is inset at the left corner").toBe("12px");
+  expect(reading.pills[1]!.insetRight, "After is inset at the right corner").toBe("12px");
+  expect(reading.pills[0]!.insetBottom, "Before sits off the bottom edge").toBe("12px");
+  expect(reading.pills[1]!.insetBottom, "After sits off the bottom edge").toBe("12px");
+
+  // The handle rides the split at collarbone level, clear of the face.
+  expect(Math.abs(reading.handle.collarDelta), "the handle sits at collar level").toBeLessThanOrEqual(2);
+  expect(reading.handle.left, "the handle starts inside the viewport").toBeGreaterThanOrEqual(0);
+  expect(reading.handle.left, "the handle starts inside the arch").toBeGreaterThanOrEqual(reading.frame.left - 1);
+  expect(reading.handle.right, "the handle ends inside the viewport").toBeLessThanOrEqual(width);
+  expect(reading.handle.right, "the handle ends inside the arch").toBeLessThanOrEqual(reading.frame.right + 1);
+}
+
+function expectResultCard(reading: ComparatorReading): void {
+  const card = reading.card;
+  expect(card.right - card.left, "the result card spans the column").toBeGreaterThanOrEqual(300);
+  for (const side of ["top", "right", "bottom", "left"] as const) {
+    expect(card.borders[side], `the card's ${side} border is the full 2 px`).toBeGreaterThan(1.5);
+    expect(card.borders[side], `the card's ${side} border is the full 2 px`).toBeLessThan(2.5);
+  }
+  expect(card.borders.style, "the card's border is solid").toBe("solid");
+  expect(card.borders.colour, "the card is edged in the accent, all the way round").toBe(card.accent);
+
+  // One cohesive card: every drawn child sits inside its box, the shop row
+  // spans the card's column, and the three verdict words share it equally.
+  expect(card.children.map((child) => child.name), "the card holds the hero, the shop row and the bar").toEqual([
+    "hero",
+    "button",
+    "verdict",
+  ]);
+  for (const child of card.children) {
+    expect(child.left, `${child.name} starts inside the card`).toBeGreaterThanOrEqual(card.left - 1);
+    expect(child.right, `${child.name} ends inside the card`).toBeLessThanOrEqual(card.right + 1);
+    expect(child.top, `${child.name} starts inside the card`).toBeGreaterThanOrEqual(card.top - 1);
+    expect(child.bottom, `${child.name} ends inside the card`).toBeLessThanOrEqual(card.bottom + 1);
+  }
+  expect(card.shopWidth, "the shop row spans the card's column").toBeGreaterThanOrEqual(card.column - 1);
+  expect(card.segments.map((segment) => segment.text), "the verdict bar's three words").toEqual([
+    "Keep",
+    "Dismiss",
+    "Bought it",
+  ]);
+  const widest = Math.max(...card.segments.map((segment) => segment.width));
+  const narrowest = Math.min(...card.segments.map((segment) => segment.width));
+  expect(widest - narrowest, "the three segments are equal").toBeLessThanOrEqual(2);
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(
+    `in a real browser, the render screen holds the bottom pills, the collar handle and the result card, ${theme}`,
+    { timeout: 120_000 },
+    async () => {
+      await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 667, deviceScaleFactor: 1, mobile: true });
+      await send("Emulation.setEmulatedMedia", {
+        features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+      });
+      if (!onOrigin) await navigate(`${baseUrl}/#/look/render`);
+      await evaluate(`localStorage.setItem("chaaya-theme", ${JSON.stringify(theme)}); true`);
+      await navigate("about:blank");
+      await navigate(`${baseUrl}/#/look/render`);
+      await waitInDocument(`document.querySelector("nav.tab-bar") !== null`, "the shell");
+      await waitInDocument(`document.querySelector(".frame .layer") !== null`, "the comparator");
+      await waitInDocument(`document.querySelector(".result-card") !== null`, "the result card");
+
+      // The halfway state the screen opens on.
+      const mid = await measureComparator();
+      expect(mid.theme, "the theme is forced").toBe(theme);
+      expect(mid.frame.radius, "the comparator is arched").toBe("999px");
+      expect(mid.frame.height, "the comparator is a portrait box").toBeGreaterThan(mid.frame.width);
+      expectPillsAndHandle(mid, 375);
+      expectResultCard(mid);
+
+      // A tap on either pill rides the split to that end — and neither end
+      // may push the round handle past the arch, the old 2 px overflow.
+      await tapPill("Before");
+      const before = await measureComparator();
+      expect(before.scrollWidth, "the Before end does not widen the page").toBeLessThanOrEqual(375);
+      expectPillsAndHandle(before, 375);
+
+      await tapPill("After");
+      const after = await measureComparator();
+      expect(after.scrollWidth, "the After end does not widen the page").toBeLessThanOrEqual(375);
+      expectPillsAndHandle(after, 375);
+    },
+  );
+}
+
+/** The verdict screen's mirror, measured the way a reader sees it: the screen
+ * opens on the photograph — the arched comparator when the render stands, the
+ * selfie in the arched mirror frame when the look flags nothing — above the
+ * screen's words, with the page never wider than the phone. jsdom lays
+ * nothing out, so this is measured here and nowhere else. No assertion reads
+ * image bytes. */
+interface MirrorReading {
+  theme: string | undefined;
+  clientWidth: number;
+  scrollWidth: number;
+  mirror: {
+    selector: string;
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    width: number;
+    height: number;
+    radius: string;
+    images: number;
+  };
+  sitsAbove: boolean;
+}
+
+/** The recorded no-fix body, served from the page itself: the mock is
+ * installed underneath, so the wrap rides on top of it and answers only the
+ * look read — the same shape `testdata/api/look-nofix.json` records. */
+const noFixWrap = `(() => {
+  if (window.__nofixWrapped) return true;
+  const inner = window.fetch;
+  const body = {
+    id: "100c0000000000000000000000000001",
+    job_id: "10b00000000000000000000000000001",
+    occasion: "family-function",
+    selfie_id: "5e1f1e00000000000000000000000001",
+    selfie_url: "/media/5e1f1e00000000000000000000000001",
+    ready: true,
+    flags: [],
+    fix: null,
+    runner_up: "",
+    shown_render: null,
+    suggestion_only: true,
+    products: [],
+    verdict: "",
+    words: "",
+  };
+  window.fetch = async (input, init) => {
+    const url = String(input && (input.url ?? input));
+    const method = (init && init.method ? init.method : input instanceof Request ? input.method : "GET").toUpperCase();
+    if (method === "GET" && url.endsWith("/api/looks/100c0000000000000000000000000001")) {
+      return new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
+    }
+    return inner(input, init);
+  };
+  window.__nofixWrapped = true;
+  return true;
+})()`;
+
+async function measureVerdictMirror(theme: string, noFix: boolean): Promise<MirrorReading> {
+  await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 667, deviceScaleFactor: 1, mobile: true });
+  await send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+  });
+  // The app has to be mounted before the wrap goes on — it rides on top of
+  // the installed mock — so the tour lands on the front door first, wraps,
+  // and walks to the verdict by hash, which mounts the screen fresh.
+  if (!onOrigin) await navigate(`${baseUrl}/#/`);
+  await evaluate(`localStorage.setItem("chaaya-theme", ${JSON.stringify(theme)}); true`);
+  await navigate("about:blank");
+  await navigate(`${baseUrl}/#/`);
+  await waitInDocument(`document.querySelector("nav.tab-bar") !== null`, "the shell");
+  if (noFix) await evaluate(noFixWrap);
+  await evaluate(`location.hash = "#/look/verdict"; true`);
+  const picture = noFix
+    ? `document.querySelector(".mirror-frame img") !== null`
+    : `document.querySelector(".frame .layer") !== null`;
+  await waitInDocument(picture, noFix ? "the selfie mirror" : "the arched comparator");
+  return JSON.parse(
+    await evaluate<string>(`(() => {
+    const round = (n) => Math.round(n * 10) / 10;
+    const doc = document.documentElement;
+    const selector = ${noFix} ? ".mirror-frame" : ".frame";
+    const mirror = document.querySelector(selector);
+    if (!mirror) throw new Error("no mirror on the verdict screen");
+    const mb = mirror.getBoundingClientRect();
+    const cs = getComputedStyle(mirror);
+    const images = mirror.querySelectorAll("img").length;
+    const next = [...document.querySelectorAll(".disclosure, .hero, .result-card")].reduce(
+      (top, el) => Math.min(top, el.getBoundingClientRect().top),
+      Number.POSITIVE_INFINITY,
+    );
+    return JSON.stringify({
+      theme: doc.dataset.theme,
+      clientWidth: doc.clientWidth,
+      scrollWidth: doc.scrollWidth,
+      mirror: {
+        selector,
+        left: round(mb.left),
+        top: round(mb.top),
+        right: round(mb.right),
+        bottom: round(mb.bottom),
+        width: round(mb.width),
+        height: round(mb.height),
+        radius: cs.borderTopLeftRadius,
+        images,
+      },
+      sitsAbove: mb.bottom <= next + 1,
+    });
+  })()`),
+  ) as MirrorReading;
+}
+
+function expectMirror(reading: MirrorReading, width: number, theme: string, noFix: boolean): void {
+  expect(reading.theme, "the theme is forced").toBe(theme);
+  expect(reading.clientWidth, "the phone column is the width under test").toBe(width);
+  expect(reading.scrollWidth, "the mirror does not widen the page").toBeLessThanOrEqual(width);
+  expect(reading.mirror.selector, "the picture the look carries").toBe(noFix ? ".mirror-frame" : ".frame");
+  expect(reading.mirror.radius, "the mirror is arched").toBe("999px");
+  expect(reading.mirror.height, "the mirror is a portrait box").toBeGreaterThan(reading.mirror.width);
+  expect(reading.mirror.images, "the photograph is in the mirror").toBeGreaterThan(0);
+  expect(reading.mirror.left, "the mirror starts inside the viewport").toBeGreaterThanOrEqual(0);
+  expect(reading.mirror.right, "the mirror ends inside the viewport").toBeLessThanOrEqual(width);
+  expect(reading.sitsAbove, "the mirror leads the screen, above the words").toBe(true);
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(
+    `in a real browser, the verdict screen opens on the arched mirror photo, ${theme}`,
+    { timeout: 120_000 },
+    async () => {
+      const reading = await measureVerdictMirror(theme, false);
+      expectMirror(reading, 375, theme, false);
+      expect(reading.mirror.images, "the comparator holds both pictures").toBe(2);
+    },
+  );
+
+  test(
+    `in a real browser, the verdict screen shows the selfie alone when the look flags nothing, ${theme}`,
+    { timeout: 120_000 },
+    async () => {
+      const reading = await measureVerdictMirror(theme, true);
+      expectMirror(reading, 375, theme, true);
+      expect(reading.mirror.images, "the selfie stands without the comparator").toBe(1);
+    },
+  );
+}
