@@ -752,7 +752,7 @@ requires:   T5.13
 fixture-ok: yes
 size:       S · light
 owns:       web/src/routes/look/render/, web/src/routes/look/verdict/, web/tests/a11y/
-status:     in-review
+status:     done
 ```
 A look whose judge flags nothing — which is a real outcome, not an error — has no fix to name, so the server's ready body carries no fix object. Two shipped screens throw on exactly that: `web/src/routes/look/render/copy.ts:120-124` answers "The render could not be read." and `web/src/routes/look/verdict/copy.ts:51-55` answers "The verdict could not be read." Nothing in the app can show a clean look. `sample-interview` is the data that reached it (T4.6's `Test…SpendsNothing` pins the null body), and the same body answers for any paid look that flags nothing, so this is not a sample-only path — it is the most reassuring screen in the product missing from the one occasion it is most needed.
 
