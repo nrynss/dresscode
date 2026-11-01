@@ -2,8 +2,19 @@
 
 // This file is the live re-run of the judging and the render-check
 // evaluation (T3.9b). The gate does not build it: `go vet ./...` and
-// `go test -race ./...` skip it, and it runs only with
-// `go test -tags live ./internal/eval/ -run TestLive`.
+// `go test -race ./...` skip it, and it runs only under the live tag.
+//
+// Run the two tests apart, never together:
+//
+//   go test -tags live ./internal/eval/ -run TestLiveProbe      # 2 calls, $0.01 ceiling
+//   go test -tags live ./internal/eval/ -run TestLiveEvaluation # 41 calls, $0.08 ceiling
+//
+// `-run TestLive` matches both, and both spend: the probe's 2 calls and the
+// sweep's 41, 43 paid calls in one command, across the two ceilings above
+// ($0.09 combined). The probe first, always - it prices the sweep, and it
+// fails if the projection reaches the sweep's ceiling or the free plan's
+// daily neurons, which is what stops the sweep from running on a probe that
+// said it should not.
 //
 // It dials Workers AI and nothing else. No YouCam client is built here
 // and no YouCam key is read. The photos are the committed sample people's
@@ -89,11 +100,27 @@ const (
 	liveOrdering = "sequential calls, no t.Parallel, fail fast on the first call error"
 )
 
-// The rate card, as docs/clef.md states it: 21,818 neurons per million
-// input tokens on clef, 3,455 on clef-flash, $0.011 per 1,000 neurons.
-// The client prices the same way; these are here so the report can name
-// the neurons a call's reported input tokens imply.
+// The rate card, and where each number comes from. The two neuron rates -
+// 21,818 per million input tokens on clef, 3,455 on clef-flash - and the
+// free plan's 10,000 neurons a day are docs/clef.md's (Cost). The dollar
+// rate is not: $0.011 per 1,000 neurons is the client's own booking rate,
+// internal/systemone/workersai.go:48-55 (`nanodollarsPerNeuron`), the same
+// figure T2.2 recorded in dev-diary/PHASE-2-clients.md:29.
+//
+// liveNeuronsPerMillion is a second copy of systemone's private table
+// (workersai.go:57-62), which a test cannot read. The copy is not tied by
+// inspection: liveImpliedPrice works out what these rates would book for a
+// call, and liveSpend.record compares it against what the ledger did book,
+// fatalling the run on the first call where the two disagree. A rate card
+// that drifted from the client's therefore stops the sweep instead of
+// printing a row nobody compared.
 const liveNanodollarsPerNeuron = 11_000
+
+// liveTokenCap mirrors systemone's private maxEstimateTokens (workersai.go:
+// 54), the cap on the token count its pricing arithmetic applies. This copy
+// needs it for the same reason: so the implied price equals the booked one
+// on any input, not only on the ones expected.
+const liveTokenCap = 20_000_000
 
 var liveNeuronsPerMillion = map[string]int64{
 	systemone.ModelClef:      21_818,
@@ -258,7 +285,11 @@ type liveSpend struct {
 }
 
 // record books one finished call against the ledger length taken before it
-// ran. This reads the meter's own booking, never an estimate of it.
+// ran. This reads the meter's own booking, never an estimate of it, and it
+// is where this file's rate card is tied to the money: the price the
+// documented rates imply for the call's reported tokens must equal the
+// price the ledger booked. A disagreement is an error, which every caller
+// turns into a fatal before the next call goes out.
 func (s *liveSpend) record(label, model string, before int, usage systemone.Usage) error {
 	perMillion, ok := liveNeuronsPerMillion[model]
 	if !ok {
@@ -270,10 +301,18 @@ func (s *liveSpend) record(label, model string, before int, usage systemone.Usag
 		if kind := charges[before].Kind; kind != "workersai."+model {
 			return fmt.Errorf("live eval: %s: charge kind %q, want workersai.%s", label, kind, model)
 		}
+		if units := charges[before].Units; units != 1 {
+			return fmt.Errorf("live eval: %s: charge booked %d units, want 1", label, units)
+		}
 	case len(charges) == before:
 		return fmt.Errorf("live eval: %s: the call booked no charge", label)
 	default:
 		return fmt.Errorf("live eval: %s: %d charges booked by one call, want 1", label, len(charges)-before)
+	}
+	booked := charges[before].UnitPrice
+	if implied := liveImpliedPrice(usage.InputTokens, perMillion); implied != booked {
+		return fmt.Errorf("live eval: %s: this file's rate card implies %s for %d tokens on %q, the ledger booked %s; "+
+			"a rate here no longer matches internal/systemone/workersai.go", label, implied, usage.InputTokens, model, booked)
 	}
 	s.calls = append(s.calls, liveCall{
 		label:   label,
@@ -281,9 +320,25 @@ func (s *liveSpend) record(label, model string, before int, usage systemone.Usag
 		tokens:  usage.InputTokens,
 		output:  usage.OutputTokens,
 		neurons: liveNeurons(usage.InputTokens, perMillion),
-		booked:  charges[before].UnitPrice,
+		booked:  booked,
 	})
 	return nil
+}
+
+// liveImpliedPrice is this file's copy of the client's own arithmetic: the
+// neurons the documented rate implies for a call's reported input tokens,
+// priced at liveNanodollarsPerNeuron and rounded up to the nanodollar -
+// which is how internal/systemone/workersai.go prices a settle (tokenPrice,
+// workersai.go:386-393, with the same cap on the token count). It exists so
+// the rate table this file prints from can be checked against the money the
+// ledger actually booked, call by call.
+func liveImpliedPrice(tokens int, neuronsPerMillion int64) cost.Price {
+	if tokens > liveTokenCap {
+		tokens = liveTokenCap
+	}
+	const scale = 1_000_000
+	product := int64(tokens) * neuronsPerMillion * liveNanodollarsPerNeuron
+	return cost.Price((product + scale - 1) / scale)
 }
 
 // liveNeurons is the documented rate applied to a call's reported input
@@ -331,7 +386,6 @@ func (s *liveSpend) dollars() cost.Price {
 // beside.
 type liveWorld struct {
 	secrets   liveSecrets
-	root      string
 	clefDir   string
 	gt        GroundTruth
 	occasions map[string]*domain.Occasion
@@ -345,7 +399,8 @@ type liveWorld struct {
 // livePrepare loads all of it and spends nothing. It also runs the
 // zero-spend consistency check on T4.4's landing: the shipped [judge] and
 // [check] numbers must equal the chosen settings the offline evaluation
-// reports. A mismatch is a finding, never papered over.
+// reports. A mismatch fails the run here, before liveNewClient builds a
+// client and before a call, because everything after it is paid for.
 func livePrepare(t *testing.T, secrets liveSecrets) liveWorld {
 	t.Helper()
 	root := repoRoot(t)
@@ -369,7 +424,6 @@ func livePrepare(t *testing.T, secrets liveSecrets) liveWorld {
 	}
 	world := liveWorld{
 		secrets:   secrets,
-		root:      root,
 		clefDir:   filepath.Join(root, "testdata", "clef"),
 		gt:        gt,
 		occasions: occasions,
@@ -425,12 +479,17 @@ func livePrepare(t *testing.T, secrets liveSecrets) liveWorld {
 // the committed settings file must carry exactly the settings the offline
 // evaluation chooses, because the live sweep measures the shipped lines
 // and calls them the shipped lines.
+//
+// A mismatch is fatal, and fatal here: livePrepare runs before the client is
+// built, so the run stops with all 41 sweep calls still unspent. As a
+// t.Error it only warned, and the sweep went on to spend money and print
+// numbers under a "the shipped line" heading that were not the shipped ones.
+// Every mismatch found is named in the one failure.
 func liveAssertShipped(t *testing.T, secrets liveSecrets, got config.Settings, want Settings) {
 	t.Helper()
-	matched := true
+	var mismatch []string
 	note := func(format string, args ...any) {
-		matched = false
-		t.Error(liveErrorf(secrets, format, args...))
+		mismatch = append(mismatch, fmt.Sprintf(format, args...))
 	}
 	if got.Judge.Met != want.JudgeMet {
 		note("shipped [judge] met is %.5f, the offline evaluation chooses %.5f", got.Judge.Met, want.JudgeMet)
@@ -454,8 +513,11 @@ func liveAssertShipped(t *testing.T, secrets liveSecrets, got config.Settings, w
 	if got.Check.Model != want.CheckModel {
 		note("shipped [check] model is %q, the offline evaluation chooses %q", got.Check.Model, want.CheckModel)
 	}
-	liveLogf(t, secrets, "consistency: the shipped [judge] and [check] numbers equal the offline evaluation's chosen settings: %v",
-		matched)
+	if len(mismatch) > 0 {
+		liveFatalf(t, secrets, "the shipped settings are not the evaluated ones, so a live sweep would report "+
+			"numbers that are not the shipped line's; stopped before any call: %s", strings.Join(mismatch, "; "))
+	}
+	liveLogf(t, secrets, "consistency: the shipped [judge] and [check] numbers equal the offline evaluation's chosen settings: true")
 }
 
 // liveJudgeRead runs one judge recording live, at the shipped lines, and
@@ -667,6 +729,16 @@ func liveCheckReads(ctx context.Context, t *testing.T, world liveWorld, sys syst
 // liveVocabularyCells scores the live look answers against each render's
 // truth, in the vocabulary's own order - the same shape and the same rules
 // the offline check report builds.
+//
+// Those rules are a copy, not a call: this mirrors internal/eval/check.go:
+// 325-344 (sort the check truths by exchange, then one cell per attribute in
+// the vocabulary's order, correct = answer equals the render's truth). The
+// extraction that would remove the duplication is a product-file edit and
+// outside this task, so the copy stands. Read it as a standing risk: an edit
+// to check.go:325-344 that does not come here leaves the live vocabulary
+// scored by different rules than the recorded one, and the only thing that
+// shows it is this file's own cell-by-cell comparison against the recorded
+// cells.
 func liveVocabularyCells(world liveWorld, answers map[string]systemone.Response) ([]VocabularyCell, error) {
 	truths := append([]CheckTruth(nil), world.gt.Checks...)
 	sort.Slice(truths, func(i, j int) bool { return truths[i].Exchange < truths[j].Exchange })
@@ -697,8 +769,10 @@ func liveVocabularyCells(world liveWorld, answers map[string]systemone.Response)
 // TestLiveProbe makes exactly two live calls - one judge and one check - to
 // prove the key works and to price one call of each before the 41-call
 // sweep. Run it first: its last lines project the sweep's cost against the
-// sweep's ceiling and against the free plan's daily neuron allowance, and
-// a projection that does not fit means the sweep does not run.
+// sweep's ceiling and against the free plan's daily neuron allowance, and a
+// projection that reaches either limit fails this test outright, so a green
+// probe is the permission for the sweep to run and a red one stops it before
+// its third call.
 //
 // It reads the shipped lines and the recordings exactly as the sweep does,
 // but reports nothing about agreement: two calls cannot measure that, and
@@ -759,10 +833,19 @@ func TestLiveProbe(t *testing.T) {
 	projectedDollars := cost.Price(projectedNeurons * liveNanodollarsPerNeuron)
 	liveLogf(t, secrets, "  projected sweep: %d judge x %.2f + 2 clef check x %.2f + 2 flash check x %.2f = %.0f neurons = %s",
 		liveJudgeCalls, judgeCall.neurons, checkCall.neurons, flashCheck, projectedNeurons, projectedDollars)
-	liveLogf(t, secrets, "  sweep ceiling %s; the projection fits under it: %v",
-		cost.Price(liveSweepCeiling), projectedDollars < liveSweepCeiling)
-	liveLogf(t, secrets, "  free plan allows %d neurons a day; the projection fits under it: %v",
-		liveFreeDailyNeurons, projectedNeurons < liveFreeDailyNeurons)
+	// The stop rule the header promises, enforced rather than printed: a
+	// projection that reaches either limit fails this test, so the sweep
+	// never runs on a probe that said it should not.
+	if projectedDollars >= liveSweepCeiling {
+		liveFatalf(t, secrets, "the projected sweep %s reaches the sweep ceiling %s; the sweep does not run",
+			projectedDollars, cost.Price(liveSweepCeiling))
+	}
+	liveLogf(t, secrets, "  sweep ceiling %s; the projection fits under it: true", cost.Price(liveSweepCeiling))
+	if projectedNeurons >= float64(liveFreeDailyNeurons) {
+		liveFatalf(t, secrets, "the projected sweep %.0f neurons reaches the free plan's %d neuron day; the sweep does not run",
+			projectedNeurons, liveFreeDailyNeurons)
+	}
+	liveLogf(t, secrets, "  free plan allows %d neurons a day; the projection fits under it: true", liveFreeDailyNeurons)
 	total, err := ledger.Total()
 	if err != nil {
 		liveFatalf(t, secrets, "ledger total: %v", err)
@@ -875,11 +958,11 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 		liveMaxTotal += c.MaxAgreement
 		for _, name := range offAt(c.Cells, readingAt) {
 			offHalfLive = append(offHalfLive, OffCell{Sample: name, Criterion: c.ID,
-				Value: valueOf(c.Cells, name), Expected: expectedOf(c.Cells, name)})
+				Value: valueOf(t, secrets, c.Cells, name), Expected: expectedOf(t, secrets, c.Cells, name)})
 		}
 		for _, name := range offAt(c.Cells, line) {
 			wrongLive = append(wrongLive, OffCell{Sample: name, Criterion: c.ID,
-				Value: valueOf(c.Cells, name), Expected: expectedOf(c.Cells, name)})
+				Value: valueOf(t, secrets, c.Cells, name), Expected: expectedOf(t, secrets, c.Cells, name)})
 		}
 		for _, cell := range c.Cells {
 			recValue, known := recValues[cell.Sample+" "+c.ID]
@@ -1046,22 +1129,31 @@ func liveCompareCells(t *testing.T, secrets liveSecrets, where string, recorded,
 	}
 }
 
-func valueOf(cells []Cell, sample string) float64 {
+// valueOf and expectedOf read one sample's cell out of a curve. The name
+// comes from offAt, which walks the same cells, so a miss is a bug in this
+// file rather than a state the sweep can be in: it fails, the way the loops
+// beside it fail on a miss, instead of printing a cell at 0.0000 / expected
+// false.
+func valueOf(t *testing.T, secrets liveSecrets, cells []Cell, sample string) float64 {
+	t.Helper()
 	for _, c := range cells {
 		if c.Sample == sample {
 			return c.Value
 		}
 	}
-	return 0
+	liveFatalf(t, secrets, "no cell for sample %q in this curve's %d cells", sample, len(cells))
+	return 0 // unreachable: liveFatalf ends the test; the compiler cannot see that
 }
 
-func expectedOf(cells []Cell, sample string) bool {
+func expectedOf(t *testing.T, secrets liveSecrets, cells []Cell, sample string) bool {
+	t.Helper()
 	for _, c := range cells {
 		if c.Sample == sample {
 			return c.Expected
 		}
 	}
-	return false
+	liveFatalf(t, secrets, "no cell for sample %q in this curve's %d cells", sample, len(cells))
+	return false // unreachable: liveFatalf ends the test; the compiler cannot see that
 }
 
 func liveApartCount(curves []Curve) int {
@@ -1077,6 +1169,14 @@ func liveApartCount(curves []Curve) int {
 // liveIssues counts the live biggest-issue answers that name one of the
 // variant's misses, or none when the variant misses nothing - the rule the
 // recorded report scores with.
+//
+// That rule is a copy, not a call: this mirrors internal/eval/judge.go:
+// 308-326 (the ground truth's shape for the biggest issue, counted into
+// report.Issues). The extraction that would remove the duplication is a
+// product-file edit and outside this task, so the copy stands. Read it as a
+// standing risk: an edit to judge.go:308-326 that does not come here leaves
+// the live biggest-issue count scored by different rules than the recorded
+// one, and the 28/37 beside 31/37 line is where the difference would show.
 func liveIssues(reads []JudgeRead) int {
 	named := 0
 	for _, r := range reads {
@@ -1118,6 +1218,9 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 		"same_person":   world.lines.SamePerson,
 		"criterion_met": world.lines.CriterionMet,
 	}
+	// gateValue names one gate off a read. The gate names come from
+	// gateNames, so an unrecognised one is a bug in this file, not a state
+	// the sweep can be in: it fails instead of reporting a gate at 0.0000.
 	gateValue := func(r CheckRead, name string) float64 {
 		switch name {
 		case "change_made":
@@ -1127,7 +1230,8 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 		case "criterion_met":
 			return r.Met
 		}
-		return 0
+		liveFatalf(t, secrets, "unknown gate %q; gateNames and this switch disagree", name)
+		return 0 // unreachable: liveFatalf ends the test; the compiler cannot see that
 	}
 
 	liveLogf(t, secrets, "")
@@ -1169,11 +1273,20 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 			if !found {
 				liveFatalf(t, secrets, "no live check read on model %q", model)
 			}
-			rec := GateCurve{}
+			// The recorded gate this row prints beside. The live set runs on
+			// the same three gates and the same two models, so a missing row
+			// is a disagreement between the two reports, not a state to print
+			// a zero margin for.
+			var rec GateCurve
+			recFound := false
 			for _, g := range recorded.Gates {
 				if g.Gate == name && g.Model == model {
-					rec = g
+					rec, recFound = g, true
 				}
+			}
+			if !recFound {
+				liveFatalf(t, secrets, "no recorded gate %q on model %q among the recorded report's %d gate rows",
+					name, model, len(recorded.Gates))
 			}
 			line := lines[name]
 			cells := []Cell{
