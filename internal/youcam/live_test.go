@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	_ "image/jpeg"
@@ -54,7 +55,7 @@ func TestLiveYouCamRendersLipRed(t *testing.T) {
 	}
 	client, err := NewClient(ClientConfig{Token: key})
 	if err != nil {
-		t.Fatal(scrubLiveKey(key, err.Error()))
+		t.Fatal(scrubLive(key, err.Error()))
 	}
 	wire := &liveWire{YouCam: client, key: key, t: t}
 
@@ -69,7 +70,7 @@ func TestLiveYouCamRendersLipRed(t *testing.T) {
 	slotStart := time.Now()
 	slot, err := wire.Upload(ctx, File{Task: "makeup-vto", ContentType: "image/jpeg", Bytes: photo})
 	if err != nil {
-		t.Fatalf("upload slot: %s", scrubLiveKey(key, err.Error()))
+		t.Fatalf("upload slot: %s", scrubLive(key, err.Error()))
 	}
 	if slot.FileID == "" {
 		t.Fatal("the slot named no file id")
@@ -167,7 +168,7 @@ func TestLiveYouCamRendersLipRed(t *testing.T) {
 	renderStart := time.Now()
 	out, err := runner.Run(ctx, job)
 	if err != nil {
-		t.Fatalf("render: %s", scrubLiveKey(key, err.Error()))
+		t.Fatalf("render: %s", scrubLive(key, err.Error()))
 	}
 	liveLog(wire, "render leg done in %d ms task_id=%s media_id=%s face_shape=%q",
 		time.Since(renderStart).Milliseconds(), out.TaskID, out.MediaID, out.FaceShape)
@@ -237,6 +238,57 @@ func TestLiveYouCamRendersLipRed(t *testing.T) {
 	}
 }
 
+// TestTheLiveScrubNeutralizesSignedUrls proves the transcript scrub on
+// fabricated secrets alone, in the shapes a run actually meets: a real
+// *url.Error carrying a fake signed url — what a failed PUT or fetch
+// returns, its query holding the signature and an access-key id — and
+// the scheme-host-path view the happy-path lines print. It dials nothing
+// and needs no key, so every -tags live run exercises it, keyed or not.
+func TestTheLiveScrubNeutralizesSignedUrls(t *testing.T) {
+	const key = "fake-youcam-key-0123456789abcdef"
+	const signature = "X-Amz-Signature=00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
+	const accessKeyID = "AKIAIOSFODNN7EXAMPLE"
+	const accountSeg = "123456789012345678"
+	const userSeg = "userpath-1a2b3c4d"
+	signed := "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/" + accountSeg +
+		"/v2/USER/" + userSeg + "/98765432-1111-2222-3333-444444444444.jpg?" +
+		signature + "&X-Amz-Credential=" + accessKeyID + "%2Fus-west-2%2Fs3%2Faws4_request"
+
+	// A failed PUT: the transport error embeds the signed url whole,
+	// query and grant included, and the client's own scrub replaces the
+	// key alone — never the signature.
+	err := &url.Error{Op: "Put", URL: signed, Err: errors.New("dial tcp: i/o timeout")}
+	got := scrubLive(key, err.Error())
+	for _, secret := range []string{signature, accessKeyID, accountSeg, userSeg, key, "X-Amz-Credential", "?"} {
+		if strings.Contains(got, secret) {
+			t.Errorf("the scrub left %q in the transcript: %s", secret, got)
+		}
+	}
+	for _, want := range []string{
+		`Put "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/redacted/v2/USER/redacted/98765432-1111-2222-3333-444444444444.jpg`,
+		": dial tcp: i/o timeout",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the scrub lost text it should keep (%q): %s", want, got)
+		}
+	}
+
+	// A failed GET carries the same shape.
+	getErr := &url.Error{Op: "Get", URL: signed, Err: errors.New("context deadline exceeded")}
+	if got := scrubLive(key, getErr.Error()); strings.Contains(got, signature) ||
+		!strings.Contains(got, `Get "https://`) ||
+		!strings.Contains(got, "context deadline exceeded") {
+		t.Errorf("the GET error is not scrubbed whole: %s", got)
+	}
+
+	// The happy path: scheme, host, the redacted segments, the extension,
+	// and no query at all.
+	want := "https://yce-us.s3-accelerate.amazonaws.com/ttl30/ACCOUNT/redacted/v2/USER/redacted/98765432-1111-2222-3333-444444444444.jpg"
+	if got := briefLiveURL(signed); got != want {
+		t.Errorf("briefLiveURL: %s, want %s", got, want)
+	}
+}
+
 // livePhoto reads one committed AI sample fixture and proves it decodes
 // above the engine's 320x320 minimum. No real person's photo ever goes to
 // the provider (AGENTS.md).
@@ -281,7 +333,7 @@ func liveBalance(ctx context.Context, w *liveWire, c *Client) int {
 	req.Header.Set("Authorization", "Bearer "+c.token)
 	resp, err := c.http.Do(req)
 	if err != nil {
-		w.t.Fatal(scrubLiveKey(c.token, err.Error()))
+		w.t.Fatal(scrubLive(c.token, err.Error()))
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
@@ -289,14 +341,14 @@ func liveBalance(ctx context.Context, w *liveWire, c *Client) int {
 		w.t.Fatal(err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		w.t.Fatalf("the balance read answered %d: %s", resp.StatusCode, scrubLiveKey(c.token, string(body)))
+		w.t.Fatalf("the balance read answered %d: %s", resp.StatusCode, scrubLive(c.token, string(body)))
 	}
 	var reply struct {
 		Status  int          `json:"status"`
 		Results []creditPool `json:"results"`
 	}
 	if err := json.Unmarshal(body, &reply); err != nil {
-		w.t.Fatalf("the balance reply is not json: %s", scrubLiveKey(c.token, string(body)))
+		w.t.Fatalf("the balance reply is not json: %s", scrubLive(c.token, string(body)))
 	}
 	total := 0
 	for _, pool := range reply.Results {
@@ -327,23 +379,124 @@ type liveWire struct {
 
 func liveLog(w *liveWire, format string, args ...any) {
 	w.t.Helper()
-	w.t.Log(scrubLiveKey(w.key, fmt.Sprintf(format, args...)))
+	w.t.Log(scrubLive(w.key, fmt.Sprintf(format, args...)))
 }
 
-func scrubLiveKey(key, text string) string {
-	if key == "" {
-		return text
+// scrubLive makes provider-facing text safe for the transcript. The api
+// key is replaced everywhere it appears; every url in the text loses its
+// query, because the query of a signed url carries the grant (the
+// signature and an AWS access key id); and the path segment after the
+// literal ACCOUNT/ and USER/ markers is redacted, because the values
+// there are the account's own and vary per upload, so only the markers
+// are stable to match. The error path gets the same treatment the happy
+// path does: a failed PUT or fetch comes back as a *url.Error whose text
+// embeds the request url verbatim, signed query included, and the
+// client's own scrub replaces the key alone.
+func scrubLive(key, text string) string {
+	if key != "" {
+		text = strings.ReplaceAll(text, key, "redacted")
 	}
-	return strings.ReplaceAll(text, key, "redacted")
+	text = cutSignedQueries(text)
+	text = redactAfter(text, "ACCOUNT/")
+	text = redactAfter(text, "USER/")
+	return text
 }
 
-// briefLiveURL strips the query string off a signed url.
+// cutSignedQueries removes the query of every url in text. A url's run
+// starts at a scheme (://) and ends at a space, a quote or the end of the
+// text; the query starts at its first ? and is dropped to the run's end.
+// Over-cutting is the safe direction: a lost word of an error is cheap, a
+// surviving signature is not.
+func cutSignedQueries(text string) string {
+	var out strings.Builder
+	for {
+		i := strings.Index(text, "://")
+		if i < 0 {
+			break
+		}
+		// The scheme is the letters before ://. A :// with none is not a
+		// url and is passed through.
+		schemeStart := i
+		for schemeStart > 0 && isSchemeByte(text[schemeStart-1]) {
+			schemeStart--
+		}
+		if schemeStart == i {
+			out.WriteString(text[:i+3])
+			text = text[i+3:]
+			continue
+		}
+		rest := text[i:]
+		end := len(rest)
+		for j := 3; j < len(rest); j++ {
+			if isRunEnd(rest[j]) {
+				end = j
+				break
+			}
+		}
+		run := rest[:end]
+		out.WriteString(text[:i])
+		if q := strings.IndexByte(run, '?'); q >= 0 {
+			out.WriteString(run[:q])
+		} else {
+			out.WriteString(run)
+		}
+		text = rest[end:]
+	}
+	out.WriteString(text)
+	return out.String()
+}
+
+// isRunEnd reports the bytes that end a url run in the text this scrub
+// meets: a *url.Error quotes the url in double quotes, a log line
+// separates words with spaces.
+func isRunEnd(c byte) bool {
+	switch c {
+	case ' ', '"', '\'', '\n', '\t', '>', ')':
+		return true
+	}
+	return false
+}
+
+// isSchemeByte reports the letters a scheme is made of.
+func isSchemeByte(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+// redactAfter replaces the path segment that follows marker with
+// "redacted", whatever it holds: the segment runs to the next slash or
+// the end of the text.
+func redactAfter(text, marker string) string {
+	var out strings.Builder
+	from := 0
+	for {
+		i := strings.Index(text[from:], marker)
+		if i < 0 {
+			break
+		}
+		abs := from + i
+		start := abs + len(marker)
+		end := start
+		for end < len(text) && text[end] != '/' {
+			end++
+		}
+		out.WriteString(text[from : abs+len(marker)])
+		out.WriteString("redacted")
+		from = end
+	}
+	out.WriteString(text[from:])
+	return out.String()
+}
+
+// briefLiveURL is a signed url as the transcript shows it: scheme, host
+// and a path whose per-upload account and user segments are redacted,
+// with the query gone — the recordings keep the same three, and the query
+// carries the grant.
 func briefLiveURL(raw string) string {
 	u, err := url.Parse(raw)
 	if err != nil {
 		return "(url)"
 	}
-	return u.Scheme + "://" + u.Host + u.Path
+	return scrubLive("", u.Scheme+"://"+u.Host+u.Path)
 }
 
 func (w *liveWire) Upload(ctx context.Context, file File) (Slot, error) {
@@ -355,7 +508,7 @@ func (w *liveWire) Upload(ctx context.Context, file File) (Slot, error) {
 	slot, err := w.YouCam.Upload(ctx, file)
 	if err != nil {
 		liveLog(w, "upload #%d task=%s bytes=%d failed after %d ms: %s",
-			n, file.Task, len(file.Bytes), time.Since(start).Milliseconds(), scrubLiveKey(w.key, err.Error()))
+			n, file.Task, len(file.Bytes), time.Since(start).Milliseconds(), scrubLive(w.key, err.Error()))
 		return Slot{}, err
 	}
 	liveLog(w, "upload #%d task=%s bytes=%d file_name=%s -> file_id=%s put=%s (%d ms)",
@@ -373,7 +526,7 @@ func (w *liveWire) Create(ctx context.Context, task Task) (Created, error) {
 	created, err := w.YouCam.Create(ctx, task)
 	if err != nil {
 		liveLog(w, "create #%d %s failed after %d ms: %s",
-			n, task.Name, time.Since(start).Milliseconds(), scrubLiveKey(w.key, err.Error()))
+			n, task.Name, time.Since(start).Milliseconds(), scrubLive(w.key, err.Error()))
 		return Created{}, err
 	}
 	liveLog(w, "create #%d POST /s2s/%s/task/%s payload=%s -> task_id=%s (%d ms)",
@@ -391,7 +544,7 @@ func (w *liveWire) Poll(ctx context.Context, ref PollRef) (Status, error) {
 	st, err := w.YouCam.Poll(ctx, ref)
 	if err != nil {
 		liveLog(w, "poll #%d failed after %d ms: %s",
-			n, time.Since(start).Milliseconds(), scrubLiveKey(w.key, err.Error()))
+			n, time.Since(start).Milliseconds(), scrubLive(w.key, err.Error()))
 		return Status{}, err
 	}
 	extra := ""
@@ -413,7 +566,7 @@ func (w *liveWire) Fetch(ctx context.Context, ref ResultRef) (Result, error) {
 	res, err := w.YouCam.Fetch(ctx, ref)
 	if err != nil {
 		liveLog(w, "fetch #%d failed after %d ms: %s",
-			n, time.Since(start).Milliseconds(), scrubLiveKey(w.key, err.Error()))
+			n, time.Since(start).Milliseconds(), scrubLive(w.key, err.Error()))
 		return Result{}, err
 	}
 	liveLog(w, "fetch #%d GET %s -> %d bytes (%d ms)",
