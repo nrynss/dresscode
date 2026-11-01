@@ -721,7 +721,7 @@ requires:   T5.21
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/capture/, web/tests/a11y/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Make the Arched Vanity Mirror on `#/capture` behave like a real mirror: show the chosen/captured selfie inside the arch, add a subtle inner mirror rim and camera icon in the idle state, add Gallery/Camera SVG icons to the two picker pills, and apply the shorter one-line labels (`Open camera`, `Take photo`, `Choose photo`, `Phone camera`, `Check look`, `Try your own piece`).
 
