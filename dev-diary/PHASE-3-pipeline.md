@@ -286,6 +286,6 @@ requires:   T3.9
 fixture-ok: no
 size:       S · light
 owns:       internal/eval/live_test.go
-status:     not-started
+status:     claimed:qoder-t39b
 ```
 Re-run the judging and check evaluation live once, after the criteria wording settles. Workers AI only; no YouCam units. **Done when:** the live numbers are in the report beside the recorded ones.
