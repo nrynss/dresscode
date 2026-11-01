@@ -220,7 +220,7 @@ requires:   T4.4, T4.5, T4.6, T4.7, T4.9
 fixture-ok: yes
 size:       M · mid
 owns:       cmd/dresscode/, internal/config/, internal/server/server.go
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 `dresscode serve` composes what P4 built and listens. Today nothing does: no production path calls `MountLooks`, `MountSamples`, the intake mounts or the deletion mount, and `cmd/dresscode` says so out loud ("not listening"). This task is the wiring, not new behaviour — every seam it joins is already exported and tested, and two of them already carry debt written down in this file.
 
