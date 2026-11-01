@@ -31,7 +31,24 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Trigger>Shop the look</Dialog.Trigger>
+  <Dialog.Trigger class="shop-trigger">
+    <!-- A shopping bag, drawn here: a rounded body and its two handles. -->
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.75"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <rect x="4.75" y="8" width="14.5" height="12.25" rx="2.25" />
+      <path d="M8.6 10.9V6.4a3.4 3.4 0 0 1 6.8 0v4.5" />
+    </svg>
+    Shop the look
+  </Dialog.Trigger>
   <Dialog.Portal>
     <Dialog.Overlay class="dresscode-overlay" />
     <Dialog.Content class="sheet">
@@ -92,6 +109,23 @@
     border: 1px solid var(--line);
     border-bottom: none;
     border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+  }
+
+  /* The shop row: one full-width secondary action, the bag ahead of the
+   * words. The class rides the bits-ui trigger, so it stays global; the
+   * theme's own button recipe supplies the fill, the border and the height. */
+  :global(.shop-trigger) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 2.75rem;
+    cursor: pointer;
+  }
+
+  :global(.shop-trigger svg) {
+    flex: none;
   }
 
   /* The dialog's own parts carry their classes through props, so they stay global. */

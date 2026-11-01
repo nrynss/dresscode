@@ -30,11 +30,16 @@
         style:clip-path="inset(0 {clip}% 0 0)"
       />
     </div>
-    <span class="divider" style:left="{clampedPosition(position)}%" aria-hidden="true">
-      <span class="handle"><span aria-hidden="true">◂ ▸</span></span>
+    <span class="divider" style:left="{clampedPosition(position)}%" aria-hidden="true"></span>
+    <span
+      class="handle"
+      style:left="clamp(1.25rem, {clampedPosition(position)}%, calc(100% - 1.25rem))"
+      aria-hidden="true"
+    >
+      <span aria-hidden="true">◂ ▸</span>
     </span>
-    <button type="button" class="badge original" onclick={showOriginal}>Original</button>
-    <button type="button" class="badge after" onclick={showRender}>After the fix</button>
+    <button type="button" class="badge original" onclick={showOriginal}>Before</button>
+    <button type="button" class="badge after" onclick={showRender}>After</button>
     <input
       class="slide"
       type="range"
@@ -107,10 +112,15 @@
     border-right: 1px solid var(--line);
   }
 
+  /* The handle rides the split at collarbone level, so the face, the eyes,
+   * the lips and the earrings stay clear. It sits on the frame itself, and
+   * its centre is clamped a half handle inside each end, so a tap that rides
+   * the split all the way over never pushes the round grip past the arch —
+   * the old centred handle overflowed the phone by two pixels at the far
+   * end. */
   .handle {
     position: absolute;
-    top: 50%;
-    left: 50%;
+    top: 72%;
     translate: -50% -50%;
     display: flex;
     align-items: center;
@@ -123,13 +133,14 @@
     color: var(--text);
   }
 
-  /* The corner badges are the two taps of the arch: the picture at either
-   * end, without a second row of buttons below. They ride above the range
-   * input, so a tap on a badge reaches the button while a drag anywhere
-   * else still drives the split. */
+  /* The corner pills are the two taps of the arch: the picture at either
+   * end, without a second row of buttons below. They sit at the bottom
+   * corners, clear of the arch's top curve, and ride above the range input,
+   * so a tap on a pill reaches the button while a drag anywhere else still
+   * drives the split. */
   .badge {
     position: absolute;
-    top: 0.6rem;
+    bottom: 0.75rem;
     z-index: 2;
     min-height: 2.75rem;
     padding: 0.15rem 0.6rem;
@@ -141,11 +152,11 @@
   }
 
   .badge.original {
-    left: 0.6rem;
+    left: 0.75rem;
   }
 
   .badge.after {
-    right: 0.6rem;
+    right: 0.75rem;
   }
 
   .slide {

@@ -151,6 +151,14 @@ export async function openShopSheet(): Promise<void> {
   await waitUntil(() => withText("h3", "Gold jhumkas"), "the product in the sheet");
 }
 
+/** The look's picture on a look screen: the arched comparator's layers when
+ * a render stands, or the selfie in the arched mirror frame when it does
+ * not. The look screens are photo-first, so their gate states wait on this
+ * beside the screen's own marker. */
+export function lookPicture(): Element | null {
+  return document.querySelector(".frame .layer, .mirror-frame img");
+}
+
 /** Open the capture screen's product drawer, so the fields inside it face the
  * gate the way a reader who is considering a piece sees them. */
 export async function openProductDrawer(): Promise<void> {
@@ -163,7 +171,7 @@ export async function openProductDrawer(): Promise<void> {
 /** Open the finished verdict's stepper drawer, so the completed steps face
  * the gate the way a reader who opens them sees them. */
 export async function openStagesDrawer(): Promise<void> {
-  const summary = withText("summary", "Checked against the dress code");
+  const summary = withText("summary", "Progress");
   expect(summary, "the stages drawer summary").not.toBeNull();
   (summary as HTMLElement).click();
   await waitUntil(() => document.querySelector("details.stages-drawer[open]"), "the stages drawer opens");
@@ -172,7 +180,7 @@ export async function openStagesDrawer(): Promise<void> {
 /** Open the missed-criteria drawer on a look screen, so the dress-code notes
  * face the gate the way a reader who expands them sees them. */
 export async function openReasonsDrawer(): Promise<void> {
-  const summary = withText("summary", "What the dress code still asks for");
+  const summary = withText("summary", "Dress code notes");
   expect(summary, "the reasons drawer summary").not.toBeNull();
   (summary as HTMLElement).click();
   await waitUntil(() => document.querySelector("details.reasons-drawer[open]"), "the reasons drawer opens");

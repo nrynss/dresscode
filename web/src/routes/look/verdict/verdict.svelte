@@ -2,7 +2,10 @@
   import { isTerminalStatus, type JobStream } from "@nrynss/chaaya/keel";
   import ErrorNotice from "../../../app/error-notice.svelte";
   import type { ShownError } from "../../../lib/api/types";
+  import type { RenderCopy } from "../render/copy";
+  import { loadLook } from "../render/load";
   import { renderHash } from "../render/route";
+  import Swipe from "../render/swipe.svelte";
   import {
     cleanSentence,
     openingSentence,
@@ -17,6 +20,9 @@
   let stream = $state<JobStream | undefined>(undefined);
   let verdict = $state<VerdictCopy | null>(null);
   let problem = $state<ShownError | undefined>(undefined);
+  /** The look's pictures, read beside the job: the mirror rides on them.
+   * Undefined while it reads, null when there is nothing to show. */
+  let look = $state<RenderCopy | null | undefined>(undefined);
 
   const word = $derived(stream ? stageWord(stream.stage) : "");
   const paused = $derived(stream?.connection === "paused");
@@ -35,6 +41,25 @@
       stream = opened;
     });
     return () => follow.close();
+  });
+
+  // The mirror is photo-first, so the look's pictures are read beside the
+  // job instead of after it. A look that cannot be read stands the mirror
+  // down; the verdict's own words carry the screen.
+  $effect(() => {
+    const control = new AbortController();
+    const lookId = storyLookId;
+    void loadLook(lookId, control.signal).then(
+      (value) => {
+        if (control.signal.aborted) return;
+        look = value;
+      },
+      () => {
+        if (control.signal.aborted) return;
+        look = null;
+      },
+    );
+    return () => control.abort();
   });
 
   $effect(() => {
@@ -61,8 +86,13 @@
 </script>
 
 <section class="verdict" aria-labelledby="verdict-heading">
-  <a class="back" href="#/">Back</a>
   <h2 id="verdict-heading">The verdict</h2>
+
+  {#if look?.render}
+    <Swipe before={look.selfieUrl} after={look.render.url} />
+  {:else if look}
+    <div class="mirror-frame"><img src={look.selfieUrl} alt="Your selfie." /></div>
+  {/if}
 
   {#if stream?.error}
     <ErrorNotice error={{ code: stream.error.code }} />
@@ -98,7 +128,7 @@
   {#if stream !== undefined}
     {#if finished}
       <details class="disclosure stages-drawer">
-        <summary>Checked against the dress code</summary>
+        <summary>Progress</summary>
         {@render stages()}
       </details>
     {:else}
@@ -117,7 +147,7 @@
   {#if verdict}
     {#if verdict.reasons.length > 0}
       <details class="disclosure reasons-drawer">
-        <summary>What the dress code still asks for</summary>
+        <summary>Dress code notes</summary>
         <ul>
           {#each verdict.reasons as reason, index (index)}
             <li>{reason}</li>
@@ -150,11 +180,34 @@
     min-inline-size: 0;
   }
 
-  .back {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-    color: var(--accent);
+  /* The screen opens on the photograph, the way the mirror does on the
+   * capture screen: the same arched portrait box, carrying the selfie until
+   * the render stands in beside it. */
+  .mirror-frame {
+    position: relative;
+    width: 100%;
+    max-width: min(100%, calc(68dvh * 3 / 4));
+    margin-inline: auto;
+    border: 2px solid var(--line);
+    border-radius: 999px 999px var(--radius-panel) var(--radius-panel);
+    background: var(--sunken);
+    overflow: hidden;
+    min-inline-size: 0;
+  }
+
+  .mirror-frame::before {
+    content: "";
+    display: block;
+    padding-top: 133%;
+  }
+
+  .mirror-frame img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
   }
 
   h2 {
@@ -185,11 +238,6 @@
     color: var(--dim);
   }
 
-  ul {
-    margin: 0;
-    padding-left: 1.1rem;
-  }
-
   /* The dress-code notes fold away until asked. The summary is the whole
    * control: a quiet tap target whose tail turns as it opens. */
   .disclosure summary {
@@ -209,6 +257,21 @@
 
   .disclosure[open] summary::after {
     rotate: 180deg;
+  }
+
+  /* The expanded body keeps the card's own inset, and the notes read as a
+   * quiet list, not raw browser bullets. */
+  .stages-drawer > ol {
+    margin: 0;
+    padding: 0.65rem 0.9rem 0.85rem;
+  }
+
+  .reasons-drawer ul {
+    list-style: none;
+    padding: 0.65rem 0.9rem 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
   }
 
   /* The live path: four words, the one in hand awake, the ones behind it

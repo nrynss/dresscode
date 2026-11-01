@@ -136,34 +136,43 @@ test("the swipe lands on the original in one tap and never shows a figure", () =
   // A tap on the original covers the frame completely: nothing of the render peeks out.
   expect(swipe).toContain('style:clip-path="inset(0 {clip}% 0 0)"');
   expect(swipe).toContain("const clip = $derived(originalPosition - clampedPosition(position));");
-  // The split is visible: a line at the clip, a handle riding it, and the
-  // two corners naming their side. The corners are the taps now — buttons
-  // above the range input — so no second row of buttons stands below the
-  // arch.
+  // The split is visible: a line at the clip, a handle riding it at collar
+  // level, and the two bottom corners naming their side. The corners are the
+  // taps now — buttons above the range input — so no second row of buttons
+  // stands below the arch.
   expect(swipe).toContain('style:left="{clampedPosition(position)}%"');
   expect(swipe).toContain('<span aria-hidden="true">◂ ▸</span>');
-  expect(swipe).toContain('<button type="button" class="badge original" onclick={showOriginal}>Original</button>');
-  expect(swipe).toContain('<button type="button" class="badge after" onclick={showRender}>After the fix</button>');
+  expect(swipe).toContain('<button type="button" class="badge original" onclick={showOriginal}>Before</button>');
+  expect(swipe).toContain('<button type="button" class="badge after" onclick={showRender}>After</button>');
   expect(swipe).not.toContain("Show the original");
   expect(swipe).not.toContain("Show the render");
+  // The handle rides the frame itself, its centre clamped half a handle
+  // inside each end of the swipe, so no tapped state widens the page.
+  expect(swipe).toContain('style:left="clamp(1.25rem, {clampedPosition(position)}%, calc(100% - 1.25rem))"');
   const styles = swipe.slice(swipe.indexOf("<style>"));
   expect(styles).toMatch(/\.frame\s*\{[^}]*border-radius: 999px 999px var\(--radius-panel\) var\(--radius-panel\)/);
   expect(styles).toMatch(/\.frame\s*\{[^}]*border: 2px solid var\(--line\)/);
   expect(styles).toMatch(/\.frame\s*\{[^}]*max-width: min\(100%, calc\(72dvh \* 3 \/ 4\)\)/);
   expect(styles).toMatch(/\.divider\s*\{[^}]*width: 2px/);
+  expect(styles).toMatch(/\.handle\s*\{[^}]*top: 72%/);
   expect(styles).toMatch(/\.handle\s*\{[^}]*width: 2\.5rem/);
   expect(styles).toMatch(/\.handle\s*\{[^}]*border-radius: 999px/);
+  expect(styles).toMatch(/\.badge\s*\{[^}]*bottom: 0\.75rem/);
   expect(styles).toMatch(/\.badge\s*\{[^}]*min-height: 2\.75rem/);
   expect(styles).toMatch(/\.badge\s*\{[^}]*background: var\(--surface\)/);
   expect(styles).toMatch(/\.badge\s*\{[^}]*border: 1px solid var\(--line\)/);
   expect(styles).toMatch(/\.badge\s*\{[^}]*color: var\(--text\)/);
   expect(styles).toMatch(/\.badge\s*\{[^}]*z-index: 2/);
+  expect(styles).toMatch(/\.badge\.original\s*\{[^}]*left: 0\.75rem/);
+  expect(styles).toMatch(/\.badge\.after\s*\{[^}]*right: 0\.75rem/);
   // A tap glides; a drag, and any forced-reduction reader, does not wait.
   expect(styles).toMatch(/@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?transition: clip-path/);
   const text = staticText(swipe);
   expect(text).not.toMatch(/\d/);
-  expect(text).toContain("Original");
-  expect(text).toContain("After the fix");
+  expect(text).toContain("Before");
+  expect(text).toContain("After");
+  expect(text).not.toContain("Original");
+  expect(text).not.toContain("After the fix");
   expect(text).not.toContain("Show the original");
   expect(text).not.toContain("Show the render");
 });
@@ -217,12 +226,21 @@ test("the sheet lists every product with its label", async () => {
   expect(sheet).toContain("{#if product.url}");
   expect(sheet).toContain("{shopSentence}");
   expect(sheet).toContain("Shop the look");
+  // The trigger is the card's full-width shop row, the bag drawn ahead of
+  // the words; the decoration is hidden from readers.
+  expect(sheet).toContain('<Dialog.Trigger class="shop-trigger">');
+  expect(sheet).toContain('aria-hidden="true"');
+  expect(sheet).toContain('stroke="currentColor"');
+  expect(sheet).toContain("<rect x=");
+  expect(sheet).toContain("<path d=");
   // The label opens its own plain explanation, one sentence per fidelity word.
   expect(sheet).toContain("<Popover.Root>");
   expect(sheet).toContain('<Popover.Trigger class="fidelity-trigger">');
   expect(sheet).toContain('<span class="label">{product.label}</span>');
   expect(sheet).toContain("{fidelityExplanations[product.label]}");
   expect(sheet).toContain('aria-label="What the label means"');
+  const styles = styleBlock(sheet);
+  expect(styles).toMatch(/\.shop-trigger[^{]*\{[^}]*width: 100%/);
   const text = staticText(sheet);
   expect(text).not.toMatch(/\d/);
   expect(text).toContain("Shop the look");
@@ -325,21 +343,25 @@ test("the look that flags nothing is read as the good outcome", async () => {
   expect(() => renderFromLook({ ...recorded, fix: {} })).toThrow();
 
   // The clean look is its own branch: the sentence leads, the original stands
-  // under it, and the fix hero and the shop list stay out of a fix that does
-  // not exist.
+  // under it, the verdict bar stays, and the fix hero, the shop list and the
+  // result card stay out of a fix that does not exist.
   const screen = readFileSync(path.join(here, "render.svelte"), "utf8");
   expect(screen).toContain("{#if look.fix === undefined}");
-  expect(screen).toContain("{#if look.fix !== undefined}");
   const cleanBranch = screen.slice(
     screen.indexOf("{#if look.fix === undefined}"),
     screen.indexOf("{:else}", screen.indexOf("{#if look.fix === undefined}")),
   );
   expect(cleanBranch).toContain("{cleanSentence}");
   expect(cleanBranch).toContain('src={look.selfieUrl}');
+  expect(cleanBranch).toContain("{@render verdictBar()}");
   expect(cleanBranch.indexOf("{cleanSentence}")).toBeLessThan(cleanBranch.indexOf('src={look.selfieUrl}'));
   expect(cleanBranch).not.toContain("hero");
   expect(cleanBranch).not.toContain("ShopSheet");
+  expect(cleanBranch).not.toContain("result-card");
   expect(cleanBranch).not.toContain("{suggestionSentence}");
+  // The card lives on the flagged side of the same branch.
+  const elseIndex = screen.indexOf("{:else}", screen.indexOf("{#if look.fix === undefined}"));
+  expect(screen.indexOf('<div class="result-card">')).toBeGreaterThan(elseIndex);
 });
 
 test("the screen shows the render, the actions and the sheet, and no digit", async () => {
@@ -364,30 +386,50 @@ test("the screen shows the render, the actions and the sheet, and no digit", asy
   expect(screen).toContain("{savedSentences[saved]}");
   expect(screen).toContain("{#each lookVerdicts as choice (choice)}");
   expect(screen).toContain("{pendingSentence}");
-  // The fix is the hero; the verdict actions sit in equal segments, the
+  // The way back is the top bar's circular button, not an inline link.
+  expect(screen).not.toContain('class="back"');
+  expect(screen).not.toContain(">Back<");
+  // The fix, the shop row and the verdict bar are one cohesive card. The fix
+  // is its hero; the verdict actions sit in equal segments at its bottom, the
   // stored one (Keep, until a choice is stored) carrying the primary fill.
+  expect(screen).toContain('<div class="result-card">');
   expect(screen).toContain('<div class="hero">');
   expect(screen).toContain('<h3 class="hero-label">A fix</h3>');
   expect(screen).toContain('<p class="hero-fix">{look.fix}</p>');
+  const card = screen.slice(screen.indexOf('<div class="result-card">'), screen.indexOf("{#if saved}"));
+  expect(card).toContain("<ShopSheet lookId={look.lookId} />");
+  expect(card).toContain('{@render verdictBar()}');
+  expect(card.indexOf("<ShopSheet")).toBeGreaterThan(card.indexOf("hero-fix"));
+  expect(card.indexOf("{@render verdictBar()}")).toBeGreaterThan(card.indexOf("<ShopSheet"));
   // The why sentence repeated reasons[0] word for word; it is gone, and the
   // fix paragraph is the card's only body.
   expect(screen).not.toContain("{look.why}");
   expect(screen).not.toContain(">Why<");
   expect(screen).toContain('class:primary={(saved ?? "kept") === choice}');
   // The missed criteria fold away: the closed drawer carries them, named by
-  // its summary.
+  // its summary, and its list reads without raw browser bullets.
   expect(screen).toContain('<details class="disclosure reasons-drawer">');
-  expect(screen).toContain("<summary>What the dress code still asks for</summary>");
+  expect(screen).toContain("<summary>Dress code notes</summary>");
   expect(screen).toContain("{reason}");
   const styles = screen.slice(screen.indexOf("<style>"));
-  expect(styles).toMatch(/\.hero\s*\{[^}]*background: var\(--raised\)/);
-  expect(styles).toMatch(/\.hero\s*\{[^}]*border-left: 3px solid var\(--accent\)/);
+  expect(styles).toMatch(
+    /\.result-card\s*\{[^}]*background: var\(--surface\)[^}]*border: 2px solid var\(--accent\)/,
+  );
+  expect(styles).toMatch(/\.result-card\s*\{[^}]*border-radius: var\(--radius-control\)/);
+  expect(styles).toMatch(/\.result-card\s*\{[^}]*padding: 1rem/);
+  expect(styles).toMatch(/\.result-card\s*\{[^}]*display: flex/);
+  expect(styles).toMatch(/\.result-card\s*\{[^}]*flex-direction: column/);
+  expect(styles).toMatch(/\.result-card\s*\{[^}]*gap: 0\.85rem/);
+  expect(styles).toMatch(/\.reasons-drawer ul\s*\{[^}]*list-style: none/);
+  expect(styles).toMatch(/\.reasons-drawer ul\s*\{[^}]*padding: 0\.65rem 0\.9rem 0\.85rem/);
   expect(styles).toMatch(/\.verdict\s*\{[^}]*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   const text = staticText(screen);
   expect(text).not.toMatch(/\d/);
   expect(text).toContain("The render");
-  expect(text).toContain("What the dress code still asks for");
+  expect(text).toContain("Dress code notes");
   expect(text).toContain("A fix");
+  expect(text).not.toContain("What the dress code still asks for");
+  expect(text).not.toContain("Back");
   expect(text).not.toContain("Why");
   expect(text).not.toContain("lookId");
   expect(text).not.toContain("jobId");
