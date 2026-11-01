@@ -103,7 +103,7 @@ requires:   T2.2
 fixture-ok: no
 size:       XS · light
 owns:       internal/youcam/live_test.go
-status:     in-review
+status:     done
 ```
 One upload slot (free), then one render task on a sample photo. **Unit budget: 20.** **Done when:** the transcript and the units spent are in the report.
 
