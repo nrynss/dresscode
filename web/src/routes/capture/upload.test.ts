@@ -10,6 +10,7 @@ import { installMock, lastCredentials, pinAnswer } from "../../lib/api/mock";
 import type { ApiFixture } from "../../lib/api/types";
 import { resetOccasionMenu, writeOptIn } from "../occasion/menu";
 import { captureHash } from "./route";
+import { PhotoPreview } from "./preview.svelte";
 import {
   chunkBytes,
   finishUpload,
@@ -341,6 +342,43 @@ test("a saved picker occasion starts the look", async () => {
   );
 });
 
+test("the mirror preview hands back each object URL, on replacement and on release", () => {
+  const original = {
+    create: URL.createObjectURL,
+    revoke: URL.revokeObjectURL,
+  };
+  const revoked: string[] = [];
+  let counter = 0;
+  (URL as unknown as { createObjectURL: (blob: Blob) => string }).createObjectURL = (blob: Blob) => {
+    expect(blob).toBeInstanceOf(Blob);
+    counter += 1;
+    return `blob:test/${counter}`;
+  };
+  (URL as unknown as { revokeObjectURL: (url: string) => void }).revokeObjectURL = (url: string) => {
+    revoked.push(url);
+  };
+  try {
+    const preview = new PhotoPreview();
+    expect(preview.url).toBe("");
+    preview.replace(new Blob(["first"], { type: "image/jpeg" }));
+    expect(preview.url).toBe("blob:test/1");
+    // A new photo revokes the one it replaces: the old bytes are not pinned.
+    preview.replace(new Blob(["second"], { type: "image/jpeg" }));
+    expect(preview.url).toBe("blob:test/2");
+    expect(revoked).toEqual(["blob:test/1"]);
+    // Releasing hands back the current URL and nothing after it.
+    preview.release();
+    expect(preview.url).toBe("");
+    expect(revoked).toEqual(["blob:test/1", "blob:test/2"]);
+    // A second release has nothing to hand back.
+    preview.release();
+    expect(revoked).toEqual(["blob:test/1", "blob:test/2"]);
+  } finally {
+    (URL as unknown as { createObjectURL: unknown }).createObjectURL = original.create;
+    (URL as unknown as { revokeObjectURL: unknown }).revokeObjectURL = original.revoke;
+  }
+});
+
 test("the screen grabs a front-camera frame and keeps a gallery and a phone-camera fallback", () => {
   const source = readFileSync(path.join(here, "capture.svelte"), "utf8");
   const shell = readFileSync(path.join(here, "../../app/shell.svelte"), "utf8");
@@ -365,9 +403,14 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(source).toContain('aria-label="Sending the photo"');
 
   // The vanity mirror: an arched portrait frame the spacer carries, and the
-  // authored camera failure whatever the session says.
+  // authored camera failure whatever the session says. The idle prompt and
+  // the ready hint are gone — the mirror's emblem and the selfie photo speak
+  // for themselves — and the top bar's back button is the way back, so the
+  // screen draws none of its own.
   const styles = source.slice(source.indexOf("<style>"));
-  expect(source).toContain("The mirror opens here.");
+  expect(source).not.toContain("The mirror opens here.");
+  expect(source).not.toContain("The selfie is ready.");
+  expect(source).not.toContain('<a class="back"');
   expect(source).not.toContain("session.reason");
   expect(source).toContain("The camera did not open. Use the phone camera below.");
   expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*border-radius: 999px 999px var\(--radius-panel\) var\(--radius-panel\)/);
@@ -375,6 +418,15 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*background: var\(--sunken\)/);
   expect(styles).toMatch(/\.mirror-frame\s*\{[^}]*max-width: min\(100%, calc\(68dvh \* 3 \/ 4\)\)/);
   expect(styles).toMatch(/\.mirror-frame::before\s*\{[^}]*padding-top: 133%/);
+
+  // The inner rim: a quiet line just inside the frame, wearing the arch, so
+  // the empty glass is not a flat rectangle. Decorative, on the excused soft
+  // edge, and it never swallows a tap.
+  expect(styles).toMatch(/\.mirror-frame::after\s*\{[^}]*content: ""/);
+  expect(styles).toMatch(/\.mirror-frame::after\s*\{[^}]*position: absolute/);
+  expect(styles).toMatch(/\.mirror-frame::after\s*\{[^}]*border: 1px solid var\(--line-soft\)/);
+  expect(styles).toMatch(/\.mirror-frame::after\s*\{[^}]*border-radius: inherit/);
+  expect(styles).toMatch(/\.mirror-frame::after\s*\{[^}]*pointer-events: none/);
 
   // Zero instructional bloat: no lead paragraph, no visible heading (the
   // section names itself for the reader who arrives by landmark), and no
@@ -384,19 +436,34 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(source).toContain('<section aria-label="Your selfie">');
   expect(source).not.toContain("If that camera does not open");
 
-  // Both camera controls live inside the arch: the idle state centres the
-  // prompt and the front-camera CTA on the glass, and the live state
-  // overlays the shutter at the frame's bottom centre.
+  // The chosen selfie shows inside the arch: the preview rides the prepared
+  // bytes behind an object URL, fills the frame, and stands down while the
+  // camera is live. The frame's curve and overflow clip it to the mirror.
   const mirror = source.slice(
     source.indexOf('<div class="mirror-frame">'),
     source.indexOf('{#if session.phase === "requesting"}'),
   );
+  expect(mirror).toContain('class="mirror-preview"');
+  expect(mirror).toContain('{#if preview.url !== "" && session.phase !== "live"}');
+  expect(mirror).toContain('src={preview.url}');
+  expect(mirror).toContain('alt="Your selfie."');
+  expect(styles).toMatch(/\.mirror-frame \.mirror-preview\s*\{[^}]*position: absolute/);
+  expect(styles).toMatch(/\.mirror-frame \.mirror-preview\s*\{[^}]*inset: 0/);
+  expect(styles).toMatch(/\.mirror-frame \.mirror-preview\s*\{[^}]*width: 100%/);
+  expect(styles).toMatch(/\.mirror-frame \.mirror-preview\s*\{[^}]*height: 100%/);
+  expect(styles).toMatch(/\.mirror-frame \.mirror-preview\s*\{[^}]*object-fit: cover/);
+
+  // Both camera controls live inside the arch: the idle state centres the
+  // mirror emblem and the front-camera CTA on the glass — the emblem above
+  // the button, stroked in the quiet role — and the live state overlays the
+  // shutter at the frame's bottom centre.
   expect(mirror).toContain('class="mirror-idle"');
-  expect(mirror).toContain("The mirror opens here.");
-  expect(mirror.indexOf("The mirror opens here.")).toBeLessThan(mirror.indexOf("Open the front camera"));
+  expect(mirror).toContain('class="mirror-mark"');
+  expect(mirror.indexOf("mirror-mark")).toBeLessThan(mirror.indexOf("Open camera"));
+  expect(mirror).toContain('stroke="var(--dim)"');
   expect(mirror).toContain('onclick={() => void openLens("selfie")}');
   expect(mirror).toContain('class="primary take-btn"');
-  expect(mirror).toContain("Take the photo");
+  expect(mirror).toContain("Take photo");
   expect(mirror).toContain('onclick={() => void take()}');
   expect(styles).toMatch(/\.mirror-idle\s*\{[^}]*position: absolute/);
   expect(styles).toMatch(/\.mirror-idle\s*\{[^}]*align-items: center/);
@@ -404,26 +471,45 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(styles).toMatch(/\.take-btn\s*\{[^}]*bottom: /);
   expect(styles).toMatch(/\.take-btn\s*\{[^}]*left: 50%/);
 
-  // The ready CTA sits below the mirror, and the two fallbacks share one
-  // compact row with nothing between the pills.
+  // The ready CTA sits below the mirror — the one main action, full width —
+  // and the two fallbacks share one compact row with nothing between the
+  // pills. Each picker names itself in three words or fewer and carries its
+  // own small icon ahead of the text, so both hold one line at the phone
+  // width.
   const below = source.slice(
     source.indexOf('{#if session.phase === "requesting"}'),
-    source.indexOf('<details class="product-drawer">'),
+    source.indexOf('<details class="product-drawer'),
   );
-  const ready = below.indexOf("The selfie is ready.");
-  const check = below.indexOf("Check the dress code");
-  const gallery = below.indexOf("Choose a photo");
+  const check = below.indexOf("Check look");
+  const gallery = below.indexOf("Choose photo");
   // The denial hint also says "Use the phone camera below.", so the picker
   // label is found from the gallery pill onward.
-  const phone = below.indexOf("Use the phone camera", gallery);
-  expect(ready).toBeGreaterThanOrEqual(0);
-  expect(check).toBeGreaterThan(ready);
+  const phone = below.indexOf("Phone camera", gallery);
+  expect(check).toBeGreaterThanOrEqual(0);
   expect(gallery).toBeGreaterThan(check);
   expect(phone).toBeGreaterThan(gallery);
   const between = below.slice(gallery, phone);
   expect(between.match(/<\/label>/g)?.length).toBe(1);
-  expect(between).not.toContain("<p");
+  // No paragraph slips between the pills (the pill's own `<path` is not one).
+  expect(/<p[\s>]/.test(between), "a paragraph between the picker pills").toBe(false);
   expect(styles).toMatch(/\.row > \.file\s*\{[^}]*flex: 1 1 0/);
+  expect(styles).toMatch(/\.file\s*\{[^}]*gap: /);
+  const checkButton = below.slice(below.indexOf("{#if selfie}"), below.indexOf('<div class="row">'));
+  expect(checkButton).toContain('class="primary"');
+  expect(checkButton).toContain("Check look");
+  // The theme's own primary recipe is what makes the CTA span the column.
+  const theme = readFileSync(path.join(here, "../../app/theme.css"), "utf8");
+  expect(theme).toMatch(/button\.primary,\s*\.btn-primary,\s*a\.primary-link\s*\{[^}]*width: 100%/);
+  // Each picker pill carries its own small icon ahead of its label, stroked
+  // in the accent the pill sits on.
+  const pills = below.split('<label class="file">').slice(1);
+  expect(pills, "the two selfie picker pills").toHaveLength(2);
+  expect(pills[0]).toContain("Choose photo");
+  expect(pills[0]).toContain("<svg");
+  expect(pills[0]).toContain('stroke="var(--accent)"');
+  expect(pills[1]).toContain("Phone camera");
+  expect(pills[1]).toContain("<svg");
+  expect(pills[1]).toContain('stroke="var(--accent)"');
 
   // The pickers wear the button, and the native input hides inside the label.
   expect(styles).toMatch(/\.file\s*\{[^}]*background: var\(--surface\)/);
@@ -436,12 +522,11 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(styles).toMatch(/\.file input\s*\{[^}]*opacity: 0/);
   expect(styles).toMatch(/\.file input\s*\{[^}]*overflow: hidden/);
 
-  // The product drawer folds away with its own summary as its only title,
-  // and the selfie's CTA starts the look.
-  expect(source).toContain('<details class="product-drawer">');
-  expect(source).toContain("Considering a specific piece?");
+  // The product drawer folds away in the shared accordion card style, with
+  // its own summary as its only title, and the selfie's CTA starts the look.
+  expect(source).toContain('<details class="product-drawer disclosure">');
+  expect(source).toContain("Try your own piece");
   expect(source).not.toContain("A product");
-  expect(source).toContain("Check the dress code");
   expect(source).toContain("startLook(");
   expect(source).toContain("storyOccasion");
   expect(source).toContain("verdictHash");

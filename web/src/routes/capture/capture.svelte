@@ -1,7 +1,9 @@
 <script lang="ts">
   import { fileBackend, prepareImage, sessionBackend, CameraSession } from "@nrynss/chaaya/capture";
   import type { ChunkUploader } from "@nrynss/chaaya/keel";
+  import { onDestroy } from "svelte";
   import ErrorNotice from "../../app/error-notice.svelte";
+  import { PhotoPreview } from "./preview.svelte";
   import type { ShownError } from "../../lib/api/types";
   import { verdictHash } from "../look/verdict/route";
   import {
@@ -20,6 +22,11 @@
   } from "./upload";
 
   const session = new CameraSession();
+
+  /** The mirror's selfie preview: the object URL over the photo's prepared
+   * bytes, revoked on replacement and when the screen goes away. */
+  const preview = new PhotoPreview();
+  onDestroy(() => preview.release());
 
   let video = $state<HTMLVideoElement | null>(null);
   let lens = $state<"selfie" | "product" | "">("");
@@ -108,7 +115,9 @@
   async function onGallery(event: Event, kind: "selfie" | "product"): Promise<void> {
     const input = event.currentTarget;
     if (!(input instanceof HTMLInputElement)) return;
-    const files = input.files;
+    // The FileList is live: resetting the input empties it, so the chosen
+    // files are copied out before the reset, or the reset swallows the pick.
+    const files = input.files ? [...input.files] : null;
     input.value = "";
     if (!files || files.length === 0) return;
     if (kind === "product" && !productReady()) return;
@@ -126,6 +135,7 @@
     busy = true;
     try {
       const prepared = await prepareImage(blob, stillOptions);
+      if (kind === "selfie") preview.replace(prepared.blob);
       status = "Sending the photo.";
       const receipt = await uploadCaptured(prepared.blob, {
         contentType: prepared.mimeType,
@@ -240,8 +250,6 @@
   }
 </script>
 
-<a class="back" href="#/">Back</a>
-
 {#if problem}
   <ErrorNotice error={problem} />
 {/if}
@@ -274,17 +282,33 @@
       autoplay
       aria-label="Camera preview"
     ></video>
-    {#if session.phase !== "live" && session.phase !== "requesting"}
+    {#if preview.url !== "" && session.phase !== "live"}
+      <img class="mirror-preview" src={preview.url} alt="Your selfie." />
+    {/if}
+    {#if session.phase !== "live" && session.phase !== "requesting" && preview.url === ""}
       <div class="mirror-idle">
-        <p class="mirror-prompt">The mirror opens here.</p>
+        <svg class="mirror-mark" viewBox="0 0 48 48" width="56" height="56" fill="none" aria-hidden="true">
+          <path
+            d="M15.5 20.5a8.5 8.5 0 0 1 17 0v12.75a2.75 2.75 0 0 1-2.75 2.75h-11.5a2.75 2.75 0 0 1-2.75-2.75V20.5Z"
+            stroke="var(--dim)"
+            stroke-width="1.5"
+          />
+          <path d="M19 18.5l4-4M18.75 23.25l6.5-6.5" stroke="var(--dim)" stroke-width="1.5" stroke-linecap="round" />
+          <path
+            d="M32.5 9.5l1.05 2.95 2.95 1.05-2.95 1.05-1.05 2.95-1.05-2.95-2.95-1.05 2.95-1.05 1.05-2.95Z"
+            stroke="var(--dim)"
+            stroke-width="1.5"
+            stroke-linejoin="round"
+          />
+        </svg>
         <button type="button" class="primary" disabled={busy} onclick={() => void openLens("selfie")}>
-          Open the front camera
+          Open camera
         </button>
       </div>
     {/if}
     {#if session.phase === "live"}
       <button type="button" class="primary take-btn" disabled={busy} onclick={() => void take()}>
-        Take the photo
+        Take photo
       </button>
     {/if}
   </div>
@@ -295,18 +319,37 @@
     <p class="hint">The camera did not open. Use the phone camera below.</p>
   {/if}
   {#if selfie}
-    <p class="hint">The selfie is ready.</p>
     <button type="button" class="primary" disabled={busy || starting} onclick={() => void checkDressCode()}>
-      Check the dress code
+      Check look
     </button>
   {/if}
   <div class="row">
     <label class="file">
-      Choose a photo
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+        <rect x="3.5" y="5.25" width="17" height="13.5" rx="2" stroke="var(--accent)" stroke-width="1.75" />
+        <path
+          d="M6.25 15.75l3.25-3.25 2.5 2.5 2.5-2.5 3.25 3.25"
+          stroke="var(--accent)"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+        <circle cx="9.25" cy="9.5" r="1.3" stroke="var(--accent)" stroke-width="1.75" />
+      </svg>
+      Choose photo
       <input type="file" accept="image/*" disabled={busy} onchange={(event) => void onGallery(event, "selfie")} />
     </label>
     <label class="file">
-      Use the phone camera
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+        <path
+          d="M3.75 9.75a1.9 1.9 0 0 1 1.9-1.9h1.8l1.15-1.7a1.9 1.9 0 0 1 1.6-.9h3.6a1.9 1.9 0 0 1 1.6.9l1.15 1.7h1.8a1.9 1.9 0 0 1 1.9 1.9v6.85a1.9 1.9 0 0 1-1.9 1.9H5.65a1.9 1.9 0 0 1-1.9-1.9V9.75Z"
+          stroke="var(--accent)"
+          stroke-width="1.75"
+          stroke-linejoin="round"
+        />
+        <circle cx="12" cy="13" r="2.9" stroke="var(--accent)" stroke-width="1.75" />
+      </svg>
+      Phone camera
       <input
         type="file"
         accept="image/*"
@@ -318,8 +361,8 @@
   </div>
 </section>
 
-<details class="product-drawer">
-  <summary>Considering a specific piece?</summary>
+<details class="product-drawer disclosure">
+  <summary>Try your own piece</summary>
   <section>
     <label class="field">
       Name
@@ -359,13 +402,6 @@
 </details>
 
 <style>
-  .back {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-    color: var(--accent);
-  }
-
   section {
     display: flex;
     flex-direction: column;
@@ -384,10 +420,13 @@
   }
 
   /* The two selfie fallbacks share one compact row: each pill takes half of
-   * it, so no picker sits on its own line. */
+   * it, so no picker sits on its own line. The tighter side padding is what
+   * keeps a pill's icon and its label on one line at the phone width — the
+   * theme's full side padding would push a 17px label to wrap. */
   .row > .file {
     flex: 1 1 0;
     min-inline-size: 0;
+    padding-inline: 0.5rem;
   }
 
   .field {
@@ -425,7 +464,29 @@
     padding-top: 133%;
   }
 
+  /* The inner rim: a quiet line just inside the frame, so the glass reads as
+   * glass and the empty mirror is not a flat rectangle. Decorative, so it
+   * rides the soft edge the contrast tables excuse. */
+  .mirror-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0.6rem;
+    border: 1px solid var(--line-soft);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
   .mirror-frame video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* The chosen selfie, filling the arch. The frame's own curve and overflow
+   * clip it, so the photo wears the mirror's shape. */
+  .mirror-frame .mirror-preview {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -437,9 +498,9 @@
     transform: scaleX(-1);
   }
 
-  /* Inside the arch: the idle state centres its prompt and the front-camera
-   * CTA on the sunken glass; the live state overlays the shutter at the
-   * bottom centre. */
+  /* Inside the arch: the idle state centres the mirror emblem and the
+   * front-camera CTA on the sunken glass; the live state overlays the shutter
+   * at the bottom centre. */
   .mirror-idle {
     position: absolute;
     inset: 0;
@@ -452,13 +513,6 @@
     padding: 1.5rem;
   }
 
-  .mirror-prompt {
-    margin: 0;
-    color: var(--dim);
-    text-align: center;
-    overflow-wrap: break-word;
-  }
-
   .take-btn {
     position: absolute;
     bottom: 1.25rem;
@@ -467,12 +521,14 @@
     z-index: 1;
   }
 
-  /* The file pickers wear the button, and the native input hides inside. */
+  /* The file pickers wear the button, and the native input hides inside. The
+   * gap keeps each pill's icon and its label on one line at the phone width. */
   .file {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 0.4rem;
     min-height: 2.75rem;
     padding: 0.45rem 0.9rem;
     color: var(--text);
@@ -481,6 +537,10 @@
     border-radius: var(--radius-control);
     cursor: pointer;
     overflow-wrap: break-word;
+  }
+
+  .file svg {
+    flex: none;
   }
 
   .file:has(input:focus-visible) {

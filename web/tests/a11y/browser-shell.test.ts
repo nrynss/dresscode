@@ -26,12 +26,15 @@ const CHROME_CANDIDATES = ["google-chrome-stable", "google-chrome", "chromium", 
 
 /** The measured states: the account screen in both themes at the phone width
  * (the recipe's two load-bearing declarations live there), the front door at
- * the phone width (the one disclosure whose tail is the recipe's own), and
- * the bar at desktop width. */
+ * the phone width (the one disclosure whose tail is the recipe's own), the
+ * capture screen in both themes at the phone width (its product drawer is the
+ * capture side of the same accordion recipe), and the bar at desktop width. */
 const states = [
   { hash: "#account", width: 375, theme: "light" },
   { hash: "#account", width: 375, theme: "dark" },
   { hash: "", width: 375, theme: "light" },
+  { hash: "#/capture", width: 375, theme: "light" },
+  { hash: "#/capture", width: 375, theme: "dark" },
   { hash: "#/", width: 768, theme: "light" },
 ] as const;
 
@@ -316,6 +319,23 @@ beforeAll(async () => {
   });
   await send("Page.enable");
   await send("Runtime.enable");
+
+  // A cold profile's first IndexedDB open can hang: the capture screen's
+  // upload store opens one database at mount, and a request issued in that
+  // first moment never answers (the database is not even created), while
+  // every later open succeeds. One throwaway open here warms the storage
+  // service, so no screen's store meets the cold path.
+  await send("Emulation.setDeviceMetricsOverride", { width: 375, height: 667, deviceScaleFactor: 1, mobile: true });
+  await navigate(`${baseUrl}/`);
+  await evaluate(`new Promise((resolve) => {
+    const open = indexedDB.open("dresscode-warmup", 1);
+    open.onsuccess = () => {
+      open.result.close();
+      indexedDB.deleteDatabase("dresscode-warmup");
+      resolve("warm");
+    };
+    open.onerror = () => resolve("cold:" + String(open.error));
+  })`);
 }, 240_000);
 
 afterAll(async () => {
@@ -541,6 +561,276 @@ for (const theme of ["light", "dark"] as const) {
         expect(Math.abs(avatar.width - avatar.height), "an avatar is round, not oval").toBeLessThanOrEqual(1);
         expect(avatar.src, "an avatar names a served media path").toMatch(/^\/media\/[0-9a-f]+$/);
       }
+    },
+  );
+}
+
+/** The capture screen's drawn geometry, measured the way a reader sees it.
+ * The empty arch with its inner rim and mirror emblem; the two picker pills,
+ * each one line tall at 375 px with its icon ahead of the text; then a real
+ * photo drawn on a canvas and handed to the gallery input the way a picker
+ * would, and the mirror wearing it, the Check look CTA spanning the column,
+ * and the product drawer in the accordion card style. jsdom lays nothing out,
+ * so these are measured here and nowhere else. No assertion reads image
+ * bytes — the preview is judged by presence, box and containment alone. */
+interface CaptureIdle {
+  frame: { width: number; height: number; radius: string; overflow: string };
+  rim: { width: number; style: string; colour: string };
+  emblem: { present: boolean; stroke: string };
+  pills: { text: string; width: number; height: number; top: number; icon: boolean }[];
+  dim: string;
+  lineSoft: string;
+}
+
+interface CaptureChosen {
+  idleGone: boolean;
+  preview: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    position: string;
+    objectFit: string;
+  };
+  frame: { left: number; top: number; right: number; bottom: number; width: number };
+  check: { width: number; column: number };
+  drawer: { isDisclosure: boolean; summary: string; summaryWidth: number; cardWidth: number; tail: string };
+}
+
+async function measureCaptureIdle(theme: string): Promise<CaptureIdle> {
+  await send("Emulation.setDeviceMetricsOverride", {
+    width: 375,
+    height: 667,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  // Colour and border assertions read the settled drawn state, so the
+  // reduced world is emulated before anything is measured (feedback.md).
+  await send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+  });
+  if (!onOrigin) await navigate(`${baseUrl}/#/capture`);
+  await evaluate(`localStorage.setItem("chaaya-theme", ${JSON.stringify(theme)}); true`);
+  await navigate("about:blank");
+  await navigate(`${baseUrl}/#/capture`);
+  await waitInDocument(`document.querySelector("nav.tab-bar") !== null`, "the shell");
+  await waitInDocument(
+    `[...document.querySelectorAll("button")].some((el) => el.textContent?.trim() === "Open camera")`,
+    "the idle camera CTA",
+  );
+  return JSON.parse(
+    await evaluate<string>(`(() => {
+    const round = (n) => Math.round(n * 10) / 10;
+    const frame = document.querySelector(".mirror-frame");
+    if (!frame) throw new Error("no mirror frame");
+    const frameBox = frame.getBoundingClientRect();
+    const frameCs = getComputedStyle(frame);
+    const rimCs = getComputedStyle(frame, "::after");
+    const emblem = document.querySelector(".mirror-idle svg.mirror-mark");
+    const emblemStroke = emblem ? getComputedStyle(emblem.querySelector("path")).stroke : "";
+    const probe = document.createElement("span");
+    probe.style.display = "none";
+    document.body.append(probe);
+    const colourOf = (role) => {
+      probe.style.color = "var(" + role + ")";
+      return getComputedStyle(probe).color;
+    };
+    const dim = colourOf("--dim");
+    const lineSoft = colourOf("--line-soft");
+    probe.remove();
+    return JSON.stringify({
+      frame: {
+        width: round(frameBox.width),
+        height: round(frameBox.height),
+        radius: frameCs.borderTopLeftRadius,
+        overflow: frameCs.overflow,
+      },
+      rim: { width: parseFloat(rimCs.borderTopWidth), style: rimCs.borderTopStyle, colour: rimCs.borderTopColor },
+      emblem: { present: emblem !== null, stroke: emblemStroke },
+      pills: [...document.querySelectorAll("section[aria-label='Your selfie'] label.file")].map((pill) => {
+        const box = pill.getBoundingClientRect();
+        return {
+          text: pill.textContent?.trim() ?? "",
+          width: round(box.width),
+          height: round(box.height),
+          top: round(box.top),
+          icon: pill.querySelector("svg") !== null,
+        };
+      }),
+      dim,
+      lineSoft,
+    });
+  })()`),
+  );
+}
+
+/** Hand one canvas-drawn JPEG to the gallery picker the way a photo picker
+ * would: the file lands in the input's own FileList and the change event
+ * fires — the same two steps a real selection is. The recorded fixtures
+ * answer the flow that follows, so the screen runs its real path: prepare,
+ * preview, upload, register. */
+async function chooseSelfieFile(): Promise<void> {
+  await evaluate(`(async () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 640;
+    canvas.height = 480;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("no 2d context");
+    ctx.fillStyle = "#804030";
+    ctx.fillRect(0, 0, 640, 480);
+    ctx.fillStyle = "#e8d8b8";
+    ctx.beginPath();
+    ctx.arc(320, 200, 100, 0, Math.PI * 2);
+    ctx.fill();
+    const blob = await new Promise((resolve, reject) =>
+      canvas.toBlob((made) => (made ? resolve(made) : reject(new Error("no blob"))), "image/jpeg", 0.9),
+    );
+    const file = new File([blob], "mirror-guard.jpg", { type: "image/jpeg" });
+    const input = [...document.querySelectorAll("section[aria-label='Your selfie'] label.file input[type=file]")].find(
+      (el) => !el.hasAttribute("capture"),
+    );
+    if (!input) throw new Error("no gallery input");
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    input.files = transfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+    // The one recorded upload carried a full 65536-byte capture; the guard's
+    // canvas photo is smaller, so the completion's recorded receipt is
+    // rewritten to name the bytes this flow actually sent, and the
+    // uploader's own durability check agrees with what it stored.
+    let sent = 0;
+    const innerFetch = window.fetch;
+    window.fetch = async (input, init) => {
+      const url = String(input?.url ?? input);
+      if ((init?.method ?? "GET") === "PUT" && init?.body && typeof init.body.byteLength === "number") {
+        sent = init.body.byteLength;
+      }
+      const response = await innerFetch(input, init);
+      if (url.endsWith("/complete")) {
+        const receipt = JSON.parse(await response.text());
+        receipt.size_bytes = sent;
+        return new Response(JSON.stringify(receipt), { status: response.status, headers: response.headers });
+      }
+      return response;
+    };
+    return true;
+  })()`);
+  await waitInDocument(`document.querySelector("img.mirror-preview") !== null`, "the selfie preview");
+  await waitInDocument(
+    `[...document.querySelectorAll("button")].some((el) => el.textContent?.trim() === "Check look")`,
+    "the check CTA",
+  );
+}
+
+async function measureCaptureChosen(): Promise<CaptureChosen> {
+  return JSON.parse(
+    await evaluate<string>(`(() => {
+    const round = (n) => Math.round(n * 10) / 10;
+    const preview = document.querySelector("img.mirror-preview");
+    if (!preview) throw new Error("no selfie preview");
+    const frame = document.querySelector(".mirror-frame");
+    if (!frame) throw new Error("no mirror frame");
+    const previewBox = preview.getBoundingClientRect();
+    const frameBox = frame.getBoundingClientRect();
+    const cs = getComputedStyle(preview);
+    const check = [...document.querySelectorAll("button")].find((el) => el.textContent?.trim() === "Check look");
+    if (!check) throw new Error("no check button");
+    const section = check.closest("section");
+    if (!section) throw new Error("no section around the check button");
+    const sectionCs = getComputedStyle(section);
+    const sectionBox = section.getBoundingClientRect();
+    const column = sectionBox.width - parseFloat(sectionCs.paddingLeft) - parseFloat(sectionCs.paddingRight);
+    const drawer = document.querySelector("details.product-drawer");
+    if (!drawer) throw new Error("no product drawer");
+    const summary = drawer.querySelector(":scope > summary");
+    if (!summary) throw new Error("no drawer summary");
+    return JSON.stringify({
+      idleGone: document.querySelector(".mirror-idle") === null,
+      preview: {
+        left: round(previewBox.left),
+        top: round(previewBox.top),
+        right: round(previewBox.right),
+        bottom: round(previewBox.bottom),
+        position: cs.position,
+        objectFit: cs.objectFit,
+      },
+      frame: {
+        left: round(frameBox.left),
+        top: round(frameBox.top),
+        right: round(frameBox.right),
+        bottom: round(frameBox.bottom),
+        width: round(frameBox.width),
+      },
+      check: { width: round(check.getBoundingClientRect().width), column: round(column) },
+      drawer: {
+        isDisclosure: drawer.classList.contains("disclosure"),
+        summary: summary.textContent?.trim() ?? "",
+        summaryWidth: round(summary.getBoundingClientRect().width),
+        cardWidth: round(drawer.getBoundingClientRect().width),
+        tail: getComputedStyle(summary, "::after").content,
+      },
+    });
+  })()`),
+  );
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(
+    `in a real browser, the capture screen wears the selfie in the arch, one-line pills and the check CTA, ${theme}`,
+    { timeout: 120_000 },
+    async () => {
+      const idle = await measureCaptureIdle(theme);
+
+      // The empty arch: rounded to the mirror silhouette, clipped, with the
+      // inner rim riding the curve in the soft line and the emblem stroked
+      // in the quiet role above the camera CTA.
+      expect(idle.frame.radius, "the mirror is arched").toBe("999px");
+      expect(idle.frame.overflow, "the arch clips what it holds").toBe("hidden");
+      expect(idle.frame.width, "the mirror is a phone-width portrait box").toBeGreaterThan(300);
+      expect(idle.frame.height, "the mirror is a portrait box").toBeGreaterThan(idle.frame.width);
+      expect(idle.rim.width, "the inner rim is a hairline").toBeGreaterThan(0.5);
+      expect(idle.rim.width, "the inner rim is a hairline").toBeLessThan(1.5);
+      expect(idle.rim.style, "the inner rim is a drawn line").toBe("solid");
+      expect(idle.rim.colour, "the inner rim is the soft line").toBe(idle.lineSoft);
+      expect(idle.emblem.present, "the idle emblem is drawn").toBe(true);
+      expect(idle.emblem.stroke, "the emblem is stroked in the quiet role").toBe(idle.dim);
+
+      // The two picker pills: named in three words or fewer, each carrying
+      // its icon, both on one row, and neither wrapping past one line — the
+      // resting height is the pill's min-height, and a wrapped label would
+      // stand visibly taller than it.
+      expect(idle.pills.map((pill) => pill.text), "the two picker pills").toEqual(["Choose photo", "Phone camera"]);
+      expect(Math.abs(idle.pills[0]!.top - idle.pills[1]!.top), "the pills share one row").toBeLessThanOrEqual(1);
+      for (const pill of idle.pills) {
+        expect(pill.icon, `${pill.text} carries its icon`).toBe(true);
+        expect(pill.width, `${pill.text} sits inside the phone`).toBeLessThanOrEqual(375);
+        expect(pill.height, `${pill.text} holds one line at 375 px`).toBeLessThanOrEqual(48);
+      }
+
+      // A chosen photo: the gallery pill's real flow — prepare, preview,
+      // upload, register — puts the picture in the arch and stands the main
+      // CTA up under the mirror.
+      await chooseSelfieFile();
+      const chosen = await measureCaptureChosen();
+      expect(chosen.idleGone, "the empty-mirror furniture stands down once the photo is in").toBe(true);
+      expect(chosen.preview.position, "the preview fills the frame").toBe("absolute");
+      expect(chosen.preview.objectFit, "the preview is covered, not letterboxed").toBe("cover");
+      expect(chosen.preview.left, "the preview starts inside the arch").toBeGreaterThanOrEqual(chosen.frame.left - 1);
+      expect(chosen.preview.top, "the preview starts inside the arch").toBeGreaterThanOrEqual(chosen.frame.top - 1);
+      expect(chosen.preview.right, "the preview ends inside the arch").toBeLessThanOrEqual(chosen.frame.right + 1);
+      expect(chosen.preview.bottom, "the preview ends inside the arch").toBeLessThanOrEqual(chosen.frame.bottom + 1);
+      expect(chosen.check.column, "the check CTA's column is a phone column").toBeGreaterThan(300);
+      expect(chosen.check.width, "the check CTA spans the column").toBeGreaterThanOrEqual(chosen.check.column - 1);
+
+      // The product drawer wears the shared accordion card: the recipe's own
+      // tail renders on its summary, and the summary spans the card.
+      expect(chosen.drawer.isDisclosure, "the product drawer wears the accordion class").toBe(true);
+      expect(chosen.drawer.summary, "the drawer names itself for a reader").toBe("Try your own piece");
+      expect(chosen.drawer.cardWidth, "the drawer card spans the column").toBeGreaterThanOrEqual(300);
+      expect(chosen.drawer.summaryWidth, "the drawer summary spans the card").toBeGreaterThanOrEqual(
+        chosen.drawer.cardWidth - 4,
+      );
+      expect(chosen.drawer.tail, "the accordion tail renders").toContain("▾");
     },
   );
 }
