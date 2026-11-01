@@ -46,9 +46,18 @@ requires:   T2.1
 fixture-ok: no
 size:       XS · light
 owns:       internal/systemone/live_test.go
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 One judge and one check request on a sample photo. Workers AI spend within the free allowance. **Done when:** the transcript is in the report and matches the recording's shape.
+
+Notes:
+
+- Added `internal/systemone/live_test.go` behind `//go:build live`, `TestLiveJudgeAndCheckOnASamplePhoto` with `judge` and `check` subtests. The gate does not build it. It reads `WORKERS_AI_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the environment and skips when either is missing. It does not open a `.env` file. The client scrubs the token out of its own errors and the test scrubs again before anything reaches the transcript; nothing else in the run carries a secret.
+- The two requests are the recorded T0.6 exchanges read back through the replay (`judge-V04-family-function`, `check-clef-V04-to-V05`), so the wire shape is the recorded shape by construction and the comparison is honest. The photos are the committed AI sample people (`testdata/samples/woman/V04-family-function.jpg`, `V05-family-function.jpg`); no real person. The check's contract is the two-image shape, so V05 rides in as the render without a live render having produced it.
+- The run: judge 8 answers, `usage.input_tokens` 1963 — the recording also says 1963 — settled $0.000471117 at 21,818 neurons per million input tokens, 1.3 s. Check 14 answers, `input_tokens` 4092 against the recording's 4092, settled $0.000982072, 2.2 s. Two charges, $0.001453189 against a $1 ceiling, free plan. One earlier judge-only run (spend discipline: one case, read the cost, then the rest) makes three Clef calls in the day, all told.
+- Shape, field by field: no divergence. The same answer ids, the same kind per id; a noul is `{type, noul}` and nothing else (the test refuses extra fields, and none came); a choice carries `choice`, `probabilities` over exactly the recorded option set, and `confidence`; `usage` carries `input_tokens` and `output_tokens` (0, as recorded). The recorded client needed no fix and got none.
+- The values drifted from the T0.6 recording on byte-identical requests, while the two live runs were bit-identical to each other: judge `biggest_issue` confidence 0.6839 → 0.0428 with the same choice, expression-present 0.5943 → 0.368; the check's verdicts (change made, same person, criterion met) and every `look.*` pick unchanged, probabilities within about 0.06. In feedback.md under Workers AI. The recorded replies are snapshots of a served model that moves; the threshold margins T3.9 measured are what absorbs this.
+- gofmt clean, `go vet -tags live ./internal/systemone/` silent, the gate passes without the tag, and a run without the keys skips cleanly.
 
 ---
 
