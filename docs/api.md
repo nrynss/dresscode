@@ -306,7 +306,7 @@ The response does not wait for the pipeline. Fixture: `look-start.json`.
 
 `GET /api/looks?occasion=family-function`
 
-Past looks for one occasion, newest first. This list is the user's looks, not style memory. It is returned whether or not history is on. Each item is `id`, `occasion`, `verdict`, `ready`, `fix` (a fix id, or empty), and `words` (empty until the check has a line). No recall sentence here. Fixture: `looks.json`.
+Past looks for one occasion, newest first. `limit` (optional, default 20, maximum 100) bounds the page; the answer carries at most `limit` looks. A value above 100 clamps to 100; a non-numeric or negative value is `invalid_request` naming `detail.field`. This list is the user's looks, not style memory. It is returned whether or not history is on. Each item is `id`, `occasion`, `verdict`, `ready`, `fix` (a fix id, or empty), and `words` (empty until the check has a line). No recall sentence here. Fixture: `looks.json`.
 
 ### Job state
 
@@ -540,6 +540,8 @@ The sample looks a judge can open. Items are `id`, `name`, and `occasion`. No im
 `POST /api/samples/{id}/looks`
 
 `202` and the same body as a fresh look: `look_id` and `job_id`. The look is the cached sample. The job is already `done` (fixture `job-done.json`). Opening it spends no YouCam unit and makes no Workers AI call. It does not count against the judge lease. The spending gate is not on this path.
+
+Opening a sample the account already holds a live look for returns that same look; the route is idempotent per account and sample. Deleting the look makes the next open start afresh.
 
 The verdict is the ready shape. The sample's analysis, judgement, and render are the cache, not a live call.
 
