@@ -345,7 +345,11 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   const source = readFileSync(path.join(here, "capture.svelte"), "utf8");
   const shell = readFileSync(path.join(here, "../../app/shell.svelte"), "utf8");
   expect(captureHash).toBe("#/capture");
-  expect(shell).toContain("captureHash");
+  // The bar's link must bind the constant, not a literal: a bare-word pin
+  // here survives a swap to `href="#/capture"` and guards nothing. The
+  // mounted side of this — that the rendered tab's href is exactly the
+  // constant's value — lives in tests/a11y/shell-nav.test.ts.
+  expect(shell).toContain("href={captureHash}");
   // The capture screen is the `Mirror` tab of the fixed bottom tab bar; the
   // text link that used to say `Bring the look` is gone from the shell.
   expect(shell).toContain("Mirror");

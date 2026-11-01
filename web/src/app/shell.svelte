@@ -6,6 +6,8 @@
   import Capture from "../routes/capture/capture.svelte";
   import { captureHash, isCaptureHash } from "../routes/capture/route";
   import { historyHash, isHistoryHash } from "../routes/history/route";
+  import { isRenderHash } from "../routes/look/render/route";
+  import { isVerdictHash } from "../routes/look/verdict/route";
 
   let { children }: { children: Snippet } = $props();
   let route = $state(currentHash());
@@ -21,14 +23,39 @@
     return hash === "" || hash === "#/" || hash === "#";
   }
 
-  /** The tab a route belongs to. The two look screens sit past the four, so
-   * they name no tab: their way back is the button, not a tab. */
+  /** The route a hash lands on, normalized exactly the way app.svelte's
+   * currentRoute() normalizes it: the leading `#` comes off, and the bare
+   * spellings (`history`, `occasion`, `look/verdict`, `look/render`, `home`)
+   * land on the same route their slashed form does. The children render from
+   * this route, so the tab has to classify it, not the raw hash — a raw-hash
+   * check lit no tab at all for `#history` while the History screen was on
+   * the page. */
+  function normalizedRoute(hash: string): string {
+    const bare = hash.replace(/^#/, "");
+    if (bare === "/occasion" || bare === "occasion") return "/occasion";
+    if (isVerdictHash(bare)) return "/look/verdict";
+    if (isRenderHash(bare)) return "/look/render";
+    if (isHistoryHash(bare)) return "/history";
+    return "/";
+  }
+
+  /** The tab a route belongs to. The two screens the shell draws itself are
+   * read off the raw hash; everything else is read off the same normalized
+   * route the children render from, so the lit tab is always the screen that
+   * is actually on the page. The two look screens sit past the four, so they
+   * name no tab: their way back is the button, not a tab. */
   function tabOf(hash: string): string {
     if (isCaptureHash(hash)) return "mirror";
     if (hash === "#account") return "account";
-    if (isHistoryHash(hash)) return "history";
-    if (isRootHash(hash) || hash === "#/occasion" || hash === "#occasion") return "occasion";
-    return "";
+    switch (normalizedRoute(hash)) {
+      case "/history":
+        return "history";
+      case "/occasion":
+      case "/":
+        return "occasion";
+      default:
+        return "";
+    }
   }
 
   let root = $derived(isRootHash(route));

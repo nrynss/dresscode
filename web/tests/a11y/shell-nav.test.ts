@@ -29,15 +29,24 @@ interface NavState {
   back: boolean;
 }
 
-/** The routes the tab bar and the back button answer to. */
+/** The routes the tab bar and the back button answer to, in every spelling a
+ * hash can take: the canonical form and the bare word that app.svelte's
+ * currentRoute() folds onto it. Each row pins the tab that must light, so a
+ * route whose screen renders with no tab lit (`#history`, before the
+ * normalization) cannot come back. */
 const states: NavState[] = [
   { hash: "", current: "Occasion", leadsTo: "#/", back: false },
   { hash: "#/", current: "Occasion", leadsTo: "#/", back: false },
   { hash: "#/occasion", current: "Occasion", leadsTo: "#/", back: true },
+  { hash: "#occasion", current: "Occasion", leadsTo: "#/", back: true },
   { hash: "#/capture", current: "Mirror", leadsTo: "#/capture", back: true },
   { hash: "#/history", current: "History", leadsTo: "#/history", back: true },
+  { hash: "#history", current: "History", leadsTo: "#/history", back: true },
   { hash: "#account", current: "Account", leadsTo: "#account", back: true },
+  { hash: "#home", current: "Occasion", leadsTo: "#/", back: true },
+  { hash: "#capture", current: "Occasion", leadsTo: "#/", back: true },
   { hash: "#/look/verdict", current: "", leadsTo: "", back: true },
+  { hash: "#look/verdict", current: "", leadsTo: "", back: true },
   { hash: "#/look/render", current: "", leadsTo: "", back: true },
 ];
 
@@ -71,12 +80,17 @@ for (const mode of modes) {
             expect(icon, "the tab's SVG icon").not.toBeNull();
             expect(icon?.getAttribute("aria-hidden"), "the icon is hidden from readers").toBe("true");
           }
-          const current = document.querySelector('.tab-bar a[aria-current="page"]');
+          // Every tab that names itself current, not just the first one: two
+          // `aria-current="page"` markers on one bar is a broken bar, and a
+          // single-element query would read only the first and pass it.
+          const currents = [...document.querySelectorAll('.tab-bar a[aria-current="page"]')];
           if (state.current === "") {
-            expect(current, "a route past the four tabs names no tab").toBeNull();
+            expect(currents, "a route past the four tabs names no tab").toHaveLength(0);
           } else {
-            expect(current?.textContent?.trim(), "the current tab").toBe(state.current);
-            expect(current?.getAttribute("href"), "the current tab leads where the route is").toBe(state.leadsTo);
+            expect(currents, "exactly one tab is current").toHaveLength(1);
+            const current = currents[0]!;
+            expect(current.textContent?.trim(), "the current tab").toBe(state.current);
+            expect(current.getAttribute("href"), "the current tab leads where the route is").toBe(state.leadsTo);
             expect(tabByLabel(state.current)?.getAttribute("aria-current"), "the tab is current").toBe("page");
           }
           const back = document.querySelector("header.bar a.icon-back");

@@ -373,7 +373,14 @@ button.danger {
 }
 
 /* A drawer that names its own tail element carries it instead of this one, so
- * the card never shows two. */
+ * the card never shows two. The reason is the account screen: it draws each
+ * drawer's tail as its own `.chevron` span inside its scoped summary (its
+ * component style also turns the summary inline-flex), so this recipe's tail
+ * would land beside it — deleting this rule puts two tails on that card while
+ * every other pin stays green. It is load-bearing: pinned by name in
+ * shell.test.ts and by computed content in a real browser in
+ * tests/a11y/browser-shell.test.ts. Do not remove it without moving the
+ * account screen onto the recipe's tail first. */
 .disclosure > summary:has(.chevron)::after {
   content: none;
 }
