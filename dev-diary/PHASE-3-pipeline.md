@@ -286,7 +286,7 @@ requires:   T3.9
 fixture-ok: no
 size:       S · light
 owns:       internal/eval/live_test.go
-status:     in-review
+status:     done
 ```
 Re-run the judging and check evaluation live once, after the criteria wording settles. Workers AI only; no YouCam units. **Done when:** the live numbers are in the report beside the recorded ones.
 
@@ -305,7 +305,7 @@ Notes:
 - **Consequence for the orchestrator to take to the user (not this task's decision):** the numbers `docs/evaluation.md`, the README and the video quote are the recorded ones — 269 of 273 at the shipped lines — and a live pass with those same lines reads 254. Because the live curves' best is still 269/273 with the same 32 perfect separations, this is a re-measurement question (re-record, then re-run T3.9's sweep) rather than a hand-nudge question; nothing here supports moving a line by hand, and the two sides agree on where the thin margins are.
 - Scope: `docs/evaluation.md` is outside `owns`; the `## The live re-run` subsection was written under a grant from the orchestrator. It holds the two tables, the cost paragraph and the reading above. The remediation round worked under two grants, both named there: that subsection again, and `testdata/eval/live/` for the paid transcripts, which is a new path and holds nothing else.
 - Handover, stated plainly: the implementer finished the code, both live runs and the docs subsection and stopped on a turn ceiling before the diary; this finisher ran no live call, verified the subsection against the two sweep transcripts line by line (`/tmp/t39b-sweep.log` and `/tmp/t39b-sweep2.log` at the time, committed now as `testdata/eval/live/sweep-1.txt` and `testdata/eval/live/sweep-2.txt`), and corrected four claims it had gotten wrong — the probe's per-call numbers were attributed to calls it did not make, the largest probability move is 0.54 not 0.45 (and three cells move past 0.45), the gate margins move by up to 0.018 not "a few thousandths", and "moves a few points call to call" contradicted the reproducibility result in the same subsection. The 254/269/269/32-of-36/28-of-37/19-vs-13/19-vs-4/272-of-273/41-call table, the check and vocabulary numbers and the ledger all checked out as written.
-- Proof, no spend: gate `./tools/check.sh` PASS (`/tmp/t39b-gate2.log`, 97 web tests); the offline eval suite PASS in 134 s — that is a `-race` run (`go test -race ./internal/eval/ -count=1`), the flag the number belongs to — `go test -race ./internal/eval/ -count=1` re-measured at 121 s in remediation, T3.9's ~120 s order — and the same package without `-race` runs in single-figure seconds (9.4 s and 4.4 s on two remediation runs); both live tests SKIP with no env and make zero calls; `go vet ./...` and `go vet -tags live ./internal/eval/` clean; `gofmt -l` empty. Nothing in the transcripts or the committed text holds a key value.
+- Proof, no spend: gate `./tools/check.sh` PASS (`/tmp/t39b-gate2.log`, 63 app unit tests and 97 accessibility tests — 160 web tests in all); the offline eval suite PASS in 134 s — that is a `-race` run (`go test -race ./internal/eval/ -count=1`), the flag the number belongs to — `go test -race ./internal/eval/ -count=1` re-measured at 121 s in remediation, T3.9's ~120 s order — and the same package without `-race` runs in single-figure seconds (9.4 s and 4.4 s on two remediation runs); both live tests SKIP with no env and make zero calls; `go vet ./...` and `go vet -tags live ./internal/eval/` clean; `gofmt -l` empty. Nothing in the transcripts or the committed text holds a key value.
 
 Remediation (review):
 
@@ -319,3 +319,46 @@ Remediation (review):
 - Deferred, not implemented, and it should be read plainly: the live report arithmetic — `liveReportJudge`, `liveReportCheck`, `liveVocabularyCells` — is pinned by no run that exists, because only a paid sweep executes it. The reviewer's fix is a zero-spend offline pin that drives that arithmetic through the package's own Replay and asserts the recorded totals come back (269/273, 260 at 0.5, 4 of 4, 19/22, 17/22). It needs a second, non-tagged test file in `internal/eval/`, which is outside this task's `owns` and its grants, so the orchestrator defers it to a follow-up task. Any task that re-runs this sweep should land that pin first.
 - The second sweep pass is now recorded as the decision it was, in its own bullet above: the charter said once, the task paid twice, and the doubling bought the reproducibility result. 84 paid calls total, ≈3,778 neurons, ≈$0.0415, against the $0.08 each 41-call pass set for itself. No third pass ran and none is proposed.
 - Proof, this round, with no paid call and no credential anywhere near the run: `gofmt -l internal/eval/live_test.go` empty; `go vet -tags live ./internal/eval/` clean; `go vet ./...` clean; `go test ./internal/eval/ -run . -count=1` ok (9.4 s, then 4.4 s on a re-run); keyless `go test -tags live ./internal/eval/ -run TestLive` SKIPs both tests and reports the package ok; `./tools/check.sh` PASS on the final code (`/tmp/t39b-gate4.log`; the two prose files were edited after it and the gate reads neither) — gofmt, `go vet ./...`, `go test -race ./...`, and the app's lint, type check, 9 unit test files and 5 accessibility files (97 tests); the web counts there are the gate's own output. `go test -race ./internal/eval/ -count=1` ok in 121 s. And the file's size: `live_test.go` is now 1,502 lines, where the first bullet above records 1,389 — that number is the file as it was built, before these fixes.
+
+Landing (orchestrator):
+
+- Review round 2 came back **clean** at `8f71e19`: no blocker, no must-fix. The task lands on that tip after a rebase onto `main` — 6 commits, conflict-free, gate green at `c23ba8c` (`./tools/check.sh` exit 0, `go vet -tags live ./internal/eval/` clean, and the keyless `-run TestLive` pair SKIPs and spends nothing). The reviewer re-derived the money independently of this branch: all 84 committed cost rows book at the implied price to the nanodollar, and the two sweeps sum to $0.041551003 ≈ 3,778 neurons — the total the ratification bullet records.
+- Three notes came with the verdict. None is a spend or a correctness item, and none is dropped:
+  - `liveExchangeModel` (`live_test.go:1449-1456`) still returns `""` on a miss where the four helpers remediation fixed now fail instead — unreachable on the committed data, so it goes to T3.9c, which owns this file.
+  - The probe's stop rule is the operator's precondition, not a code coupling: `TestLiveEvaluation` never consults the probe's two fatals, so `-run TestLiveEvaluation` alone would still spend after a red probe. The $0.08 meter ceiling bounds a sweep at ≈7,272 neurons either way, under the 10,000 a day. The header line and the Notes bullet that read as a code guarantee are corrected in the same place.
+  - The gate's web count in the proof bullet above was wrong: 63 app unit tests plus 97 accessibility tests, 160 in all. Fixed here, in the orchestrator's own edit.
+
+---
+
+### T3.9c: The live arithmetic, pinned offline
+```yaml
+requires:   T3.9b
+fixture-ok: yes
+size:       S · light
+owns:       internal/eval/live_report_test.go, internal/eval/live_test.go
+status:     not-started
+```
+T3.9b's review found that the arithmetic the live sweep prints — `liveReportJudge`, `liveReportCheck`, `liveVocabularyCells`, the projected call and neuron totals — is run by nothing that does not cost money: it lives only in the `live`-tagged file, so the gate never executes it and a break shows up only after a paid run. Lift it into a non-tagged test file in the same package and pin it against the committed transcripts (`testdata/eval/live/probe.txt`, `sweep-1.txt`); the tagged file calls the pinned helpers instead of carrying its own copy.
+
+Also takes the two items the review handed over, both in this file: `liveExchangeModel` returns an empty model on a miss where its neighbours fatal, and the header and Notes wording that present the probe's stop rule as the sweep's permission should say what it is — the operator's precondition, with the $0.08 meter ceiling as the backstop.
+
+**Done when:** `./tools/check.sh` runs the arithmetic with no `live` tag, no key and no network; a test over the committed transcript reproduces every number the live re-run subsection of `docs/evaluation.md` quotes; zero live calls and no new dependency.
+
+---
+
+### T3.9d: Re-record and re-measure
+```yaml
+requires:   T3.9b, T3.9c
+fixture-ok: no
+size:       M · mid
+owns:       testdata/clef/, docs/clef.md, internal/eval/, testdata/eval/, docs/evaluation.md, dresscode.toml.example, internal/config/load_test.go
+status:     not-started
+```
+The shipped lines come off the T0.6 recordings and read 254 of 273 live against the 269 they were chosen for (T3.9b); the live curves still top out at 269 with the same 32 of 36 perfect separations, so the gap is service drift under the lines, not the criteria wording. Re-record the corpus against the service of today and re-choose every line from the fresh curves. The wording is deliberately unchanged here — drift and a rewording must not land in one diff.
+
+- Re-record on the same sample photos and the same request shape: the 37 judge calls, the 4 check calls, the ten stability repeats and the size sweep. **Budget: one pass ≈ 78 calls ≈ 3,300 neurons, two passes ≈ 156 calls ≈ 6,600 neurons, inside the 10,000-neuron free daily allowance.** Run one case first, read what it cost, and stop and report if the pass would cross it. Workers AI only; no YouCam client and no YouCam key.
+- Replace `testdata/clef/` with the fresh recordings, then re-run the offline evaluation and the sweep rule: the `[judge]` default and its overrides, the `[check]` gates and the model. Every line must sit beside its own fresh curve.
+- Re-quote what pins a number: `dresscode.toml.example`, the tests that assert the shipped lines, `docs/evaluation.md`, `docs/clef.md`. The README and the video numbers go through the orchestrator, in the orchestrator's own commit.
+- The ground truth does not move with the service. A cell where the fresh read contradicts the transcription is reported by name, not re-transcribed.
+
+**Done when:** every shipped line sits beside the curve that chose it; `eval.Run` returns an identical report on the new corpus twice; the live re-run on the new corpus agrees with the recorded numbers within the drift T3.9b measures, with both numbers stated; the recordings and transcripts hold no key value.
