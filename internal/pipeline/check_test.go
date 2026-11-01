@@ -209,12 +209,16 @@ var expectedChecks = map[string]struct {
 }{
 	"check-clef-V04-to-V05": {
 		shown: true, change: true, same: true, met: true,
-		words:      "jhumkas, gold, red, mandarin, tied-back, black, flat, festive-top",
+		// The phrase table's line: the jhumkas option's display phrase
+		// embeds the colour winner, and the colour does not also stand
+		// alone. This is the fixture's "gold jhumkas" (testdata/api/
+		// look.json), now derived from the table.
+		words:      "gold jhumkas, red, mandarin, tied-back, black, flat, festive-top",
 		attributes: 8,
 	},
 	"check-clef-flash-V04-to-V05": {
 		shown: true, change: true, same: true, met: true,
-		words:      "jhumkas, gold, red, mandarin, tied-back, black, flat, festive-top",
+		words:      "gold jhumkas, red, mandarin, tied-back, black, flat, festive-top",
 		attributes: 8,
 	},
 	"check-clef-V04-to-woman-white": {
@@ -549,9 +553,9 @@ func TestTheLookLineIsIdenticalForIdenticalAnswers(t *testing.T) {
 	if !reflect.DeepEqual(first, second) {
 		t.Fatalf("identical answers gave two outcomes: %+v and %+v", first, second)
 	}
-	want := "jhumkas, gold, red, tied-back, black, flat, festive-top"
+	want := "gold jhumkas, red, tied-back, black, flat, festive-top"
 	if first.Words != want {
-		t.Errorf("words %q, want %q - the vocabulary's order with none and can't tell left out", first.Words, want)
+		t.Errorf("words %q, want %q - the vocabulary's order with none and can't tell left out, the colour spoken inside the jhumkas phrase", first.Words, want)
 	}
 
 	// Different answers, different line.

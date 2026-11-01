@@ -124,8 +124,16 @@ func TestEveryFixShopsALabelledList(t *testing.T) {
 			if sim.ID != fix.ID || sim.Category != category || sim.Fidelity != domain.VisualSimulation || sim.Origin != domain.OriginCatalog {
 				t.Fatalf("%s: the suggestion is %+v, want the fix under %q as a visual simulation", fix.ID, sim, category)
 			}
-			if sim.Name != fix.Changes {
-				t.Fatalf("%s: the suggestion's name is %q, want the fix's own changes wording %q", fix.ID, sim.Name, fix.Changes)
+			// The suggestion's name: the fix's display name from the
+			// occasions data when one is recorded, else the fix's own
+			// changes wording - the fallback that keeps an unworded fix
+			// saying what it has always said.
+			wantName := fix.Changes
+			if fix.Display != nil && fix.Display.Name != "" {
+				wantName = fix.Display.Name
+			}
+			if sim.Name != wantName {
+				t.Fatalf("%s: the suggestion's name is %q, want %q", fix.ID, sim.Name, wantName)
 			}
 			offered := false
 			for _, offeredByID := range occ.Basket.TemplateOnly {
@@ -216,6 +224,25 @@ func TestTheLabelRules(t *testing.T) {
 	sim := simList[0]
 	if sim.ID != "family-closed-smile" || sim.Category != "expression" || sim.Fidelity != domain.VisualSimulation || sim.Origin != domain.OriginCatalog {
 		t.Fatalf("the smile: %+v, want the fix under expression as a visual simulation", sim)
+	}
+	// The suggestion's name is the fix's display name from the occasions
+	// data - "Closed-mouth smile", the shop fixture's own English
+	// (testdata/api/shop-simulation.json), now derived from the fix's
+	// display entry instead of hand-named in the fixture alone.
+	if sim.Name != "Closed-mouth smile" {
+		t.Fatalf("the smile: name %q, want the display table's %q", sim.Name, "Closed-mouth smile")
+	}
+
+	// A fix with no display entry keeps its changes wording: the
+	// fallback that preserves every name the pipeline has always said.
+	date := occasions["date"]
+	dateSmile := measureFix(t, date, "date-closed-smile")
+	dateSim, err := Shop(date, dateSmile, nil, catalog, nil)
+	if err != nil {
+		t.Fatalf("the date smile: %v", err)
+	}
+	if len(dateSim) != 1 || dateSim[0].Name != dateSmile.Changes {
+		t.Fatalf("the date smile: %+v, want the changes wording %q", dateSim, dateSmile.Changes)
 	}
 
 	// The spellings on the wire are the domain labels, exactly, and a

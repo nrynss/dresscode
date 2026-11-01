@@ -11,18 +11,11 @@ package server
 //     the render and the catalog picture. The wiring makes the look id
 //     and the job id one id (the look row is the look, the job is its
 //     engine), so both fixture ids rename to it.
-//   - The look in words. The fixture composes "gold jhumkas"; the check
-//     joins the vocabulary's own order, "jhumkas, gold". That is T3.5's
-//     flagged phrase-table tension, a data decision, not a wiring one.
 //   - The suggestion story's runner-up. The fixture names the festive
 //     top, whose cloth task composites a product photo; one look may name
 //     one catalog product, so the replay's runner-up is the red lip,
 //     which paints and photographs nothing. The frames are pinned by
 //     shape and the honest values.
-//   - The simulation's shop name. The fixture reads "Closed-mouth
-//     smile"; no occasions field carries a display name for a fix, so
-//     the shop entry copies the fix's changes wording (flagged for the
-//     user at dev-diary/PHASE-3-pipeline.md, T3.7's notes).
 //   - The heartbeat comment frame, which a replay cannot carry: the
 //     frames are compared without comment lines. The error example
 //     records the error frame alone, so the stages that ran before the
@@ -849,20 +842,15 @@ var (
 	fixtureSelfieID  = "5e1f1e00000000000000000000000001"
 	fixtureRenderID  = "2e4de200000000000000000000000001"
 	fixtureCatalogID = "c0a10600000000000000000000000001"
-	// fixtureWords is the phrase the fixture composes; storyWords is the
-	// join the check actually answers, in the vocabulary's own order.
-	fixtureWords = "gold jhumkas"
-	storyWords   = "jhumkas, gold"
 )
 
-// renames maps the fixture's values onto this replay's: the minted ids,
-// the media urls that follow them, and the look in words. renderID is
-// empty when no render was shown.
+// renames maps the fixture's values onto this replay's: the minted ids
+// and the media urls that follow them. renderID is empty when no render
+// was shown.
 func (e *lookEnv) renames(lookID, selfieID, renderID string) map[string]string {
 	r := map[string]string{
 		fixtureSelfieID:  selfieID,
 		fixtureCatalogID: e.catalog["gold-jhumkas"],
-		fixtureWords:     storyWords,
 	}
 	r["/media/"+fixtureSelfieID] = "/media/" + selfieID
 	r["/media/"+fixtureCatalogID] = "/media/" + e.catalog["gold-jhumkas"]
@@ -1326,8 +1314,8 @@ func TestTheSuggestionStoryDiscardsBothRenders(t *testing.T) {
 
 // TestTheSmileStoryShopsASimulation is the template-only shop fixture: a
 // fix with nothing to photograph lists the suggestion itself, under the
-// basket's own category and no picture. The name is the fix's changes
-// wording, the deviation T3.7's notes flag for the user.
+// basket's own category and no picture, named by the fix's display entry
+// in the occasions data.
 func TestTheSmileStoryShopsASimulation(t *testing.T) {
 	t.Parallel()
 	env := newLookEnv(t, smileAnswers(), 8, nil)
@@ -1342,7 +1330,6 @@ func TestTheSmileStoryShopsASimulation(t *testing.T) {
 	lookRec := env.get(t, cookie, "/api/looks/"+lookID)
 	renderID := shownRenderID(t, bodyOf(t, lookRec))
 	r := env.renames(lookID, selfieID, renderID)
-	r["Closed-mouth smile"] = "Sets a calm, closed-mouth smile."
 	compare(t, "shop-simulation", env.get(t, cookie, "/api/looks/"+lookID+"/shop"), r)
 
 	shop := stageFrame(t, frames, "shop")

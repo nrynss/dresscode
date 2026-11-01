@@ -198,7 +198,10 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 		{id: "sample-family", fixture: "sample-look", occasion: "family-function",
 			flags: []string{"family-earring-festive", "family-lip-colour"},
 			fix:   "family-gold-jhumkas", runnerUp: "family-festive-top",
-			shownFix: "family-gold-jhumkas", words: storyWords,
+			// The words the sample rig's own bare join (samples.go's
+			// wordsOf) composes for this story's two answers - the sample
+			// path's wording until it adopts the pipeline's LookLine.
+			shownFix: "family-gold-jhumkas", words: "jhumkas, gold",
 			products: []string{"gold-jhumkas"}},
 		{id: "sample-interview", fixture: "sample-interview-look", occasion: "interview",
 			// The one story that flags nothing, so its ready body answers
@@ -315,9 +318,14 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 
 		if pin.id == "sample-family" {
 			// The recorded story's routes, whole: the verdict read, the
-			// job state, the list, the renders and the shop.
+			// job state, the list, the renders and the shop. The sample
+			// rig composes its own words (samples.go's wordsOf, the bare
+			// join), so the fixture's phrase-table English renames onto
+			// it here - the bridge lives until wordsOf adopts the
+			// pipeline's LookLine, the follow-on T3.10's report proposes.
 			renderID := shownRenderID(t, body)
 			r := env.renames(lookID, selfieID, renderID)
+			r["gold jhumkas"] = "jhumkas, gold"
 			compare(t, "look", lookRec, r)
 			compare(t, "job-done", env.get(t, cookie, "/api/jobs/"+jobID), r)
 			compare(t, "looks", env.get(t, cookie, "/api/looks?occasion=family-function"), r)
@@ -448,7 +456,13 @@ func TestTheSampleStreamAnswersLikeTheRecordedJob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pinFrames(t, "job-events", frames, env.renames("look-id", "selfie-id", "render-id"))
+	// The sample rig composes its own words (samples.go's wordsOf, the
+	// bare join), so the recorded frame's phrase-table English renames
+	// onto it - the bridge lives until wordsOf adopts the pipeline's
+	// LookLine, the follow-on T3.10's report proposes.
+	sampleWords := env.renames("look-id", "selfie-id", "render-id")
+	sampleWords["gold jhumkas"] = "jhumkas, gold"
+	pinFrames(t, "job-events", frames, sampleWords)
 	var look map[string]any
 	if err := json.Unmarshal(data, &look); err != nil {
 		t.Fatalf("story data %s: %v", data, err)
@@ -456,7 +470,10 @@ func TestTheSampleStreamAnswersLikeTheRecordedJob(t *testing.T) {
 	if look["fix_id"] != "family-gold-jhumkas" || look["runner_up_id"] != "family-festive-top" {
 		t.Fatalf("story pick %v %v", look["fix_id"], look["runner_up_id"])
 	}
-	if look["suggestion_only"] != false || look["words"] != storyWords {
+	// The words the sample rig's own bare join composes (wordsOf), not
+	// the pipeline's phrase-table line: the sample path's wording until
+	// it adopts LookLine.
+	if look["suggestion_only"] != false || look["words"] != "jhumkas, gold" {
 		t.Fatalf("story look words %v suggestion-only %v", look["words"], look["suggestion_only"])
 	}
 	shown, _ := look["shown"].(map[string]any)

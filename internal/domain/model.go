@@ -65,6 +65,19 @@ type VocabularyChange struct {
 	To        string `json:"to"`
 }
 
+// FixDisplay is a fix's display wording, as data. Name is what the shop
+// list shows for a visual-simulation entry of this fix; without it the
+// entry copies the fix's changes sentence, the way it always has. Words
+// is the fix in words the memory sentences keep; without it the sentence
+// falls back to the id's own name. Changes stays the fix's own sentence:
+// the pick menu and the render check read it, never either field here.
+type FixDisplay struct {
+	// Name is the display name a shop suggestion wears.
+	Name string `json:"name,omitempty"`
+	// Words is the fix in words a remembered sentence carries.
+	Words string `json:"words,omitempty"`
+}
+
 // Fix is one opt-in menu entry: what it changes, which YouCam task renders
 // it, which analysis it needs, and which criteria it addresses.
 //
@@ -80,6 +93,7 @@ type Fix struct {
 	Criteria   []string           `json:"criteria"`
 	Vocabulary []VocabularyChange `json:"vocabulary"`
 	Products   []string           `json:"products"`
+	Display    *FixDisplay        `json:"display,omitempty"`
 	Note       string             `json:"note,omitempty"`
 }
 
@@ -123,10 +137,18 @@ type LookAttribute struct {
 }
 
 // Vocabulary is the only look vocabulary. Attributes are the questions.
+//
+// Phrases is the display-phrase table: attribute id, then option value,
+// then the phrase the look-in-words line speaks for that winner. An
+// option with no entry is spoken as its own bare label. A phrase may
+// carry `{attribute}` placeholders that embed another attribute's winner
+// from the same answer set; the loader refuses one that names an
+// attribute the vocabulary does not have.
 type Vocabulary struct {
-	Kind       string          `json:"kind"`
-	ID         string          `json:"id"`
-	Attributes []LookAttribute `json:"attributes"`
+	Kind       string                       `json:"kind"`
+	ID         string                       `json:"id"`
+	Attributes []LookAttribute              `json:"attributes"`
+	Phrases    map[string]map[string]string `json:"phrases,omitempty"`
 }
 
 // Origin says whether a product came from the catalog or from the user.
