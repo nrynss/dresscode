@@ -8,6 +8,10 @@ export const pendingSentence = "This look is still being finished. Open the verd
 
 export const suggestionSentence = "No render passed the check. The suggestion and the products stand without one.";
 
+/** The look that flags nothing is the good outcome: there is no fix to name,
+ * so the screen says so instead of throwing. */
+export const cleanSentence = "Nothing needs changing; the outfit already meets the dress code.";
+
 export const shopSentence = "Every product is labelled for what it is.";
 
 export const shopOpeningSentence = "Opening the shop list.";
@@ -59,12 +63,14 @@ export interface RenderPicture {
   url: string;
 }
 
-/** The lines this screen shows. The look id and the check booleans are not among them. */
+/** The lines this screen shows. The look id and the check booleans are not among them.
+ * `fix` and `why` are undefined when the judge flagged nothing: the outfit already
+ * meets the dress code, and the screen says so instead of a fix that does not exist. */
 export interface RenderCopy {
   lookId: string;
   reasons: string[];
-  fix: string;
-  why: string;
+  fix: string | undefined;
+  why: string | undefined;
   selfieUrl: string;
   /** Undefined when no render passed the check. A failed render never lands here. */
   render: RenderPicture | undefined;
@@ -109,7 +115,9 @@ function shownRender(shown: unknown): RenderPicture | undefined {
 }
 
 /** The ready look, or null while the job is still running.
- * A body that cannot be read at all throws. */
+ * A body that cannot be read at all throws. A look whose judge flagged nothing
+ * is read whole: its fix key rides null (the server marshals the absent pick
+ * that way) or is absent, and the screen answers it with the clean sentence. */
 export function renderFromLook(body: unknown): RenderCopy | null {
   const look = asRecord(body);
   if (!look) throw new Error("The render could not be read.");
@@ -117,10 +125,6 @@ export function renderFromLook(body: unknown): RenderCopy | null {
   const lookId = asString(look.id);
   const selfieUrl = asString(look.selfie_url);
   if (lookId === undefined || selfieUrl === undefined) throw new Error("The render could not be read.");
-  const fix = asRecord(look.fix);
-  const changes = fix === undefined ? undefined : asString(fix.changes);
-  const why = fix === undefined ? undefined : asString(fix.why);
-  if (changes === undefined || why === undefined) throw new Error("The render could not be read.");
   const flags = look.flags;
   if (!Array.isArray(flags)) throw new Error("The render could not be read.");
   const reasons: string[] = [];
@@ -130,6 +134,17 @@ export function renderFromLook(body: unknown): RenderCopy | null {
     if (suggestion === undefined) throw new Error("The render could not be read.");
     reasons.push(suggestion);
   }
+  // No fix, and no reason named either: the good outcome. A look that flags
+  // something must name a fix, so that shape stays unreadable. Nor can a
+  // clean look carry a render: there was no fix to render.
+  if (look.fix === null || look.fix === undefined) {
+    if (reasons.length > 0) throw new Error("The render could not be read.");
+    return { lookId, reasons, fix: undefined, why: undefined, selfieUrl, render: undefined };
+  }
+  const fix = asRecord(look.fix);
+  const changes = fix === undefined ? undefined : asString(fix.changes);
+  const why = fix === undefined ? undefined : asString(fix.why);
+  if (changes === undefined || why === undefined) throw new Error("The render could not be read.");
   return { lookId, reasons, fix: changes, why, selfieUrl, render: shownRender(look.shown_render) };
 }
 

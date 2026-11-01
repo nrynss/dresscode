@@ -4,9 +4,19 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
 import { humanMessage } from "../../../lib/api/errors";
-import { installMock, pinAnswer } from "../../../lib/api/mock";
+import { installMock, pinAnswer, preferFixture } from "../../../lib/api/mock";
 import type { ApiFixture } from "../../../lib/api/types";
-import { openingSentence, pausedSentence, readingSentence, stageOrder, stageWord, verdictLines } from "./copy";
+import {
+  cleanSentence,
+  openingSentence,
+  pausedSentence,
+  readingSentence,
+  stageOrder,
+  stageWord,
+  verdictFromLook,
+  verdictLines,
+} from "./copy";
+import { cleanSentence as renderCleanSentence } from "../render/copy";
 import { followLook, loadVerdict, storyJobId, storyLookId, type LookFollow } from "./follow";
 import { verdictHash } from "./route";
 
@@ -100,7 +110,12 @@ test("the stage words are the four look words and nothing else", () => {
   expect(stageWord("shop")).toBe("");
   expect(stageWord("delete")).toBe("");
   expect(stageWord(undefined)).toBe("");
-  expect([pausedSentence, openingSentence, readingSentence].join(" ")).not.toMatch(/\d/);
+  expect([pausedSentence, openingSentence, readingSentence, cleanSentence].join(" ")).not.toMatch(/\d/);
+  // The look that flags nothing is the good outcome, said in one plain
+  // sentence: no exclamation, no digit, nothing to fix. The render screen's
+  // copy carries the same sentence, word for word.
+  expect(cleanSentence).toBe("Nothing needs changing; the outfit already meets the dress code.");
+  expect(cleanSentence).toBe(renderCleanSentence);
   // The stepper walks the same four words, in order.
   expect(stageOrder).toEqual(["Checking", "Choosing a fix", "Rendering", "Checking the render"]);
   expect(stageOrder.join(" ")).not.toMatch(/\d/);
@@ -252,6 +267,56 @@ test("a bare ending without an error clears the wait and says so", async () => {
     .replace(/\{[^}]*\}/g, " ")
     .replace(/<[^>]+>/g, " ");
   expect(`${sentence}\n${staticText}`).not.toMatch(/\d/);
+});
+
+test("the look that flags nothing is read as the good outcome", async () => {
+  installMock();
+  preferFixture("GET", `/api/looks/${storyLookId}`, "look-nofix.json");
+  const verdict = await loadVerdict(storyLookId);
+  expect(verdict.lookId).toBe(storyLookId);
+  expect(verdict.fix).toBeUndefined();
+  expect(verdict.why).toBeUndefined();
+  expect(verdict.reasons).toEqual([]);
+  // The clean look has no lines to fold into the notes: the sentence is the
+  // whole verdict on the page.
+  expect(verdictLines(verdict)).toEqual([]);
+
+  // The recorded shape is the server's own answer for a look whose judge
+  // flagged nothing (the shape T4.6 pins on the interview sample): the fix
+  // key present and JSON null, nothing flagged, nothing shown, nothing to buy.
+  const fixtureDir = path.resolve(here, "../../../../../testdata/api");
+  const recorded = JSON.parse(readFileSync(path.join(fixtureDir, "look-nofix.json"), "utf8")) as {
+    body: Record<string, unknown>;
+  };
+  expect("fix" in recorded.body).toBe(true);
+  expect(recorded.body.fix).toBeNull();
+  expect(recorded.body.flags).toEqual([]);
+  expect(recorded.body.shown_render).toBeNull();
+  expect(recorded.body.products).toEqual([]);
+
+  // The fix key may also ride absent altogether; a look that flags something
+  // must name a fix, and a fix that answers as an empty object is not a name.
+  const absent: Record<string, unknown> = { ...recorded.body };
+  absent.fix = undefined;
+  expect(() => verdictFromLook(absent)).not.toThrow();
+  const flagged = {
+    ...recorded.body,
+    flags: [{ id: "family-lip-colour", kind: "grooming", suggestion: "Try a red lip." }],
+  };
+  expect(() => verdictFromLook(flagged)).toThrow();
+  expect(() => verdictFromLook({ ...recorded.body, fix: {} })).toThrow();
+
+  // The clean verdict is its own branch: the sentence stands where the fix
+  // hero was, and no render link points at a render that does not exist.
+  const screen = readFileSync(path.join(here, "verdict.svelte"), "utf8");
+  expect(screen).toContain("{#if verdict.fix === undefined}");
+  const cleanBranch = screen.slice(
+    screen.indexOf("{#if verdict.fix === undefined}"),
+    screen.indexOf("{:else}", screen.indexOf("{#if verdict.fix === undefined}")),
+  );
+  expect(cleanBranch).toContain("{cleanSentence}");
+  expect(cleanBranch).not.toContain("hero");
+  expect(cleanBranch).not.toContain("renderHash");
 });
 
 test("the screen and the shell link show no digit", () => {

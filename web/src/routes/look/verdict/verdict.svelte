@@ -3,7 +3,15 @@
   import ErrorNotice from "../../../app/error-notice.svelte";
   import type { ShownError } from "../../../lib/api/types";
   import { renderHash } from "../render/route";
-  import { openingSentence, pausedSentence, readingSentence, stageOrder, stageWord, type VerdictCopy } from "./copy";
+  import {
+    cleanSentence,
+    openingSentence,
+    pausedSentence,
+    readingSentence,
+    stageOrder,
+    stageWord,
+    type VerdictCopy,
+  } from "./copy";
   import { followLook, loadVerdict, shownFailure, storyJobId, storyLookId } from "./follow";
 
   let stream = $state<JobStream | undefined>(undefined);
@@ -117,11 +125,18 @@
         </ul>
       </details>
     {/if}
-    <div class="hero">
-      <h3 class="hero-label">A fix</h3>
-      <p class="hero-fix">{verdict.fix}</p>
-    </div>
-    <a class="primary-link" href={renderHash}>See the render</a>
+    {#if verdict.fix === undefined}
+      <!-- The judge flagged nothing: the good outcome. The sentence stands
+       * where the fix card was, and no link points at a render that does not
+       * exist. -->
+      <p role="status">{cleanSentence}</p>
+    {:else}
+      <div class="hero">
+        <h3 class="hero-label">A fix</h3>
+        <p class="hero-fix">{verdict.fix}</p>
+      </div>
+      <a class="primary-link" href={renderHash}>See the render</a>
+    {/if}
   {/if}
 </section>
 

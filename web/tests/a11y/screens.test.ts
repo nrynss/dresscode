@@ -1,6 +1,8 @@
 import { test } from "vitest";
 import { preferFixture } from "../../src/lib/api/mock";
 import { resetHistory, writeHistory } from "../../src/routes/history/flow";
+import { cleanSentence } from "../../src/routes/look/render/copy";
+import { storyLookId } from "../../src/routes/look/render/load";
 import { resetOccasionMenu } from "../../src/routes/occasion/menu";
 import {
   gate,
@@ -115,6 +117,12 @@ const states: ScreenState[] = [
     open: openStagesDrawer,
   },
   {
+    name: "the verdict screen with a look that flags nothing",
+    hash: "#/look/verdict",
+    before: () => preferFixture("GET", `/api/looks/${storyLookId}`, "look-nofix.json"),
+    ready: () => withText("p", cleanSentence),
+  },
+  {
     name: "the render screen with the swipe and the verdict buttons",
     hash: "#/look/render",
     ready: () => withText("button", "Shop the look"),
@@ -139,6 +147,12 @@ const states: ScreenState[] = [
       await openShopSheet();
       await openFidelityExplanation();
     },
+  },
+  {
+    name: "the render screen with a look that flags nothing",
+    hash: "#/look/render",
+    before: () => preferFixture("GET", `/api/looks/${storyLookId}`, "look-nofix.json"),
+    ready: () => withText("p", cleanSentence),
   },
   {
     name: "the history screen with the switch off",

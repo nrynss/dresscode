@@ -6,6 +6,7 @@ import { humanMessage } from "../../../lib/api/errors";
 import { installMock, lastFixtureFile, pinAnswer, preferFixture } from "../../../lib/api/mock";
 import { clampedPosition, midPosition, originalPosition, renderPosition } from "./compare";
 import {
+  cleanSentence,
   fidelityExplanations,
   fidelityLabels,
   isFidelityLabel,
@@ -66,6 +67,7 @@ test("the screen's sentences and words carry no digit", () => {
   const words = [
     openingSentence,
     pendingSentence,
+    cleanSentence,
     suggestionSentence,
     shopSentence,
     shopOpeningSentence,
@@ -75,6 +77,9 @@ test("the screen's sentences and words carry no digit", () => {
     ...fidelityLabels,
   ].join(" ");
   expect(words).not.toMatch(/\d/);
+  // The look that flags nothing is the good outcome, said in one plain
+  // sentence: no exclamation, no digit, nothing to fix.
+  expect(cleanSentence).toBe("Nothing needs changing; the outfit already meets the dress code.");
   expect(fidelityLabels).toEqual(["exact product", "approximate match", "visual simulation"]);
   expect(isFidelityLabel("exact product")).toBe(true);
   expect(isFidelityLabel("approximate match")).toBe(true);
@@ -283,6 +288,58 @@ test("the look with no passing render stands on the suggestion", async () => {
     shown_render: { url: "/media/x", check: { change_made: true, same_person: true } },
   });
   expect(broken?.render).toBeUndefined();
+});
+
+test("the look that flags nothing is read as the good outcome", async () => {
+  installMock();
+  preferFixture("GET", `/api/looks/${storyLookId}`, "look-nofix.json");
+  const copy = await loadLook(storyLookId);
+  expect(lastFixtureFile).toBe("look-nofix.json");
+  expect(copy).not.toBeNull();
+  expect(copy?.fix).toBeUndefined();
+  expect(copy?.why).toBeUndefined();
+  expect(copy?.reasons).toEqual([]);
+  expect(copy?.render).toBeUndefined();
+  expect(copy?.selfieUrl).toBe("/media/5e1f1e00000000000000000000000001");
+
+  // The recorded shape is the server's own answer for a look whose judge
+  // flagged nothing (the shape T4.6 pins on the interview sample): the fix
+  // key present and JSON null, nothing flagged, nothing shown, nothing to buy.
+  const recorded = disk("look-nofix.json").body as Record<string, unknown>;
+  expect("fix" in recorded).toBe(true);
+  expect(recorded.fix).toBeNull();
+  expect(recorded.flags).toEqual([]);
+  expect(recorded.shown_render).toBeNull();
+  expect(recorded.suggestion_only).toBe(true);
+  expect(recorded.products).toEqual([]);
+  expect(recorded.runner_up).toBe("");
+  expect(recorded.words).toBe("");
+
+  // The fix key may also ride absent altogether; a look that flags something
+  // must name a fix, and a fix that answers as an empty object is not a name.
+  const absent: Record<string, unknown> = { ...recorded };
+  absent.fix = undefined;
+  expect(() => renderFromLook(absent)).not.toThrow();
+  const flagged = { ...recorded, flags: [{ id: "family-lip-colour", kind: "grooming", suggestion: "Try a red lip." }] };
+  expect(() => renderFromLook(flagged)).toThrow();
+  expect(() => renderFromLook({ ...recorded, fix: {} })).toThrow();
+
+  // The clean look is its own branch: the sentence leads, the original stands
+  // under it, and the fix hero and the shop list stay out of a fix that does
+  // not exist.
+  const screen = readFileSync(path.join(here, "render.svelte"), "utf8");
+  expect(screen).toContain("{#if look.fix === undefined}");
+  expect(screen).toContain("{#if look.fix !== undefined}");
+  const cleanBranch = screen.slice(
+    screen.indexOf("{#if look.fix === undefined}"),
+    screen.indexOf("{:else}", screen.indexOf("{#if look.fix === undefined}")),
+  );
+  expect(cleanBranch).toContain("{cleanSentence}");
+  expect(cleanBranch).toContain('src={look.selfieUrl}');
+  expect(cleanBranch.indexOf("{cleanSentence}")).toBeLessThan(cleanBranch.indexOf('src={look.selfieUrl}'));
+  expect(cleanBranch).not.toContain("hero");
+  expect(cleanBranch).not.toContain("ShopSheet");
+  expect(cleanBranch).not.toContain("{suggestionSentence}");
 });
 
 test("the screen shows the render, the actions and the sheet, and no digit", async () => {
