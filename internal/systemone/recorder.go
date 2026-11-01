@@ -565,6 +565,23 @@ type pendingImage struct {
 // reported before the first paid call. Two files with one digest are
 // named by the lexicographically first path, which makes a re-run's
 // references stable.
+//
+// A paid driver owes this function two decisions, both about what the
+// index is built over, and neither belongs mid-run.
+//
+// Point it at the samples tree only, never at the old testdata/clef. The
+// task that re-records replaces those files, so a fresh recording that
+// references them points at bytes its own run is about to rewrite, and
+// the corpus it is meant to replace stays load-bearing under the new one.
+//
+// Decide what the resized cost photos do before the first call, too. The
+// intent here is to write them into the tree the index is built over
+// first, so every reference in the corpus is a name a person reads. A
+// photo the index does not know falls through instead to
+// images/<sha256>.<ext> under the recording, which the reader handles as
+// well as any reference but which nobody would recognise in a listing. Say
+// which of the two the run means: both are correct output, and a run that
+// only finds out afterwards leaves two shapes in one corpus.
 func MatchImages(root string) (ImageResolver, error) {
 	if root == "" {
 		return nil, errors.New("systemone: no image root to match")
