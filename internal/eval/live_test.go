@@ -71,38 +71,19 @@ import (
 )
 
 // The live run's own numbers. None of them is a threshold: the lines this
-// measures with are read from the committed settings file.
+// measures with are read from the committed settings file. The ceilings,
+// the day allowance, the call counts, the ordering note and the probe's two
+// exchanges live in live_report_test.go, untagged, so the pinned tests
+// project and price against the same constants the sweep runs on.
 const (
 	// liveWorkersBase is the only address this file hands the client, and
 	// liveWorkersHost the only host its transport admits.
 	liveWorkersBase = "https://api.cloudflare.com"
 	liveWorkersHost = "api.cloudflare.com"
 
-	// liveProbeCeiling covers the probe's two calls. liveSweepCeiling is
-	// 8 cents, about four times the sweep's expected settle (~1,950
-	// neurons, ~$0.022): the client reserves double its token estimate for
-	// each call, so the ceiling sits above the expected settle, not at it.
-	// The meter refuses a call whose reserve does not fit, which is the
-	// guard that stops a runaway loop.
-	liveProbeCeiling = cost.Cent
-	liveSweepCeiling = 8 * cost.Cent
-
-	// liveFreeDailyNeurons is the Workers AI free plan's day allowance
-	// (docs/clef.md, Cost). The sweep is projected against it.
-	liveFreeDailyNeurons = 10_000
-
-	// liveJudgeCalls and liveCheckCalls are the sweep's expected calls:
-	// every judge recording and every check recording, once each.
-	liveJudgeCalls = 37
-	liveCheckCalls = 4
-
 	liveCallTimeout   = 2 * time.Minute
 	liveProbeDeadline = 6 * time.Minute
 	liveSweepDeadline = 32 * time.Minute
-
-	// liveOrdering states what the sweep does not do: no t.Parallel, one
-	// call after another, so the ledger and the budget tell one story.
-	liveOrdering = "sequential calls, no t.Parallel, fail fast on the first call error"
 )
 
 // The rate card this run measures against - liveNanodollarsPerNeuron,
@@ -113,12 +94,9 @@ const (
 // liveSpend.record below is the tie: it fatals the run on the first call
 // where this file's implied price and the ledger's booking disagree.
 
-// The probe's two calls: the full-size family-function judge recording and
-// the honest second-visit check on the shipped model.
-const (
-	liveProbeJudge = "judge-V04-family-function"
-	liveProbeCheck = "check-clef-V04-to-V05"
-)
+// The probe's two calls, liveProbeJudge and liveProbeCheck, are named in
+// live_report_test.go, untagged, so the pinned probe test reads the same
+// two exchanges the probe dials.
 
 // liveSecrets holds the two environment values. Only scrub reads them, so
 // neither can reach a log line, an error or a failure message.
