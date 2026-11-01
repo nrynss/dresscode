@@ -1696,7 +1696,7 @@ func TestLiveTranscriptJudging(t *testing.T) {
 	if !moved {
 		t.Errorf("live pin: the moved list lacks the doc's %q", wantMove)
 	}
-	departed, arrived, arrivalKey := 0, 0, ""
+	departed, arrived, arrivalKey, arrivalLine := 0, 0, "", ""
 	for _, r := range d.cellRows {
 		line := liveFloat(t, d.name, r.line)
 		recAgrees := (recValues[r.sample+" "+r.criterion] >= line) == r.expected
@@ -1706,11 +1706,17 @@ func TestLiveTranscriptJudging(t *testing.T) {
 		case !recAgrees && r.agrees:
 			arrived++
 			arrivalKey = r.sample + " " + r.criterion
+			arrivalLine = r.line
 		}
 	}
 	if departed != 16 || arrived != 1 || arrivalKey != "P12 family-expression-present" {
 		t.Errorf("live pin: %d left the correct side, %d arrived (%s); want 16 and P12 family-expression-present",
 			departed, arrived, arrivalKey)
+	}
+	// The doc's one arrival, at the line it names: P12's flat stare drops
+	// under its 0.5466 override and reads correct for the first time.
+	if arrived == 1 && arrivalLine != "0.54660" {
+		t.Errorf("live pin: the arriving cell reads at line %s, want 0.54660", arrivalLine)
 	}
 
 	// The printed lines, re-emitted from the computed values.
@@ -2163,6 +2169,33 @@ func TestLiveTranscriptCost(t *testing.T) {
 		}
 	}
 	total := liveCallsDollars(calls)
+	// The doc's cost spread, from the rows: a judge call is 42.41 to 45.40
+	// neurons depending on the occasion's token count, and the two
+	// clef-flash checks print 14.14 and 14.04 against the 14.14 the
+	// projection assumed.
+	var cheapest, dearest float64
+	var flash []string
+	for _, c := range calls {
+		if c.model == systemone.ModelClefFlash {
+			flash = append(flash, fmt.Sprintf("%.2f", c.neurons))
+			continue
+		}
+		if !strings.HasPrefix(c.label, "judge-") {
+			continue
+		}
+		if cheapest == 0 || c.neurons < cheapest {
+			cheapest = c.neurons
+		}
+		if c.neurons > dearest {
+			dearest = c.neurons
+		}
+	}
+	if got := fmt.Sprintf("%.2f-%.2f", cheapest, dearest); got != "42.41-45.40" {
+		t.Errorf("live pin: the judge calls run %.2f to %.2f neurons, want 42.41-45.40", cheapest, dearest)
+	}
+	if strings.Join(flash, " ") != "14.14 14.04" {
+		t.Errorf("live pin: the clef-flash checks print %q, want 14.14 14.04", strings.Join(flash, " "))
+	}
 	if got := fmt.Sprintf("%s", total); got != "$0.020048907" {
 		t.Errorf("live pin: %s: one pass books %s, want $0.020048907", d.name, got)
 	}
