@@ -5,8 +5,10 @@ package systemone
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"slices"
 	"strings"
@@ -26,7 +28,11 @@ import (
 // The token and the account id come from the environment. With either
 // missing the test skips, so the committed file never fails for a key.
 // The key is never printed: the client scrubs it out of its own errors,
-// and this test scrubs again before anything reaches the transcript.
+// and this test scrubs again before anything reaches the transcript —
+// the account id with it, because a transport error is a url.Error whose
+// text names the full endpoint, account id included, and the client
+// scrubs only its token. TestLiveScrubRedactsTheKeyAndTheAccount proves
+// that scrub on exactly such text.
 //
 // The two requests are the recorded T0.6 exchanges read back through the
 // replay, so the wire shape is the recorded shape by construction and the
@@ -63,10 +69,10 @@ func TestLiveJudgeAndCheckOnASamplePhoto(t *testing.T) {
 	rep := openDir(t, clefDir(t))
 
 	t.Run("judge", func(t *testing.T) {
-		liveAsk(t, token, client, ledger, "judge-V04-family-function", rep)
+		liveAsk(t, token, account, client, ledger, "judge-V04-family-function", rep)
 	})
 	t.Run("check", func(t *testing.T) {
-		liveAsk(t, token, client, ledger, "check-clef-V04-to-V05", rep)
+		liveAsk(t, token, account, client, ledger, "check-clef-V04-to-V05", rep)
 	})
 
 	// The books: each call verified its own charge above, so the tally
@@ -81,7 +87,7 @@ func TestLiveJudgeAndCheckOnASamplePhoto(t *testing.T) {
 // then compared against the recording's answer set, so a field the live
 // API added or dropped fails here and lands in the report as the finding
 // it is.
-func liveAsk(t *testing.T, token string, client *WorkersAI, ledger *cost.Ledger, exchange string, rep *Replay) {
+func liveAsk(t *testing.T, token, account string, client *WorkersAI, ledger *cost.Ledger, exchange string, rep *Replay) {
 	t.Helper()
 	rec := recorded(t, rep, exchange)
 	req := recordedRequest(t, rec)
@@ -107,7 +113,7 @@ func liveAsk(t *testing.T, token string, client *WorkersAI, ledger *cost.Ledger,
 	start := time.Now()
 	got, err := client.Ask(ctx, req)
 	if err != nil {
-		t.Fatalf("%s: %s", exchange, scrubLiveKey(token, err.Error()))
+		t.Fatalf("%s: %s", exchange, scrubLiveKey(token, account, err.Error()))
 	}
 	t.Logf("%s: took %s", exchange, time.Since(start).Round(time.Millisecond))
 	t.Logf("%s: reply model=%s answers=%d usage.input_tokens=%d usage.output_tokens=%d",
@@ -226,11 +232,52 @@ func legendLine(legend map[string]json.RawMessage) string {
 	return strings.Join(parts, " ")
 }
 
-// scrubLiveKey keeps the token out of the transcript even if the client's
-// own scrubbing missed a path.
-func scrubLiveKey(token, text string) string {
-	if token == "" {
-		return text
+// scrubLiveKey keeps the token and the account id out of the transcript
+// even if the client's own scrubbing missed a path. Its one consumer is
+// the failure of a live Ask, and the error that reaches it can be the
+// client's transport error: a url.Error whose text is
+//
+//	Post "https://api.cloudflare.com/client/v4/accounts/<account>/ai/run/…"
+//
+// which carries the account id and never the token — the token rides the
+// Authorization header — so both are scrubbed here, every occurrence.
+func scrubLiveKey(token, account, text string) string {
+	for _, secret := range []string{token, account} {
+		if secret != "" {
+			text = strings.ReplaceAll(text, secret, "redacted")
+		}
 	}
-	return strings.ReplaceAll(text, token, "redacted")
+	return text
+}
+
+// TestLiveScrubRedactsTheKeyAndTheAccount proves the transcript's scrub
+// on the text it will actually meet. The secrets are fabricated, the
+// error is built as a real url.Error is, and nothing dials; the test runs
+// without the live keys present, so the guard is exercised on every
+// no-network run too.
+func TestLiveScrubRedactsTheKeyAndTheAccount(t *testing.T) {
+	const token = "fake-workers-ai-token-0123456789abcdef"
+	const account = "fake-account-id-000000000000"
+
+	err := &url.Error{
+		Op:  "Post",
+		URL: "https://api.cloudflare.com/client/v4/accounts/" + account + "/ai/run/@cf/cloudflare/clef",
+		Err: errors.New("dial tcp: lookup api.cloudflare.com: no such host"),
+	}
+	got := scrubLiveKey(token, account, err.Error())
+	if strings.Contains(got, token) || strings.Contains(got, account) {
+		t.Fatalf("the scrub left a secret in the transcript: %s", got)
+	}
+	if !strings.Contains(got, `Post "https://api.cloudflare.com/client/v4/accounts/redacted/ai/run/@cf/cloudflare/clef"`) ||
+		!strings.Contains(got, "dial tcp: lookup api.cloudflare.com: no such host") {
+		t.Fatalf("the scrub lost text it should keep: %s", got)
+	}
+
+	// Every occurrence goes, whichever secret sits where.
+	carried := "bearer " + token + " at accounts/" + account + ", and again " + token + " and " + account
+	if got := scrubLiveKey(token, account, carried); strings.Contains(got, token) ||
+		strings.Contains(got, account) ||
+		strings.Count(got, "redacted") != 4 {
+		t.Fatalf("the scrub missed an occurrence: %s", got)
+	}
 }
