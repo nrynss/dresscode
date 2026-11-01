@@ -14,7 +14,7 @@ Each phase document gives an engineer starting cold the complete context for its
 
 **This diary may go public.** Nothing private goes in here: no key, no account detail, no personal path beyond `~`, no private repository's name, no photo of anyone.
 
-**Current status:** T4.9 landed (`9109c13`) — erasure reaches every row: the jobs sweep, the schema-derived reference count, the single-look sweep, and the 85-column classification guard, all mutation-proven (six mutations, each run red and restored). T4.8 (the server binary — the first production caller of every mount) dispatches next; T4.10 (bounds) needs the user's sample-open policy call. T4.6's five-round loop and T3.9's measured thresholds are both in the log. **P3 9/9; P4 8/10; P5B 8/9.**
+**Current status:** T4.9 landed (`9109c13`) — erasure reaches every row: the jobs sweep, the schema-derived reference count, the single-look sweep, and the 85-column classification guard, all mutation-proven (six mutations, each run red and restored). T4.8 (the server binary — the first production caller of every mount) dispatches next; T4.10 (bounds) needs the user's sample-open policy call. **P3 9/9; P4 8/10; P5B 8/9.**
 
 ---
 
