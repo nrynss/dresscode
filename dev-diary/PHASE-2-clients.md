@@ -46,7 +46,7 @@ requires:   T2.1
 fixture-ok: no
 size:       XS · light
 owns:       internal/systemone/live_test.go
-status:     in-review
+status:     done
 ```
 One judge and one check request on a sample photo. Workers AI spend within the free allowance. **Done when:** the transcript is in the report and matches the recording's shape.
 
