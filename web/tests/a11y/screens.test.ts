@@ -103,12 +103,12 @@ const states: ScreenState[] = [
   {
     name: "the capture screen",
     hash: "#/capture",
-    ready: () => withText("button", "Open the front camera"),
+    ready: () => withText("button", "Open camera"),
   },
   {
     name: "the capture screen with the product drawer open",
     hash: "#/capture",
-    ready: () => withText("button", "Open the front camera"),
+    ready: () => withText("button", "Open camera"),
     open: openProductDrawer,
   },
   {

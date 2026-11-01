@@ -154,7 +154,7 @@ export async function openShopSheet(): Promise<void> {
 /** Open the capture screen's product drawer, so the fields inside it face the
  * gate the way a reader who is considering a piece sees them. */
 export async function openProductDrawer(): Promise<void> {
-  const summary = withText("summary", "Considering a specific piece?");
+  const summary = withText("summary", "Try your own piece");
   expect(summary, "the product drawer summary").not.toBeNull();
   (summary as HTMLElement).click();
   await waitUntil(() => document.querySelector("details.product-drawer[open]"), "the product drawer opens");
