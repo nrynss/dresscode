@@ -317,6 +317,7 @@ test("the look that flags nothing is read as the good outcome", async () => {
   expect(cleanBranch).toContain("{cleanSentence}");
   expect(cleanBranch).not.toContain("hero");
   expect(cleanBranch).not.toContain("renderHash");
+  expect(cleanBranch).not.toContain("result-card");
 });
 
 test("the screen and the shell link show no digit", () => {
@@ -375,17 +376,33 @@ test("the screen and the shell link show no digit", () => {
   // word for word, so it is gone.
   expect(screen).toContain('<details class="disclosure reasons-drawer">');
   expect(screen).toContain("<summary>Dress code notes</summary>");
+  // One card language with the render screen: the fix and its way forward
+  // are one cohesive Result Card on the shared recipe, the hero bare of
+  // chrome inside it, and the crescent sliver gone from the file. This
+  // screen holds no shop row and no verdict bar to add, so its card carries
+  // the fix and the render link alone.
+  expect(screen).toContain('<div class="result-card">');
   expect(screen).toContain('<div class="hero">');
   expect(screen).toContain('<h3 class="hero-label">A fix</h3>');
   expect(screen).toContain('<p class="hero-fix">{verdict.fix}</p>');
   expect(screen).toContain('<a class="primary-link" href={renderHash}>See the render</a>');
   expect(staticText).toContain("See the render");
   expect(markup).toContain("renderHash");
+  const card = screen.slice(screen.indexOf('<div class="result-card">'), screen.indexOf("</section>"));
+  expect(card).toContain('<a class="primary-link" href={renderHash}>See the render</a>');
+  expect(card.indexOf("hero-fix")).toBeLessThan(card.indexOf('class="primary-link"'));
   const heroStyles = screen.slice(screen.indexOf("<style>"));
-  expect(heroStyles).toMatch(/\.hero\s*\{[^}]*background: var\(--raised\)/);
-  expect(heroStyles).toMatch(/\.hero\s*\{[^}]*border: 1px solid var\(--line-soft\)/);
-  expect(heroStyles).toMatch(/\.hero\s*\{[^}]*border-left: 3px solid var\(--accent\)/);
-  expect(heroStyles).toMatch(/\.hero\s*\{[^}]*border-radius: var\(--radius-control\)/);
+  expect(heroStyles).toMatch(
+    /\.result-card\s*\{[^}]*background: var\(--surface\)[^}]*border: 2px solid var\(--accent\)/,
+  );
+  expect(heroStyles).toMatch(/\.result-card\s*\{[^}]*border-radius: var\(--radius-control\)/);
+  expect(heroStyles).toMatch(/\.result-card\s*\{[^}]*padding: 1rem/);
+  expect(heroStyles).toMatch(/\.result-card\s*\{[^}]*display: flex/);
+  expect(heroStyles).toMatch(/\.result-card\s*\{[^}]*flex-direction: column/);
+  expect(heroStyles).toMatch(/\.result-card\s*\{[^}]*gap: 0\.85rem/);
+  expect(screen).not.toContain("border-left: 3px solid var(--accent)");
+  expect(heroStyles).not.toMatch(/\.hero\s*\{[^}]*background/);
+  expect(heroStyles).not.toMatch(/\.hero\s*\{[^}]*border/);
   expect(heroStyles).toMatch(/\.primary-link\s*\{[^}]*color: var\(--on-accent\)/);
   expect(heroStyles).toMatch(/\.primary-link\s*\{[^}]*background: var\(--accent\)/);
   expect(heroStyles).toMatch(/\.stages-drawer > ol\s*\{[^}]*padding: 0\.65rem 0\.9rem 0\.85rem/);
