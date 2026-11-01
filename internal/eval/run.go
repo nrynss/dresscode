@@ -41,7 +41,22 @@ type Report struct {
 // testdata/clef/cost (the size sweep), testdata/occasions (the
 // criteria, the fixes and the vocabulary), and testdata/eval (the
 // transcribed ground truth). No key, no network, no spend.
+//
+// Run is RunAt pointed at testdata/clef, the shipped corpus. A re-record
+// writes a second tree beside it, so RunAt takes the recording directory
+// as an argument and the two corpora are read with one code path: only
+// the recordings differ, never the rules.
 func Run(root string) (Report, error) {
+	return RunAt(root, filepath.Join(root, "testdata", "clef"))
+}
+
+// RunAt replays the whole evaluation offline over the recordings in
+// clefDir, reading the ground truth, the occasions and the vocabulary
+// from root as Run does. clefDir holds the judge and check exchanges at
+// its top level, the ten repeats in clefDir/stability and the size sweep
+// in clefDir/cost, because Open does not descend into a folder: the same
+// layout testdata/clef has. No key, no network, no spend.
+func RunAt(root, clefDir string) (Report, error) {
 	gt, err := LoadGroundTruth(filepath.Join(root, "testdata", "eval", "ground-truth.json"))
 	if err != nil {
 		return Report{}, err
@@ -56,7 +71,6 @@ func Run(root string) (Report, error) {
 		occasions[occ.ID] = &occ
 	}
 	vocab := loaded.Vocabulary
-	clefDir := filepath.Join(root, "testdata", "clef")
 	replay, err := systemone.Open(clefDir)
 	if err != nil {
 		return Report{}, err
