@@ -194,8 +194,15 @@ func TestExampleQuotesAreNamesOnly(t *testing.T) {
 	}
 	// The check model is a value the contract fixes, not a name: the
 	// check recordings carry clef and clef-flash, and the example names
-	// the one the pipeline runs.
-	allowed := map[string]bool{"env": true, "keyring": true, "clef": true}
+	// the one the pipeline runs. The two [paths] values are the
+	// repository's own data directories, paths and not names.
+	allowed := map[string]bool{
+		"env":                true,
+		"keyring":            true,
+		"clef":               true,
+		"testdata/occasions": true,
+		"testdata/samples":   true,
+	}
 	for _, name := range EnvVars() {
 		allowed[name] = true
 	}
@@ -421,15 +428,36 @@ func TestAnOverrideAndItsModelLoad(t *testing.T) {
 	})
 }
 
-// The paths section is the one the server boots from. The example file
-// carries none, because the ops commands read the same file and need no
-// directories, so an absent section must load as empty; a present one
-// must land in the fields the mounts read.
+// The paths section is the one the server boots from. The example
+// carries the repository's own data directories, laid out the way the
+// loaders require; the section stays optional at load, because the ops
+// commands read the same file and need no directories. A file without
+// it must still load as empty, and an operator's own values must land
+// in the fields the mounts read.
 func TestPathsLoad(t *testing.T) {
 	t.Parallel()
-	t.Run("the example carries no paths and loads empty", func(t *testing.T) {
+	t.Run("a file without the section loads empty", func(t *testing.T) {
+		data, err := os.ReadFile(examplePath(t))
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(data)
+		// The section is cut structurally, between its header and its
+		// last value line, so a reworded comment does not move the
+		// anchor.
+		start := strings.Index(text, "\n[paths]\n")
+		end := strings.LastIndex(text, `samples = "testdata/samples"`)
+		if start < 0 || end < start {
+			t.Fatalf("the example carries no [paths] section to cut: start %d end %d", start, end)
+		}
+		end += len(`samples = "testdata/samples"`)
+		text = text[:start] + text[end:]
+		path := filepath.Join(t.TempDir(), "dresscode.toml")
+		if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+			t.Fatal(err)
+		}
 		got, _, err := Load(t.Context(), Options{
-			Path:      examplePath(t),
+			Path:      path,
 			LookupEnv: lookup(standins()),
 			Keyring: func(context.Context, string) (string, error) {
 				return "", errors.New("absent")
@@ -443,12 +471,27 @@ func TestPathsLoad(t *testing.T) {
 		}
 	})
 
-	t.Run("a paths section lands in the fields", func(t *testing.T) {
-		got, err := loadVariant(t, swap("[flags]", `[paths]
-occasions = "/srv/dresscode/occasions"
-samples = "/srv/dresscode/samples"
+	t.Run("the example's paths load into the fields", func(t *testing.T) {
+		got, _, err := Load(t.Context(), Options{
+			Path:      examplePath(t),
+			LookupEnv: lookup(standins()),
+			Keyring: func(context.Context, string) (string, error) {
+				return "", errors.New("absent")
+			},
+		})
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		if got.Paths.Occasions != "testdata/occasions" || got.Paths.Samples != "testdata/samples" {
+			t.Fatalf("paths %+v, want the example's two data directories", got.Paths)
+		}
+	})
 
-[flags]`))
+	t.Run("an operator's paths land in the fields", func(t *testing.T) {
+		got, err := loadVariant(t, func(text string) string {
+			text = swap(`occasions = "testdata/occasions"`, `occasions = "/srv/dresscode/occasions"`)(text)
+			return swap(`samples = "testdata/samples"`, `samples = "/srv/dresscode/samples"`)(text)
+		})
 		if err != nil {
 			t.Fatalf("load: %v", err)
 		}

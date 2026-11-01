@@ -30,6 +30,19 @@ fresh_uploads_off = false
 renders_off = false
 samples_only = false
 
+[paths]
+# The two data directories the server reads. The section may be omitted -
+# `dresscode budget` and `dresscode flag` need no directories - but
+# `dresscode serve` refuses to boot without both. The values here are
+# this repository's own data, laid out the way the loaders require.
+occasions = "testdata/occasions"
+# The samples directory carries the recordings' layout: a story reads a
+# recorded provider result from <samples>/../youcam/results beside it,
+# and the catalog pictures a shop list shows come from
+# <samples>/products. Move one without the other and the samples mount
+# refuses, naming both roots it tried.
+samples = "testdata/samples"
+
 [judge]
 # The lines that turn Clef's read into flags. A criterion flags when its
 # yes-probability sits under its line. per_criterion names a line per

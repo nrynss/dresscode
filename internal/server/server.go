@@ -7,8 +7,8 @@
 // next request. Keel gate stands in front of every route that spends.
 // Open alone mounts the session, the gate and the intake; Compose is the
 // constructor the binary boots, and it mounts the rest: the look routes,
-// the samples, sign-in, and deletion. Intake mounts uploads, photos,
-// products, links, and media.
+// the occasions, the samples, sign-in, and deletion. Intake mounts
+// uploads, photos, products, links, and media.
 package server
 
 import (
@@ -373,9 +373,9 @@ type Wiring struct {
 // answering before the first listen. It calls Open, opens the two spend
 // books on the same handle, and mounts, in the order the constructors
 // demand: the look routes (the intake must be there first, and the
-// samples and the job read hang off the look mount), then the samples,
-// then sign-in, then deletion, whose identity middleware is the one the
-// server serves under.
+// occasions, the samples and the job read hang off the look mount), then
+// the occasions, then the samples, then sign-in, then deletion, whose
+// identity middleware is the one the server serves under.
 //
 // The spend wiring is T4.7's seam landed: the units books are the
 // `spend_youcam` namespace with the settings' lifetime ceiling and its
@@ -477,6 +477,9 @@ func Compose(ctx context.Context, cfg Config, wiring Wiring) (*Server, error) {
 		Now:          now,
 		Log:          log,
 	}); err != nil {
+		return nil, fmt.Errorf("server: compose: %w", err)
+	}
+	if err := srv.MountOccasions(); err != nil {
 		return nil, fmt.Errorf("server: compose: %w", err)
 	}
 	if err := srv.MountSamples(ctx, SamplesConfig{
