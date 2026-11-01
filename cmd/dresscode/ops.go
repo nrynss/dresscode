@@ -10,6 +10,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -28,6 +29,18 @@ const (
 	defaultConfigPath = "dresscode.toml"
 )
 
+// budgetUsage is the help, with the operator's caveat in it: opening the
+// books rewrites their ceilings from the settings file, so the read is a
+// write, and the report is only the books' if the file is the one the
+// server booted from.
+func budgetUsage(fs *flag.FlagSet) {
+	fmt.Fprintln(fs.Output(), "usage: dresscode budget [-db file] [-config file]")
+	fmt.Fprintln(fs.Output(), "run it with the settings file the server booted from:")
+	fmt.Fprintln(fs.Output(), "  opening the books rewrites the ceilings from that file, so a")
+	fmt.Fprintln(fs.Output(), "  different file moves the ceilings the running server enforces")
+	fs.PrintDefaults()
+}
+
 // runBudget prints the two books: the YouCam units with their judging
 // split, and the Workers AI dollars of the running UTC day, each as
 // spent and left. The settings file owns the ceilings, the way it does
@@ -37,13 +50,17 @@ const (
 func runBudget(args []string, stdout, stderr io.Writer, lookup func(string) (string, bool)) int {
 	fs := flag.NewFlagSet("budget", flag.ContinueOnError)
 	fs.SetOutput(stderr)
+	fs.Usage = func() { budgetUsage(fs) }
 	dbPath := fs.String("db", defaultDBPath, "database file the server serves out of")
 	configPath := fs.String("config", defaultConfigPath, "settings file with the budgets")
 	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
 		return 2
 	}
 	if fs.NArg() != 0 {
-		fmt.Fprintln(stderr, "usage: dresscode budget [-db file] [-config file]")
+		budgetUsage(fs)
 		return 2
 	}
 	ctx := context.Background()

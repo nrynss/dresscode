@@ -26,13 +26,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stdout, versionLine())
 		return 0
 	case "serve":
-		if len(args) != 1 {
-			fmt.Fprintln(stderr, "usage: dresscode serve")
-			return 2
-		}
-		// Not a server yet: do not listen, dial, or read a key.
-		fmt.Fprintln(stdout, "dresscode serve: not listening")
-		return 0
+		return runServe(args[1:], stdout, stderr, nil, serveInterrupts())
 	case "budget":
 		return runBudget(args[1:], stdout, stderr, nil)
 	case "flag":

@@ -421,6 +421,43 @@ func TestAnOverrideAndItsModelLoad(t *testing.T) {
 	})
 }
 
+// The paths section is the one the server boots from. The example file
+// carries none, because the ops commands read the same file and need no
+// directories, so an absent section must load as empty; a present one
+// must land in the fields the mounts read.
+func TestPathsLoad(t *testing.T) {
+	t.Parallel()
+	t.Run("the example carries no paths and loads empty", func(t *testing.T) {
+		got, _, err := Load(t.Context(), Options{
+			Path:      examplePath(t),
+			LookupEnv: lookup(standins()),
+			Keyring: func(context.Context, string) (string, error) {
+				return "", errors.New("absent")
+			},
+		})
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		if got.Paths.Occasions != "" || got.Paths.Samples != "" {
+			t.Fatalf("paths %+v, want empty", got.Paths)
+		}
+	})
+
+	t.Run("a paths section lands in the fields", func(t *testing.T) {
+		got, err := loadVariant(t, swap("[flags]", `[paths]
+occasions = "/srv/dresscode/occasions"
+samples = "/srv/dresscode/samples"
+
+[flags]`))
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		if got.Paths.Occasions != "/srv/dresscode/occasions" || got.Paths.Samples != "/srv/dresscode/samples" {
+			t.Fatalf("paths %+v", got.Paths)
+		}
+	})
+}
+
 func TestKeyringArgsMatchTheDocs(t *testing.T) {
 	t.Parallel()
 	want := map[string][]string{

@@ -67,6 +67,30 @@ type Settings struct {
 	Flags   Flags   `toml:"flags"`
 	Judge   Judge   `toml:"judge"`
 	Check   Check   `toml:"check"`
+	Paths   Paths   `toml:"paths"`
+}
+
+// Paths are the data directories the server reads. They are settings,
+// not arguments, so the operator flips them in the same file the budgets
+// live in and the books, the flags and the mounts all come from one
+// boot. An empty path is not a load error, because the ops commands read
+// the same file and need no directories: the boot that mounts the routes
+// refuses the empty one, with the mount's own message.
+type Paths struct {
+	// Occasions is the occasions data directory: the five occasions,
+	// the vocabulary, and the catalog, in the layout domain.Load reads.
+	// Empty refuses the look mount.
+	Occasions string `toml:"occasions"`
+
+	// Samples is the samples data directory: the sample people, the
+	// recorded stories under cached/, and the catalog pictures under
+	// products/. The directory carries the layout the recordings have:
+	// a story names a recorded provider result as
+	// ../youcam/results/<name>.jpg, so the mount reads a second root,
+	// the sibling <Samples>/../youcam/results, and a samples directory
+	// laid out without that sibling refuses the mount and names both
+	// roots it tried. Empty refuses the samples mount.
+	Samples string `toml:"samples"`
 }
 
 // Judge holds the lines that turn Clef's probabilities into the judge's
