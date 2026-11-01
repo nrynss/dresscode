@@ -14,6 +14,8 @@ Names and where they live. No values in this file. `.env` is gitignored and hold
 | `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` | `.env` |
 | `LAMBO_URL` | Dresscode's own Lambo HTTP MCP | `.env`. This machine, `127.0.0.1:7720` |
 | `LAMBO_DRESSCODE_TOKEN` | Bearer token for that server | `.env`, and the server's environment file outside this repo |
+| `DRESSCODE_SIGNING_KEY` | Signs the session cookie. At least 16 bytes, or `dresscode serve` refuses before anything opens | `.env`, read by `dresscode serve` |
+| `DRESSCODE_CODE_KEY` | Signs the sign-in and account-deletion codes | `.env`, read by `dresscode serve` |
 
 YouCam console balance: 1040 credits, in two pools (1,000 event units and a 40-unit trial). Both pools expire, the event pool after judging closes; the console and `GET /s2s/v1.0/client/credit` give the date. That endpoint answers to the v2 key and reads the balance without spending (T0.5).
 
