@@ -200,6 +200,9 @@
         {"attribute": "expression", "to": "closed-mouth-smile"}
       ],
       "products": [],
+      "display": {
+        "name": "Closed-mouth smile"
+      },
       "note": "Style name closed_mouth_smile is documented. The JSON field for it is not printed on the overview."
     }
   ],

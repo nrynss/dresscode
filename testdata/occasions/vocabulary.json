@@ -57,5 +57,10 @@
       "question": "What garment is visible at the neck and shoulders?",
       "options": ["none", "relaxed-shirt", "plain-shirt", "festive-top", "dark-plain", "tee", "suit", "can't tell"]
     }
-  ]
+  ],
+  "phrases": {
+    "jewellery": {
+      "jhumkas": "{jewellery_colour} jhumkas"
+    }
+  }
 }

@@ -23,14 +23,16 @@
 // The text is the product's plain voice, and it is the one the probe
 // recorded and the fixtures speak: the occasion's name, the verdict, and
 // the fix in words - "Family function kept the gold jhumkas." The words
-// for a fix come from its id's own name (family-gold-jhumkas keeps "gold
-// jhumkas"), so the sentence carries no id, no score and no analysis
-// value, and the same fix always reads the same way. docs/lambo.md
-// measured what recall returns: the nearest concepts of the session,
-// unfiltered by occasion, their text verbatim, a score that ranks but
-// does not match. So the recall half reads the concept text - the format
-// is this file's, written and parsed by the same functions - and keeps
-// only the facts of the occasion asked about.
+// for a fix come from the occasions data's display table when the fix
+// carries an entry, and from its id's own name otherwise
+// (family-gold-jhumkas keeps "gold jhumkas"), so the sentence carries no
+// id, no score and no analysis value, and the same fix always reads the
+// same way. docs/lambo.md measured what recall returns: the nearest
+// concepts of the session, unfiltered by occasion, their text verbatim,
+// a score that ranks but does not match. So the recall half reads the
+// concept text - the format is this file's, written and parsed by the
+// same functions - and keeps only the facts of the occasion asked
+// about.
 
 package pipeline
 
@@ -188,20 +190,18 @@ func RecallFor(ctx context.Context, client memory.Memory, session string, occ *d
 	return out, nil
 }
 
-// factWords is the fix in words: the id's own name, with the occasion's
-// prefix cut and the hyphens spaced - family-gold-jhumkas reads "gold
-// jhumkas". The prefix is the occasion id's first dash segment, the
-// convention the shipped data gives every fix (family-gold-jhumkas on
-// family-function, date-nude-lip on date). A fix outside it has no
-// words this format can carry, and is refused rather than remembered
-// as an id - the sentence never carries one.
-func factWords(occ *domain.Occasion, fixID string) (string, error) {
-	prefix, _, _ := strings.Cut(occ.ID, "-")
-	words, ok := strings.CutPrefix(fixID, prefix+"-")
-	if !ok || words == "" {
-		return "", fmt.Errorf("memory: fix %q carries no %q prefix to word it by", fixID, prefix)
+// fixWords is the fix in words, through the occasions data's display
+// table: the fix's own display words when one is recorded, else the
+// id-derived name the table's fallback produces - the occasion's prefix
+// cut and the hyphens spaced, family-gold-jhumkas reading "gold
+// jhumkas". The wording the user reviews lives in the data (domain's
+// FixWords); this wrapper only keeps the stage's own name on the error.
+func fixWords(occ *domain.Occasion, fix *domain.Fix) (string, error) {
+	words, err := occ.FixWords(fix)
+	if err != nil {
+		return "", fmt.Errorf("memory: %w", err)
 	}
-	return strings.ReplaceAll(words, "-", " "), nil
+	return words, nil
 }
 
 // factConcept composes one concept for one verdict. The sentence is the
@@ -220,7 +220,7 @@ func factConcept(occ *domain.Occasion, fact Fact) (memory.Concept, error) {
 	if fact.Verdict == "" || !fact.Verdict.Valid() {
 		return memory.Concept{}, fmt.Errorf("memory: verdict %q is not one the memory keeps", string(fact.Verdict))
 	}
-	words, err := factWords(occ, fact.Fix.ID)
+	words, err := fixWords(occ, fact.Fix)
 	if err != nil {
 		return memory.Concept{}, err
 	}
@@ -232,7 +232,9 @@ func factConcept(occ *domain.Occasion, fact Fact) (memory.Concept, error) {
 // the fact it names on this occasion. Anything else - another
 // occasion's fact, another sentence, a fix the occasion no longer
 // carries - is not a fact here, and false is the answer. The words must
-// name a fix exactly: no prefix match, no score, no guessing.
+// name a fix exactly: no prefix match, no score, no guessing. The same
+// table that words the sentences parses them, so a display-words entry
+// and its fallback always invert.
 func parseFact(occ *domain.Occasion, content string) (Fact, bool) {
 	if occ == nil {
 		return Fact{}, false
@@ -254,7 +256,7 @@ func parseFact(occ *domain.Occasion, content string) (Fact, bool) {
 		return Fact{}, false
 	}
 	for i := range occ.Fixes {
-		fixWords, err := factWords(occ, occ.Fixes[i].ID)
+		fixWords, err := occ.FixWords(&occ.Fixes[i])
 		if err != nil || fixWords != words {
 			continue
 		}
@@ -286,10 +288,16 @@ func memoryLine(occ *domain.Occasion, kept, bought, dismissed []string) string {
 		}
 		words := make([]string, 0, len(class.ids))
 		for _, id := range class.ids {
-			w, err := factWords(occ, id)
-			if err != nil {
+			fix := fixByID(occ, id)
+			if fix == nil {
 				// The ids came from facts already parsed against this
-				// occasion; every one has words. This branch cannot run.
+				// occasion; every one names a fix. This branch cannot run.
+				continue
+			}
+			w, err := occ.FixWords(fix)
+			if err != nil {
+				// A fix the table and its id cannot word was refused
+				// before any fact carried it. This branch cannot run.
 				continue
 			}
 			words = append(words, "the "+w)
@@ -303,4 +311,14 @@ func memoryLine(occ *domain.Occasion, kept, bought, dismissed []string) string {
 		return ""
 	}
 	return "Last " + strings.ToLower(occ.Name) + " you " + strings.Join(clauses, " and ") + "."
+}
+
+// fixByID finds one of the occasion's fixes by id.
+func fixByID(occ *domain.Occasion, id string) *domain.Fix {
+	for i := range occ.Fixes {
+		if occ.Fixes[i].ID == id {
+			return &occ.Fixes[i]
+		}
+	}
+	return nil
 }

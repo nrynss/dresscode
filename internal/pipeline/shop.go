@@ -69,8 +69,10 @@ var simulationCategories = map[string]string{
 // covering what the task does with that photograph. Only an item outside
 // the catalog is labelled by this file's own rule, and its rule is the
 // first clause: the user brought this very item, origin user. A
-// simulation's name is the fix's own changes wording, copied verbatim;
-// no occasions field carries a display name for a fix.
+// simulation's name is the fix's display name from the occasions data
+// when one is recorded, else the fix's own changes wording, copied
+// verbatim - the same fallback that keeps an unworded fix saying what it
+// has always said.
 //
 // The order. When history is on - the recall names kept fixes - a
 // product a kept fix names ranks first. The fix maps to products through
@@ -148,13 +150,15 @@ func Shop(occ *domain.Occasion, fix *domain.Fix, brought *domain.Product, catalo
 	}
 
 	// Nothing to photograph: the suggestion itself is the entry, when
-	// this occasion's basket offers a category for it.
+	// this occasion's basket offers a category for it. The name is the
+	// fix's display name from the occasions data when one is recorded,
+	// else the fix's own changes wording, the way it has always read.
 	if len(fix.Products) == 0 {
 		if category, ok := simulationCategory(occ, fix); ok {
 			entries = append(entries, domain.Product{
 				ID:       fix.ID,
 				Category: category,
-				Name:     fix.Changes,
+				Name:     displayName(fix),
 				Fidelity: domain.VisualSimulation,
 				Origin:   domain.OriginCatalog,
 			})
@@ -173,6 +177,18 @@ func catalogEntry(catalog []domain.Product, id string) (domain.Product, bool) {
 		}
 	}
 	return domain.Product{}, false
+}
+
+// displayName is the name a fix's visual-simulation entry wears: the
+// fix's display name from the occasions data when one is recorded, else
+// the fix's own changes wording, copied verbatim - the composition the
+// phrase table replaces, and the fallback that keeps a fix without an
+// entry saying what it has always said.
+func displayName(fix *domain.Fix) string {
+	if fix.Display != nil && fix.Display.Name != "" {
+		return fix.Display.Name
+	}
+	return fix.Changes
 }
 
 // simulationCategory names the basket's template-only category a fix's

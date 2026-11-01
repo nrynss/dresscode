@@ -1003,3 +1003,49 @@ func TestEveryVerdictWordsAndInverts(t *testing.T) {
 		t.Fatal("a fact without an occasion composed")
 	}
 }
+
+// TestTheDisplayTableWordsTheSentences pins the phrase table's memory
+// words: a fix whose display entry carries words is remembered in them,
+// and the same table parses the sentence back to the fix. The display
+// NAME is the shop entry's wording and never the sentence's - a fix
+// carrying a name and no words keeps its id-derived sentence, so the
+// recorded sentences survive a name-only entry untouched.
+func TestTheDisplayTableWordsTheSentences(t *testing.T) {
+	t.Parallel()
+	occ := &domain.Occasion{
+		ID:   "gala",
+		Name: "Gala",
+		Fixes: []domain.Fix{
+			{ID: "gala-silver-studs", Display: &domain.FixDisplay{Words: "silver stud earrings"}},
+			{ID: "gala-braid", Display: &domain.FixDisplay{Name: "Braided hair"}},
+		},
+	}
+
+	// The table's entry words the sentence, and the sentence inverts
+	// through the same table.
+	concept, err := factConcept(occ, Fact{Fix: &occ.Fixes[0], Verdict: domain.VerdictKept})
+	if err != nil {
+		t.Fatalf("the studs: %v", err)
+	}
+	if want := "Gala kept the silver stud earrings."; concept.Content != want {
+		t.Fatalf("sentence %q, want the table's %q", concept.Content, want)
+	}
+	parsed, ok := parseFact(occ, concept.Content)
+	if !ok || parsed.Fix.ID != "gala-silver-studs" || parsed.Verdict != domain.VerdictKept {
+		t.Fatalf("sentence %q read back as %+v, want gala-silver-studs kept", concept.Content, parsed)
+	}
+
+	// A name-only display keeps the id-derived words: the sentence the
+	// format has always spoken.
+	concept, err = factConcept(occ, Fact{Fix: &occ.Fixes[1], Verdict: domain.VerdictDismissed})
+	if err != nil {
+		t.Fatalf("the braid: %v", err)
+	}
+	if want := "Gala dismissed the braid."; concept.Content != want {
+		t.Fatalf("sentence %q, want the fallback %q - the display name is not the sentence's words", concept.Content, want)
+	}
+	parsed, ok = parseFact(occ, concept.Content)
+	if !ok || parsed.Fix.ID != "gala-braid" || parsed.Verdict != domain.VerdictDismissed {
+		t.Fatalf("sentence %q read back as %+v, want gala-braid dismissed", concept.Content, parsed)
+	}
+}

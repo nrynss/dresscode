@@ -266,6 +266,9 @@ func validateOccasion(file string, o *Occasion) error {
 	if err := validateFixes(file, o.Fixes, ids); err != nil {
 		return err
 	}
+	if err := validateDisplay(file, o); err != nil {
+		return err
+	}
 	return validateBasket(file, *o)
 }
 
@@ -507,6 +510,59 @@ func validateVocabulary(file string, v *Vocabulary) error {
 			return err
 		}
 	}
+	return validatePhrases(file, v)
+}
+
+// validatePhrases checks the display-phrase table. Every key must name a
+// vocabulary attribute, every inner key one of that attribute's options
+// other than none and can't tell - the line never speaks those - and
+// every template must parse and reference attributes the vocabulary
+// holds, never its own. The rule is the loader's word for "a wiring bug
+// is named, never papered over": a phrase the line could never speak, or
+// one naming an attribute that does not exist, is refused at load.
+func validatePhrases(file string, v *Vocabulary) error {
+	if v.Phrases == nil {
+		return nil
+	}
+	attrs := make(map[string]LookAttribute, len(v.Attributes))
+	for _, attr := range v.Attributes {
+		attrs[attr.ID] = attr
+	}
+	for attrID, byOption := range v.Phrases {
+		attr, ok := attrs[attrID]
+		if !ok {
+			return fail(file, "phrase table names attribute %q, which the vocabulary does not have", attrID)
+		}
+		if len(byOption) == 0 {
+			return fail(file, "phrase table for attribute %q is empty", attrID)
+		}
+		for option, template := range byOption {
+			if !contains(attr.Options, option) {
+				return fail(file, "phrase table offers %q for attribute %q, which is not one of its options", option, attrID)
+			}
+			if option == optionNone || option == optionCantTell {
+				return fail(file, "phrase table words option %q of attribute %q, which the line never speaks", option, attrID)
+			}
+			if blank(template) {
+				return fail(file, "phrase for %s %q is blank", attrID, option)
+			}
+			parts, err := parsePhrase(template)
+			if err != nil {
+				return fail(file, "phrase for %s %q: %s", attrID, option, err.Error())
+			}
+			for _, part := range parts {
+				if part.Ref == "" {
+					continue
+				}
+				if part.Ref == attrID {
+					return fail(file, "phrase for %s %q references its own attribute", attrID, option)
+				}
+				if _, ok := attrs[part.Ref]; !ok {
+					return fail(file, "phrase for %s %q references attribute %q, which the vocabulary does not have", attrID, option, part.Ref)
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -534,6 +590,39 @@ func validateOptions(file string, attr LookAttribute) error {
 	}
 	if !hasCant {
 		return fail(file, "attribute %q options must include \"can't tell\"", attr.ID)
+	}
+	return nil
+}
+
+// validateDisplay checks the fixes' display table. A display that names
+// nothing, a blank field, and two fixes of one occasion whose sentences
+// the memory could not tell apart are all refused: the words the memory
+// keeps must map one fix to one sentence, or a recalled fact reads back
+// as the wrong fix.
+func validateDisplay(file string, o *Occasion) error {
+	words := make(map[string]string, len(o.Fixes))
+	for i := range o.Fixes {
+		f := &o.Fixes[i]
+		if f.Display != nil {
+			// The two fields are optional and each falls back when
+			// absent - a blank string decodes as an absent field, the
+			// struct's own JSON contract. A display that names nothing
+			// is the one malformed form, and it is refused.
+			if blank(f.Display.Name) && blank(f.Display.Words) {
+				return fail(file, "fix %q has a display that names nothing", f.ID)
+			}
+		}
+		w, err := o.FixWords(f)
+		if err != nil {
+			// A fix whose id carries no occasion prefix has no words
+			// this format can carry and no entry to word it; the memory
+			// stage refuses it at composition. Nothing to collide with.
+			continue
+		}
+		if prev, ok := words[w]; ok {
+			return fail(file, "fixes %q and %q both read %q - the memory could not tell the sentences apart", prev, f.ID, w)
+		}
+		words[w] = f.ID
 	}
 	return nil
 }

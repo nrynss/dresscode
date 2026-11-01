@@ -58,11 +58,11 @@ const (
 )
 
 // runLine is the look-in-words line the stub's vocabulary answers join
-// into: the vocabulary's own order, none and can't tell left out. The
-// fixtures' "gold jhumkas" composes the colour onto the noun, which no
-// mechanical join derives; that gap is T3.5's flagged finding and is
-// not re-decided here.
-const runLine = "jhumkas, gold, red, mandarin, tied-back, black, flat, festive-top"
+// into: the vocabulary's own order, none and can't tell left out, the
+// jhumkas option's display phrase embedding the colour winner. This is
+// the fixtures' "gold jhumkas" - T3.5's flagged gap, closed by the
+// phrase table the look now composes from.
+const runLine = "gold jhumkas, red, mandarin, tied-back, black, flat, festive-top"
 
 // lookStub answers the three Clef calls a look makes, in kind: the
 // judge's noul probabilities and biggest issue, the pick's choice, and

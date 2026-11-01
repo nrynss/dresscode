@@ -258,8 +258,10 @@ func checkRequest(model string, original, render systemone.Image, occ *domain.Oc
 // checkRead turns the answers into the outcome. The three gates become
 // facts at their lines. Each attribute's winning option must be one the
 // vocabulary offers - a value off the list is refused, not passed on -
-// and the attributes and the line keep the vocabulary's own order, so
-// identical answers always join into the identical line.
+// and the attributes keep the vocabulary's own order. The line composes
+// from the same answers through the phrase table (LookLine), a pure
+// function of the winners and the loaded data, so identical answers
+// always join into the identical line.
 func checkRead(resp systemone.Response, vocab *domain.Vocabulary, lines Lines) (Outcome, error) {
 	var outcome Outcome
 	change, err := gateAnswer(resp, changeMadeID)
@@ -278,7 +280,6 @@ func checkRead(resp systemone.Response, vocab *domain.Vocabulary, lines Lines) (
 	outcome.Check.SamePerson = same >= lines.SamePerson
 	outcome.Check.CriterionMet = met >= lines.CriterionMet
 
-	words := make([]string, 0, len(vocab.Attributes))
 	for _, attr := range vocab.Attributes {
 		answer, ok := resp.Answers[lookIDPrefix+attr.ID]
 		if !ok {
@@ -294,9 +295,11 @@ func checkRead(resp systemone.Response, vocab *domain.Vocabulary, lines Lines) (
 			continue
 		}
 		outcome.Check.Attributes = append(outcome.Check.Attributes, domain.AnsweredAttribute{ID: attr.ID, Value: answer.Choice})
-		words = append(words, answer.Choice)
 	}
-	outcome.Words = strings.Join(words, ", ")
+	outcome.Words, err = LookLine(vocab, outcome.Check.Attributes)
+	if err != nil {
+		return Outcome{}, fmt.Errorf("check: %w", err)
+	}
 	return outcome, nil
 }
 
