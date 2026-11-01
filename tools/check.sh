@@ -15,6 +15,10 @@ if [[ -n "${unformatted}" ]]; then
 fi
 
 go vet ./...
+# Also type-check the live-tagged files: they build no binary, run no call
+# and read no key, and without this line a break in the paid harness lands
+# green and is only found by someone paying for a run.
+go vet -tags live ./...
 go test -race ./...
 
 if [[ ! -d web/node_modules ]]; then
