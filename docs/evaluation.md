@@ -166,6 +166,48 @@ What varies is between photos and between sizes, and the curves carry it:
 - **Between photos** the near-line readings are the beard and expression groups — that is what the per-criterion lines and the four irreducible cells above measure.
 - **Between sizes**: the same photo re-recorded at 1024, 768 and 512 px, read at the shipped lines, moves exactly one flag — `family-expression-present` at 768 px (0.5312, under its 0.5466 line) — and none at 1024 or 512. The pipeline ships full-size photos, so the shipped lines are measured where they run; **if a later task resizes to save neurons, re-measure first.** (The no-image recording in the same folder is the evidence behind the judge's empty-photo refusal: every criterion answers yes to a photo that is not there.)
 
+## The live re-run
+
+The evaluation above replays recordings. T3.9b re-ran the same two measurements against Workers AI itself: one call per judge recording (37) and one per check recording (4), the committed photos, the lines read from `dresscode.toml.example`.
+
+```
+go test -tags live ./internal/eval/ -run TestLiveProbe      # two calls: price the sweep first
+go test -tags live ./internal/eval/ -run TestLiveEvaluation  # 41 calls: the re-run
+```
+
+Both need `WORKERS_AI_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment; with either missing they skip and spend nothing. Workers AI only — the run builds no YouCam client and reads no YouCam key.
+
+**What it cost.** 41 calls — 39 on clef, 2 on clef-flash — 90,403 input tokens, 1,823 neurons, **$0.0200 booked**, inside the $0.08 the run set for itself with $0.0600 spare, and under a fifth of the free plan's 10,000 neurons a day. The probe's two calls priced it first: a judge call 42.4–45.4 neurons (a clef check 89.3, a clef-flash check 14.1, $0.011 per 1,000 neurons). Every call reported the recording's own input-token count — date 1,944, family function 1,963, interview 1,973, festival 2,064, funeral 2,081, the honest check pair 4,092, the proxy 4,065 — which is the request bytes matching the recordings. Re-running the sweep returned identical cells to the last digit.
+
+**Judging: the method reproduces, the probabilities do not.** Live against recorded, 273 cells:
+
+| Reading | Recorded | Live |
+|---|---|---|
+| cells agreeing at 0.5 | 260/273 | 254/273 |
+| cells agreeing at the shipped lines | 269/273 | 254/273 |
+| the curves' best total | 269/273 | 269/273 |
+| criteria separating perfectly | 32/36 | 32/36 |
+| biggest issue names a miss (or none) | 31/37 | 28/37 |
+| cells off the expected side at 0.5 | 13 | 19 |
+| irreducible cells at the shipped line | 4 | 19 |
+
+272 of the 273 live probabilities differ from the recorded ones, usually by a few points and once by 0.45 (`funeral-beard-close` on V17, 0.8120 → 0.3595); 17 cells end up on the other side of the shipped line, so the lines that read 269 recorded cells read 254 live ones. The shape holds where it matters: the live curves' best total is again 269 of 273, and the same 32 of 36 criteria separate perfectly, so a re-measurement lands on the same plateau — the lines, not the method, are what a single call moves. The drift concentrates in the groups the thin margins already named: `family-expression-present` reads 6/9 live against 8/9 recorded, `date-beard-even` 5/8 against 7/8, `funeral-beard-close` 6/8 against 8/8, and twelve criteria lose a cell in all.
+
+**The check held.** All four live reads decide the same way as the recorded ones: every known bad render rejected, no honest render lost, zero of each on both sides, and the honest render's line is the recorded one, word for word, on both models (`jhumkas, gold, red, mandarin, tied-back, black, flat, festive-top`).
+
+| Read | Model | `change_made` | `same_person` | `criterion_met` | Decision |
+|---|---|---|---|---|---|
+| (a) V04 → V05 (honest) | clef | 0.9820 | 0.9246 | 0.9744 | shown |
+| (a) V04 → V05 (honest) | clef-flash | 0.9437 | 0.9434 | 0.9748 | shown |
+| (b) V04 → woman-white (bad) | clef | 0.0136 | 0.0352 | 0.0228 | discarded |
+| (b) V04 → woman-white (bad) | clef-flash | 0.0350 | 0.0269 | 0.0188 | discarded |
+
+Each gate separates at the shipped line and at 0.5 on both models, and the separating intervals stay the same shape as the recorded ones (the recorded `change_made` interval was (0.0151, 0.9866) on clef; live (0.0136, 0.9820)) — the margins move by a few thousandths, never enough to put a line outside the interval.
+
+**The vocabulary.** clef reads 19 of 22 true live, exactly as recorded; clef-flash 18 of 22 against 17 recorded. Seven of the eight recorded misses reproduce: the honest render's `hair` (tied-back for a bun) and `expression` (flat for calm and present) on both models, the proxy's bare lips read `nude` on both, and flash's buttoned collar on the open anchor. The eighth did not — flash called the proxy's bare ear `gold` in the recording and `none` live, which is the one miss that was never a miss, and it sits on a render the check discards anyway.
+
+**What this says about the numbers above.** The thresholds are measured, and a measurement moves a few points call to call. The lines shipped here were chosen on one recorded pass; the live pass reads 254 of 273 with them against the 269 the recorded pass reads, and finds the same 269 available on its own curves. Nothing here argues for hand-nudging a line — the recorded set, the live set and the size sweep agree on where the thin margins are, and Recommendations already names those criteria.
+
 ## Recommendations
 
 1. **Rewording candidates** (a re-recording decision — the criteria live in `testdata/occasions/`, T0.3's owner's; rewording one question moves the others on the same photo, so an occasion's whole set re-records): `family-expression-present` (a flat stare outranks calm faces; the curve's plateau is 0.007 wide), the beard-even family (`date-beard-even`, `family-beard-even` — a light sparse beard reads mid-scale whether it is even or patchy), and `date-light-see` (flat dull frontal light passes "can the eyes be seen" — V02).
