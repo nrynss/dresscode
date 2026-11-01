@@ -337,7 +337,7 @@ func TestLiveRerecord(t *testing.T) {
 		liveFatalf(t, secrets, "rerecord: the fresh tree does not evaluate: %v", err)
 	}
 	liveLogf(t, secrets, "fresh tree reads: %d samples, %d cells, %d agreeing at the chosen lines, %d off at 0.50, "+
-			"%d check reads, %d stability answers, %d size variants, %s",
+		"%d check reads, %d stability answers, %d size variants, %s",
 		fresh.Judge.Samples, fresh.Judge.Cells, fresh.Judge.ChosenTotal, len(fresh.Judge.OffAtHalf),
 		len(fresh.Check.Reads), fresh.Stability.Answers, len(fresh.Sizes.Variants), fresh.Settings.CheckModel)
 	if fresh.Judge.Samples != 37 || fresh.Judge.Cells != 273 {

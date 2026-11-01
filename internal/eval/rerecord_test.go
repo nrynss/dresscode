@@ -36,10 +36,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/nrynss/dresscode/internal/config"
 	"github.com/nrynss/dresscode/internal/domain"
 	"github.com/nrynss/dresscode/internal/pipeline"
 	"github.com/nrynss/dresscode/internal/systemone"
@@ -1595,11 +1598,15 @@ func TestRerecordReadsBothCorpora(t *testing.T) {
 			new, agreement(c.Cells, new), len(c.Cells), c.MaxAgreement)
 	}
 
-	// The two numbers that matter, both corpora, both lines.
+	// The two numbers that matter, both corpora, both lines. The report's
+	// chosen settings carry the same two fields a JudgeSettings reads its
+	// line from, so rerecordJudgeSettingsOf projects them and one
+	// arithmetic measures all four readings.
+	freshChosen := rerecordJudgeSettingsOf(fresh.Settings)
 	shippedAtShipped, _ := rerecordAgreement(shipped.Judge.Curves, fileSettings)
 	freshAtShipped, _ := rerecordAgreement(fresh.Judge.Curves, fileSettings)
-	freshAtFresh, _ := rerecordAgreement(fresh.Judge.Curves, fresh.Settings)
-	shippedAtFresh, _ := rerecordAgreement(shipped.Judge.Curves, fresh.Settings)
+	freshAtFresh, _ := rerecordAgreement(fresh.Judge.Curves, freshChosen)
+	shippedAtFresh, _ := rerecordAgreement(shipped.Judge.Curves, freshChosen)
 	t.Logf("agreement at the shipped lines: the shipped corpus %d of %d, the fresh corpus %d of %d",
 		shippedAtShipped, shipped.Judge.Cells, freshAtShipped, fresh.Judge.Cells)
 	t.Logf("agreement at the fresh lines: the fresh corpus %d of %d, the shipped corpus read at them %d of %d",
@@ -1641,7 +1648,7 @@ func TestRerecordReadsBothCorpora(t *testing.T) {
 	// The shipped check lines read against the fresh gates: the decisions
 	// the file would make on the fresh bytes, per read.
 	for _, name := range []string{"change_made", "same_person", "criterion_met"} {
-		oldLine, newLine := rerecordCheckLineOf(fileLines, name), rerecordCheckLineOf(fresh.Check.Lines, name)
+		oldLine, newLine := rerecordCheckLineOf(fileLines, name), rerecordCheckLineOf(rerecordLinesOf(fresh.Check.Lines), name)
 		inside := 0
 		for _, g := range fresh.Check.Gates {
 			if g.Gate != name || g.Chosen != newLine {
@@ -1686,6 +1693,19 @@ func rerecordApart(curves []Curve) int {
 	return n
 }
 
+// rerecordCurveOf finds one criterion's curve in a corpus's reading, so the
+// two corpora's plateaus can be put beside each other by name. The curves
+// are built in criterion order, so a miss means the criterion is in one
+// corpus and not the other.
+func rerecordCurveOf(curves []Curve, id string) (Curve, bool) {
+	for _, c := range curves {
+		if c.ID == id {
+			return c, true
+		}
+	}
+	return Curve{}, false
+}
+
 // rerecordAgreement reads one corpus's curves at one set of lines: the
 // shipped lines against fresh bytes and against shipped bytes are the same
 // arithmetic here, which is the point of running it twice.
@@ -1700,6 +1720,16 @@ func rerecordAgreement(curves []Curve, s JudgeSettings) (int, map[string]int) {
 	return total, per
 }
 
+// rerecordJudgeSettingsOf projects a report's chosen [judge] settings onto
+// the JudgeSettings shape rerecordAgreement reads. The report flattens the
+// settings for JSON, so the two fields a line is read from are carried in
+// Settings.JudgeMet and Settings.JudgePerCriterion; Total is a measurement,
+// not a line, and belongs to the report rather than to the settings, so it
+// stays unset here and rerecordAgreement computes the total it reports.
+func rerecordJudgeSettingsOf(s Settings) JudgeSettings {
+	return JudgeSettings{Met: s.JudgeMet, PerCriterion: s.JudgePerCriterion}
+}
+
 // rerecordLineOf is JudgeSettings.lineFor for a settings shape that is not
 // a JudgeSettings - the report's chosen settings, which carry the same two
 // fields the line is read from.
@@ -1708,6 +1738,18 @@ func rerecordLineOf(s Settings, c Curve) float64 {
 		return v
 	}
 	return s.JudgeMet
+}
+
+// rerecordLinesOf is the check's chosen lines in the shape the pipeline
+// takes: the same three fields, and the same conversion evaluateCheck does
+// when it applies them. The report holds them as a ChosenLines, so the two
+// sets of lines are only comparable after this.
+func rerecordLinesOf(l ChosenLines) pipeline.Lines {
+	return pipeline.Lines{
+		ChangeMade:   l.ChangeMade,
+		SamePerson:   l.SamePerson,
+		CriterionMet: l.CriterionMet,
+	}
 }
 
 func rerecordCheckLineOf(l pipeline.Lines, name string) float64 {
@@ -1765,6 +1807,279 @@ func rerecordSortedIDs(m map[string]float64) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// ---- docs/clef.md's transcription ----
+
+// rerecordCellKey keys one cell the way this package's other pins key them:
+// the variant and the criterion, space separated.
+func rerecordCellKey(sample, criterion string) string {
+	return sample + " " + criterion
+}
+
+// rerecordLetter is docs/clef.md's expected answer for a cell: Y is met, N
+// is flagged.
+func rerecordLetter(met bool) string {
+	if met {
+		return "Y"
+	}
+	return "N"
+}
+
+// rerecordCell is one cell as docs/clef.md's judge tables transcribe it: the
+// expected answer the doc lifts from testdata/samples/README.md, the
+// probability the shipped corpus recorded against it, and the mark the doc
+// writes when that probability sits on the other side of 0.5.
+type rerecordCell struct {
+	Sample    string
+	Criterion string
+	Expected  bool
+	Value     float64
+	Marked    bool
+}
+
+// rerecordTranscribed is those tables read whole.
+type rerecordTranscribed struct {
+	path  string
+	cells map[string]rerecordCell
+}
+
+// rerecordNotEqual is the mark docs/clef.md puts on a cell whose probability
+// sits on the other side of 0.5 from its expected answer.
+const rerecordNotEqual = "≠"
+
+// rerecordTranscription reads docs/clef.md's transcription of the sample set:
+// the five per-occasion tables under "The judge on the sample set", each
+// headed | Variant | Person | <criterion columns> | Biggest issue (p) |,
+// every criterion cell written "<Y|N> <probability>" with the ≠ mark after it
+// where the recorded probability and the expected answer disagree at 0.5.
+//
+// This is the transcription the charter says does not move with the service:
+// the letters are the sample set's ground truth, the same T0.4 reading
+// LoadGroundTruth carries in testdata/eval/ground-truth.json, and the
+// probabilities are the shipped corpus's own. A re-record changes the second,
+// never the first.
+//
+// The parse is strict, because a comparison that quietly read half the table
+// would report no contradiction at all. A row whose cell count does not match
+// its header, a column that is not a backticked criterion id, a cell that is
+// not a letter and a probability and at most one ≠, a cell transcribed twice:
+// each is fatal, with the row's name, rather than skipped.
+func rerecordTranscription(t *testing.T, path string) rerecordTranscribed {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("rerecord: transcription: %v", err)
+	}
+	tr := rerecordTranscribed{path: path, cells: map[string]rerecordCell{}}
+	// columns holds the criterion ids of the table being read, in its column
+	// order, and is nil between tables: a header that is not the sample
+	// tables' opens one, any line that is not a table row closes it.
+	var columns []string
+	for _, line := range strings.Split(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if !strings.HasPrefix(trimmed, "|") {
+			columns = nil
+			continue
+		}
+		cols := rerecordRow(trimmed)
+		if len(cols) >= 4 && cols[0] == "Variant" && cols[1] == "Person" &&
+			strings.HasPrefix(cols[len(cols)-1], "Biggest issue") {
+			columns = make([]string, len(cols))
+			for i, name := range cols[2 : len(cols)-1] {
+				if !strings.HasPrefix(name, "`") || !strings.HasSuffix(name, "`") || len(name) < 3 {
+					t.Fatalf("%s: criterion column %d is %q, want a criterion id in backticks",
+						path, i+2, name)
+				}
+				columns[i+2] = strings.Trim(name, "`")
+			}
+			continue
+		}
+		if columns == nil || rerecordDividerRow(cols) {
+			continue
+		}
+		if len(cols) != len(columns) {
+			t.Fatalf("%s: the row for %q has %d cells, its table has %d",
+				path, cols[0], len(cols), len(columns))
+		}
+		for i, id := range columns {
+			if id == "" {
+				continue // the Variant, Person and biggest-issue columns
+			}
+			cell, err := rerecordParseCell(cols[i])
+			if err != nil {
+				t.Fatalf("%s: %s/%s: %v", path, cols[0], id, err)
+			}
+			cell.Sample, cell.Criterion = cols[0], id
+			key := rerecordCellKey(cell.Sample, cell.Criterion)
+			if _, dup := tr.cells[key]; dup {
+				t.Fatalf("%s: %s is transcribed twice", path, key)
+			}
+			// The doc's own mark must follow from the doc's own letter and
+			// number. A table that breaks that is either misread here or
+			// mis-written there, and either way the comparison below would
+			// be measuring the wrong cells.
+			if cell.Marked != ((cell.Value >= readingAt) != cell.Expected) {
+				t.Fatalf("%s: %s marks %s %s %.4f, and its own numbers put it on the %s side of %.2f",
+					path, key, rerecordLetter(cell.Expected), rerecordMark(cell.Marked), cell.Value,
+					map[bool]string{true: "other", false: "expected"}[cell.Marked], readingAt)
+			}
+			tr.cells[key] = cell
+		}
+	}
+	if len(tr.cells) == 0 {
+		t.Fatalf("%s: no judge cell read, so the sample tables are not the shape this reads", path)
+	}
+	return tr
+}
+
+// rerecordRow splits one markdown table row into its trimmed cells. The
+// leading and trailing pipes frame the row and are not cells.
+func rerecordRow(trimmed string) []string {
+	body := strings.Trim(trimmed, "|")
+	parts := strings.Split(body, "|")
+	out := make([]string, len(parts))
+	for i, part := range parts {
+		out[i] = strings.TrimSpace(part)
+	}
+	return out
+}
+
+// rerecordDividerRow reports the |---|---| row under a table header: every
+// cell is dashes, colons or both.
+func rerecordDividerRow(cols []string) bool {
+	if len(cols) == 0 {
+		return false
+	}
+	for _, col := range cols {
+		if col == "" || strings.Trim(col, "-:") != "" {
+			return false
+		}
+	}
+	return true
+}
+
+// rerecordMark renders a cell's ≠ mark for the log, so a printed line reads
+// the way the doc's cell does.
+func rerecordMark(marked bool) string {
+	if !marked {
+		return ""
+	}
+	return " marked " + rerecordNotEqual
+}
+
+// rerecordParseCell reads one transcribed cell: "Y 0.8095", "N 0.0403", and
+// either of those followed by the doc's bold ≠ mark.
+func rerecordParseCell(text string) (rerecordCell, error) {
+	var cell rerecordCell
+	cell.Marked = strings.Contains(text, rerecordNotEqual)
+	if strings.Count(text, rerecordNotEqual) > 1 {
+		return rerecordCell{}, fmt.Errorf("%q carries the %s mark twice", text, rerecordNotEqual)
+	}
+	stripped := strings.NewReplacer("**", "", rerecordNotEqual, "").Replace(text)
+	fields := strings.Fields(stripped)
+	if len(fields) != 2 {
+		return rerecordCell{}, fmt.Errorf("%q is not an expected answer and a probability", text)
+	}
+	switch fields[0] {
+	case "Y":
+		cell.Expected = true
+	case "N":
+		cell.Expected = false
+	default:
+		return rerecordCell{}, fmt.Errorf("%q: expected answer %q, want Y or N", text, fields[0])
+	}
+	value, err := strconv.ParseFloat(fields[1], 64)
+	if err != nil {
+		return rerecordCell{}, fmt.Errorf("%q: probability: %w", text, err)
+	}
+	if value < 0 || value > 1 {
+		return rerecordCell{}, fmt.Errorf("%q: probability %v is not between 0 and 1", text, value)
+	}
+	cell.Value = value
+	return cell, nil
+}
+
+// rerecordReportTranscription names every cell of one corpus's reading that
+// contradicts docs/clef.md's transcription, and leaves it named: the ground
+// truth does not move with the service, so a contradiction is a finding about
+// the corpus, not a line to re-transcribe, and nothing here adjusts a recorded
+// number or a doc cell to make the two agree. Two counts close the report: the
+// cells whose side of 0.5 moved, and the cells whose expected answer the doc
+// and the committed ground truth disagree about.
+//
+// Coverage is the exception, and it is fatal rather than logged: a cell the doc
+// does not transcribe or a transcribed cell the corpus does not read means the
+// comparison silently lost a cell, which is the one way this report could
+// under-report.
+func rerecordReportTranscription(t *testing.T, tr rerecordTranscribed, curves []Curve) {
+	t.Helper()
+	samples := map[string]bool{}
+	criteria := map[string]bool{}
+	marked := 0
+	for _, cell := range tr.cells {
+		samples[cell.Sample] = true
+		criteria[cell.Criterion] = true
+		if cell.Marked {
+			marked++
+		}
+	}
+	t.Logf("%s transcribes %d cells over %d samples and %d criteria, %d of them marked %s at %.2f",
+		tr.path, len(tr.cells), len(samples), len(criteria), marked, rerecordNotEqual, readingAt)
+
+	side, letter, absent := 0, 0, 0
+	var lines []string
+	read := map[string]bool{}
+	for _, c := range curves {
+		for _, cell := range c.Cells {
+			key := rerecordCellKey(cell.Sample, c.ID)
+			doc, ok := tr.cells[key]
+			if !ok {
+				absent++
+				lines = append(lines, fmt.Sprintf("  no transcription for %s: %s %.4f expected met %t",
+					key, rerecordLetter(cell.Expected), cell.Value, cell.Expected))
+				continue
+			}
+			read[key] = true
+			switch {
+			case doc.Expected != cell.Expected:
+				letter++
+				lines = append(lines, fmt.Sprintf("  ground truth %s: the doc transcribes %s, the committed ground truth says %s (%.4f recorded, %.4f read)",
+					key, rerecordLetter(doc.Expected), rerecordLetter(cell.Expected), doc.Value, cell.Value))
+			case (doc.Value >= readingAt) != (cell.Value >= readingAt):
+				side++
+				lines = append(lines, fmt.Sprintf("  side of %.2f %s: doc %s %.4f%s, read %s %.4f%s",
+					readingAt, key, rerecordLetter(doc.Expected), doc.Value, rerecordMark(doc.Marked),
+					rerecordLetter(cell.Expected), cell.Value,
+					rerecordMark((cell.Value >= readingAt) != cell.Expected)))
+			}
+		}
+	}
+	var unread []string
+	for key := range tr.cells {
+		if !read[key] {
+			unread = append(unread, key)
+		}
+	}
+	sort.Strings(unread)
+	sort.Strings(lines)
+	for _, line := range lines {
+		t.Log(line)
+	}
+	for _, key := range unread {
+		t.Errorf("rerecord: %s is transcribed in %s and read by no curve of this corpus", key, tr.path)
+	}
+	if absent > 0 {
+		t.Errorf("rerecord: %d cells of this corpus are not transcribed by %s, so the comparison lost them",
+			absent, tr.path)
+	}
+	if letter > 0 {
+		t.Errorf("rerecord: %d cells contradict the ground truth as %s transcribes it, and the ground truth does not move with the service",
+			letter, tr.path)
+	}
+	t.Logf("transcription against this reading: %d cells contradict it on which side of %.2f they sit, "+
+		"%d on the expected answer, %d transcribed and not read, %d read and not transcribed",
+		side, readingAt, letter, len(unread), absent)
 }
 
 // rerecordShippedLines reads the shipped lines out of the committed
