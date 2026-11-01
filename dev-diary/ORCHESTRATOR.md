@@ -131,6 +131,11 @@ Do not edit dev-diary/README.md; put your handoff-log text in your report.
 If you start a dev server, kill it before you report. Nothing else can remove this
 worktree while it holds web/.vite/deps open.
 
+Never tell a UI worker that `web/tests/a11y/` is Chromium-backed: it mounts in jsdom,
+which performs no layout, so it cannot see a `position: fixed` bar and a width
+assertion there proves nothing. A mobile geometry claim needs a browser-backed rect
+assertion; a text pin on a CSS file guards against a careless edit and nothing else.
+
 Report: branch, `git log --oneline main..HEAD`, each Done-when clause with its evidence,
 anything unmet, and anything surprising.
 ```
