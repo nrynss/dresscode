@@ -1168,23 +1168,6 @@ func TestARestartInterruptsAnUnfinishedPlaybackRow(t *testing.T) {
 	}
 }
 
-// TestASampleRepeatOpenKeepsThePicturesItAlreadyHeld is the amplification
-// pin, and it is a pin on two halves now. A story's pictures are fixed data,
-// so a second open of one sample asks for bytes the judge already holds, and
-// the open reuses the SELFIE instead of writing it again: without that the
-// five sample selfies, 1,359,634 bytes between them, would be written again
-// on every repeat, with no gate token and no budget reservation to bound it.
-// The render is NOT reused: keep mints a fresh id per look, because a look
-// deletion erases exactly the media its renders name, so two live looks
-// naming one render blob would mean deleting one of them erasing the other's
-// picture. The cost of that rule is stated here rather than hidden: family's
-// shown render is 289,905 bytes, so a repeat of this one story grows the
-// judge's pictures by exactly one blob of exactly that size, and T4.9's
-// per-user cap is what bounds repeats. What each look reads is compared with
-// the recorded bytes and not only with an id, since neither half of the rule
-// may hand a look the wrong picture. The look row still lands once per open,
-// and the list route that answers them has no LIMIT: that growth is the
-// composition hand's, named in the task's Notes.
 // TestARepeatSampleOpenAnswersTheLookItAlreadyHolds is the idempotency pin,
 // and the bound T4.10 was chartered to land: the second open of one sample
 // answers the SAME look - the same id in the same 202 body - and mints
