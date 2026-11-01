@@ -447,7 +447,7 @@ requires:   T3.9c, T3.9d
 fixture-ok: no
 size:       M · mid
 owns:       testdata/clef/, testdata/clef-fresh/, docs/clef.md, internal/eval/, testdata/eval/, docs/evaluation.md, dresscode.toml.example, internal/config/load_test.go, internal/pipeline/judge_test.go, internal/systemone/recorder_test.go
-status:     not-started
+status:     claimed:qoder-t39e
 ```
 The shipped lines come off the T0.6 recordings and read 254 of 273 live against the 269 they were chosen for (T3.9b); the live curves still top out at 269 with the same 32 of 36 perfect separations, so the gap is service drift under the lines, not the criteria wording. Re-record the corpus against the service of today and re-choose every line from the fresh curves, with T3.9d's recorder and T3.9c's pinned arithmetic in place. The wording is deliberately unchanged here — the user's open call on the four irreducible criteria came to the orchestrator, and the ruling is to re-record as-is, so service drift and a rewording never land in one diff and become inseparable. A rewording is T3.9e's result read against `docs/evaluation.md`'s named candidates, as its own task, after the fresh corpus says where the thin margins actually sit.
 
