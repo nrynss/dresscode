@@ -346,7 +346,9 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   const shell = readFileSync(path.join(here, "../../app/shell.svelte"), "utf8");
   expect(captureHash).toBe("#/capture");
   expect(shell).toContain("captureHash");
-  expect(shell).toContain("Bring the look");
+  // The capture screen is the `Mirror` tab of the fixed bottom tab bar; the
+  // text link that used to say `Bring the look` is gone from the shell.
+  expect(shell).toContain("Mirror");
   expect(shell).toContain("isCaptureHash");
   expect(source).toContain("sessionBackend");
   expect(source).toContain("fileBackend");

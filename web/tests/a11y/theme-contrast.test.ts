@@ -28,7 +28,10 @@ const colourRoles = [
 /** Every text pair the screens draw, foreground over background. The gate
  * measures each pair in every theme block the stylesheet defines. The stop
  * pairs carry the danger button's text; the dim pair carries the appearance
- * pill's resting labels on their sunken fill. */
+ * pill's resting labels on their sunken fill; the accent pairs carry the top
+ * bar's About trigger on the surface and the fixed tab bar's current tab on
+ * its soft accent fill (both past 8.0:1 in either theme: 10.48 and 8.81
+ * light, 10.96 and 8.00 dark). */
 const textPairs: readonly ContrastPair[] = [
   ["text", "ground"],
   ["text", "surface"],
@@ -40,6 +43,8 @@ const textPairs: readonly ContrastPair[] = [
   ["dim", "surface"],
   ["dim", "sunken"],
   ["accent", "ground"],
+  ["accent", "surface"],
+  ["accent", "accent-soft"],
   ["on-accent", "accent"],
   ["stop", "surface"],
   ["stop", "ground"],

@@ -360,13 +360,14 @@ test("each label survives a 375 px frame in the styles the gate can read", () =>
   }
 
   const shell = readFileSync(path.join(here, "../../../app/app.svelte"), "utf8");
-  expect(shell).toContain("renderHash");
-  expect(shell).toContain("See the render");
+  // The render is a hash branch of the app, not a footer text link: the blog
+  // row that read `See the render` is gone with the tab-bar shell.
+  expect(shell).toContain("isRenderHash");
   expect(shell).toContain('route === "/look/render"');
   expect(shell).toContain("<Render />");
   const shellText = staticText(shell);
   expect(shellText).not.toMatch(/\d/);
-  expect(shellText).toContain("See the render");
+  expect(shellText).not.toContain("See the render");
 });
 
 test("a shop list that cannot be read throws before the sheet shows it", () => {

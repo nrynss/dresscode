@@ -1,14 +1,13 @@
 <script lang="ts">
   import { ApiError } from "@nrynss/chaaya/keel";
-  import { Dialog } from "bits-ui";
   import { api } from "../lib/api/client";
   import History from "../routes/history/history.svelte";
   import Occasion from "../routes/occasion/occasion.svelte";
   import Render from "../routes/look/render/render.svelte";
   import Verdict from "../routes/look/verdict/verdict.svelte";
-  import { historyHash, isHistoryHash } from "../routes/history/route";
-  import { isRenderHash, renderHash } from "../routes/look/render/route";
-  import { isVerdictHash, verdictHash } from "../routes/look/verdict/route";
+  import { isHistoryHash } from "../routes/history/route";
+  import { isRenderHash } from "../routes/look/render/route";
+  import { isVerdictHash } from "../routes/look/verdict/route";
   import ErrorNotice from "./error-notice.svelte";
   import Home from "./home.svelte";
   import Shell from "./shell.svelte";
@@ -149,50 +148,20 @@
         </div>
       {/if}
     </details>
-    <div class="quiet-row">
-      <a href={verdictHash}>See the verdict</a>
-      <a href={renderHash}>See the render</a>
-      <a href={historyHash}>Style history</a>
-      <Dialog.Root>
-        <Dialog.Trigger class="ghost">About</Dialog.Trigger>
-        <Dialog.Portal>
-          <Dialog.Overlay class="dresscode-overlay" />
-          <Dialog.Content class="dresscode-panel">
-            <Dialog.Title class="dresscode-title">Dresscode</Dialog.Title>
-            <Dialog.Description class="dresscode-copy">
-              A private look at the dress code, before anyone else sees the photo. Dresscode suggests a fix. It does
-              not grade the photo.
-            </Dialog.Description>
-            <Dialog.Close class="primary">Close</Dialog.Close>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
-    </div>
   {/if}
 </Shell>
 
 <style>
-  /* The judge samples fold into a boxed drawer, closed until asked. */
+  /* The judge samples fold into the app-wide accordion card, closed until
+   * asked. The recipe in theme.css draws the box, the summary row and the
+   * body's inset, so this screen keeps only the gap above the card and the
+   * rhythm inside the body. */
   .samples {
     margin-top: 2rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-control);
-    background: var(--surface);
-    min-inline-size: 0;
-  }
-
-  .samples summary {
-    display: flex;
-    align-items: center;
-    min-height: 2.75rem;
-    padding: 0.45rem 0.9rem;
-    cursor: pointer;
-    color: var(--text);
-    overflow-wrap: break-word;
   }
 
   .quiet {
-    margin: 0 0.9rem 0.9rem;
+    margin: 0 0 0.9rem;
     color: var(--dim);
     overflow-wrap: break-word;
   }
@@ -201,30 +170,5 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
-    padding: 0.1rem 0.9rem 0.9rem;
-  }
-
-  .quiet-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.25rem 1.25rem;
-    margin-top: 2.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px solid var(--line-soft);
-  }
-
-  .quiet-row a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-    color: var(--dim);
-    text-decoration: none;
-  }
-
-  .quiet-row a:hover {
-    color: var(--accent);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
   }
 </style>
