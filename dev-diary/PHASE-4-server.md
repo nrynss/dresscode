@@ -327,7 +327,7 @@ requires:   T4.4, T4.6
 fixture-ok: yes
 size:       M · mid (two decisions and one contract line; not a mechanical fix)
 owns:       internal/server/looks.go, internal/server/samples.go, docs/api.md
-status:     in-review
+status:     done
 ```
 The other half of what T4.6's reviews surfaced, split out of T4.9 so that loop stays narrow: a **free** route must not be able to grow an account without limit, and a list must answer a page. Both are promises, not tidiness — the second one is what a phone with two hundred looks depends on.
 
