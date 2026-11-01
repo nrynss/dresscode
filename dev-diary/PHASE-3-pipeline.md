@@ -346,17 +346,35 @@ Also takes the two items the review handed over, both in this file: `liveExchang
 
 ---
 
-### T3.9d: Re-record and re-measure
+### T3.9d: The Clef recorder
 ```yaml
-requires:   T3.9b, T3.9c
+requires:   T3.9b
+fixture-ok: yes
+size:       S · light
+owns:       internal/systemone/recorder.go, internal/systemone/recorder_test.go
+status:     not-started
+```
+T0.6 produced `testdata/clef/` with a scratch script that was never committed: the repo has the replay's **reader** (`internal/systemone/replay.go`) and no writer, so nothing in the tree can re-record a corpus. Build the writer before any task spends against it — `internal/mail/recorder.go` is the house precedent for a recorder that lives beside the client it records.
+
+- A client that wraps another `SystemOne`: it answers like the inner one, and stores each exchange as `<dir>/<exchange>.json` in exactly the envelope `replay.Open` loads — the request's model, state and images, the images as `{"content_type", "file"}` references whose paths are relative to the recording (the byte-for-file conversion that took `testdata/clef` from 20 MB to 0.6 MB in T0.6), and the stored reply in Cloudflare's `{"body":{"result":{model, answers, usage}}}` wrapper shape.
+- **The proof is the round trip:** open the directory the recorder wrote with `replay.Open` and serve the same request — it must hit, key for key, and hand back the same answers and usage. A recorder whose output the replay cannot serve is useless here.
+- Never write a key, a header or an account id into a recording: the path holds no account id and no header is stored, as in T0.6's envelope.
+
+**Done when:** the round-trip test passes on a temp directory with a fake inner client and zero network; the recorder's output is byte-shape-identical to what `replay.Open` reads today; no live call anywhere in the gate.
+
+---
+
+### T3.9e: Re-record and re-measure
+```yaml
+requires:   T3.9c, T3.9d
 fixture-ok: no
 size:       M · mid
 owns:       testdata/clef/, docs/clef.md, internal/eval/, testdata/eval/, docs/evaluation.md, dresscode.toml.example, internal/config/load_test.go
 status:     not-started
 ```
-The shipped lines come off the T0.6 recordings and read 254 of 273 live against the 269 they were chosen for (T3.9b); the live curves still top out at 269 with the same 32 of 36 perfect separations, so the gap is service drift under the lines, not the criteria wording. Re-record the corpus against the service of today and re-choose every line from the fresh curves. The wording is deliberately unchanged here — drift and a rewording must not land in one diff.
+The shipped lines come off the T0.6 recordings and read 254 of 273 live against the 269 they were chosen for (T3.9b); the live curves still top out at 269 with the same 32 of 36 perfect separations, so the gap is service drift under the lines, not the criteria wording. Re-record the corpus against the service of today and re-choose every line from the fresh curves, with T3.9d's recorder and T3.9c's pinned arithmetic in place. The wording is deliberately unchanged here — drift and a rewording must not land in one diff.
 
-- Re-record on the same sample photos and the same request shape: the 37 judge calls, the 4 check calls, the ten stability repeats and the size sweep. **Budget: one pass ≈ 78 calls ≈ 3,300 neurons, two passes ≈ 156 calls ≈ 6,600 neurons, inside the 10,000-neuron free daily allowance.** Run one case first, read what it cost, and stop and report if the pass would cross it. Workers AI only; no YouCam client and no YouCam key.
+- Re-record on the same sample photos and the same request shape: the 37 judge calls, the 4 check calls, the ten stability repeats and the size sweep (the resized photos under `testdata/clef/cost/images/` stay as they are; the recordings only reference them). **Budget: one pass ≈ 78 calls ≈ 3,300 neurons, two passes ≈ 156 calls ≈ 6,600 neurons, inside the 10,000-neuron free daily allowance — and T3.9b already spent ≈3,778 neurons against today's counter, so read the counter before the second pass.** Run one case first, read what it cost, and stop and report if the pass would cross it. Workers AI only; no YouCam client and no YouCam key.
 - Replace `testdata/clef/` with the fresh recordings, then re-run the offline evaluation and the sweep rule: the `[judge]` default and its overrides, the `[check]` gates and the model. Every line must sit beside its own fresh curve.
 - Re-quote what pins a number: `dresscode.toml.example`, the tests that assert the shipped lines, `docs/evaluation.md`, `docs/clef.md`. The README and the video numbers go through the orchestrator, in the orchestrator's own commit.
 - The ground truth does not move with the service. A cell where the fresh read contradicts the transcription is reported by name, not re-transcribed.
