@@ -672,7 +672,7 @@ requires:   T5.20
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/app/app.svelte, web/src/routes/occasion/, web/tests/a11y/
-status:     not-started
+status:     claimed:glm-5.3-flash
 ```
 Transform the Front Door (`#/`) from plain text boxes into a visual mobile app home screen: custom SVG icons for all 5 Occasion tiles, clean full `2px solid var(--accent)` selection borders (replacing the curved left-border crescent sliver), a full-width `Continue` CTA, and circular sample-person photo thumbnails inside `Sample looks`.
 
