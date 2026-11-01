@@ -1555,20 +1555,30 @@ func TestLiveTranscriptJudging(t *testing.T) {
 		t.Errorf("live pin: cells across the line %d (want 17), criteria losing a cell %d (want 12)",
 			len(nums.Flipped), nums.CriteriaLost)
 	}
-	if meanMove := fmt.Sprintf("%.4f", drift.MeanMove); meanMove != "0.0803" {
-		t.Errorf("live pin: mean |move| prints %s, want 0.0803", meanMove)
-	}
-	if drift.Inside05 != 140 || drift.AtLeast10 != 74 || drift.Past045 != 3 {
-		t.Errorf("live pin: drift buckets %d/%d/%d, want 140/74/3", drift.Inside05, drift.AtLeast10, drift.Past045)
-	}
-	if len(drift.Identical) != 1 || drift.Identical[0] != "V20 lip-quiet" {
-		t.Errorf("live pin: identical cells %v, want exactly V20 lip-quiet", drift.Identical)
-	}
-	if drift.LargestCell != "V09 interview-beard-short" {
-		t.Errorf("live pin: largest move on %s, want V09 interview-beard-short", drift.LargestCell)
-	}
-	if from, to := fmt.Sprintf("%.4f", drift.LargestFrom), fmt.Sprintf("%.4f", drift.LargestTo); from != "0.7586" || to != "0.2175" {
-		t.Errorf("live pin: largest move displays %s -> %s, want 0.7586 -> 0.2175", from, to)
+	// The drift aggregates, one table, every value a literal
+	// docs/evaluation.md's live re-run quotes and every got computed from
+	// the transcript's per-cell rows. These three summaries are NOT pinned
+	// as transcript text: the committed transcripts predate the lines that
+	// print them (see the note under the headline pins below), so the doc
+	// is their pin.
+	const v20 = "V20 lip-quiet"
+	for _, want := range []struct{ label, got, want string }{
+		{"mean |move| over 273 cells", fmt.Sprintf("%.4f", drift.MeanMove), "0.0803"},
+		{"moves inside 0.05", fmt.Sprintf("%d", drift.Inside05), "140"},
+		{"moves of 0.10 or more", fmt.Sprintf("%d", drift.AtLeast10), "74"},
+		{"moves past 0.45", fmt.Sprintf("%d", drift.Past045), "3"},
+		{"cells whose live value differs", fmt.Sprintf("%d of %d", drift.Differing, drift.Cells), "272 of 273"},
+		{"the one identical cell", strings.Join(drift.Identical, ", "), v20},
+		{"that cell's value on both sides", fmt.Sprintf("%.4f", recValues[v20]), "0.0462"},
+		{"largest move, named", drift.LargestCell, "V09 interview-beard-short"},
+		{"largest move, recorded", fmt.Sprintf("%.4f", drift.LargestFrom), "0.7586"},
+		{"largest move, live", fmt.Sprintf("%.4f", drift.LargestTo), "0.2175"},
+		{"largest move, delta", fmt.Sprintf("%.4f", drift.LargestDelta), "0.5411"},
+		{"cells across the shipped line", fmt.Sprintf("%d", len(nums.Flipped)), "17"},
+	} {
+		if want.got != want.want {
+			t.Errorf("live pin: %s: %s, want %s", want.label, want.got, want.want)
+		}
 	}
 	// The doc's second named mover, and the arrival among the flips.
 	wantMove := "V17 funeral-beard-close: recorded 0.8120, live 0.3595, delta -0.4525"
@@ -1620,12 +1630,11 @@ func TestLiveTranscriptJudging(t *testing.T) {
 		d.headline(t, "movedOf"))
 	livePinLine(t, d, "the flipped count", fmt.Sprintf(liveFlippedCountFormat, len(nums.Flipped)),
 		d.headline(t, "flippedCount"))
-	livePinLine(t, d, "the drift line", fmt.Sprintf(liveDriftFormat, drift.MeanMove, drift.Cells,
-		drift.Inside05, drift.AtLeast10, drift.Past045), d.headline(t, "drift"))
-	livePinLine(t, d, "the largest move", fmt.Sprintf(liveLargestFormat, drift.LargestCell, drift.LargestFrom, drift.LargestTo),
-		d.headline(t, "largest"))
-	livePinLine(t, d, "the identical cells", fmt.Sprintf(liveIdenticalFormat, strings.Join(drift.Identical, ", ")),
-		d.headline(t, "identical"))
+	// The drift, largest-move and identical-cells lines are pinned as
+	// COMPUTED VALUES, not as transcript text: the committed transcripts
+	// predate them. They print in live_test.go now, so a future paid
+	// transcript carries all three - see the Notes in
+	// dev-diary/PHASE-3-pipeline.md for the ruling.
 
 	// The per-criterion table: the drift the doc names, criterion by
 	// criterion, and every row re-emitted.
