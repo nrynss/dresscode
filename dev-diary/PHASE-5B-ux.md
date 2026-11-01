@@ -767,7 +767,7 @@ requires:   T5.22
 fixture-ok: yes
 size:       M · mid
 owns:       web/src/routes/look/, web/tests/a11y/
-status:     in-review:glm-5.3-flash
+status:     done
 ```
 Polish the Arched Comparator (`Before` / `After` moved to the bottom corners inside the arch so they never clip the top curve, drag handle lowered to collarbone level at `top: 72%` so it never covers the nose), combine the Suggested Fix, `Shop the look` preview trigger, and `Keep / Dismiss / Bought it` into one cohesive Result Card, show the Arched Mirror on `#/look/verdict` too, and capture the final verification tour in `/tmp/ui-explore-after/`.
 
