@@ -850,7 +850,7 @@ requires:   T5.23
 fixture-ok: yes
 size:       S · mid
 owns:       web/vite.config.ts, web/src/routes/look/verdict/, web/tests/a11y/
-status:     in-review
+status:     done
 ```
 The user's decision (2026-11-02): both polish follow-ons, fix. (a) Per-sample face thumbnails: only two faces are served, so the interview and funeral chips show a woman's face while their recorded people are men — add per-sample entries to `web/vite.config.ts`'s `mediaSamples` mapping every sample id to its own recorded person's face (inventory `testdata/samples/` first; if a recorded person's face fixture does not exist, report rather than invent one). (b) The verdict screen's hero still wears the crescent `border-left: 3px solid var(--accent)` while `#/look/render` uses T5.23's unified Result Card — give the verdict screen the same card language.
 
