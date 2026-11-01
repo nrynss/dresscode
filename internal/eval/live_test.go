@@ -872,14 +872,12 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 		fmt.Sprintf("%d/%d", nums.RecApart, len(recorded.Curves)), nums.LiveApart, len(liveCurves))
 	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "biggest issue names a miss (or none)",
 		fmt.Sprintf("%d/%d", recorded.Issues.Named, recorded.Issues.Of), liveIssues(reads), len(reads))
-	liveLogf(t, secrets, "  cells whose live value differs from the recorded one: %d of %d",
-		len(nums.Moved), recorded.Cells)
-	liveLogf(t, secrets, "  cells that sit on the other side of the shipped line live than recorded: %d", len(nums.Flipped))
-	liveLogf(t, secrets, "  drift: mean |move| %.4f over %d cells; %d inside 0.05, %d at 0.10 or more, %d past 0.45",
-		drift.MeanMove, drift.Cells, drift.Inside05, drift.AtLeast10, drift.Past045)
-	liveLogf(t, secrets, "  largest move: %s recorded %.4f, live %.4f", drift.LargestCell, drift.LargestFrom, drift.LargestTo)
+	liveLogf(t, secrets, liveMovedCountFormat, len(nums.Moved), recorded.Cells)
+	liveLogf(t, secrets, liveFlippedCountFormat, len(nums.Flipped))
+	liveLogf(t, secrets, liveDriftFormat, drift.MeanMove, drift.Cells, drift.Inside05, drift.AtLeast10, drift.Past045)
+	liveLogf(t, secrets, liveLargestFormat, drift.LargestCell, drift.LargestFrom, drift.LargestTo)
 	if len(drift.Identical) > 0 {
-		liveLogf(t, secrets, "  cells identical live and recorded: %s", strings.Join(drift.Identical, ", "))
+		liveLogf(t, secrets, liveIdenticalFormat, strings.Join(drift.Identical, ", "))
 	}
 
 	// Per criterion: the recorded curve's best against the live curve's
