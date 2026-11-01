@@ -352,7 +352,7 @@ requires:   T3.9b
 fixture-ok: yes
 size:       S · light
 owns:       internal/systemone/recorder.go, internal/systemone/recorder_test.go
-status:     not-started
+status:     claimed:qoder-t39d
 ```
 T0.6 produced `testdata/clef/` with a scratch script that was never committed: the repo has the replay's **reader** (`internal/systemone/replay.go`) and no writer, so nothing in the tree can re-record a corpus. Build the writer before any task spends against it — `internal/mail/recorder.go` is the house precedent for a recorder that lives beside the client it records.
 
