@@ -2,6 +2,7 @@
   import { ApiError } from "@nrynss/chaaya/keel";
   import ErrorNotice from "../../app/error-notice.svelte";
   import { readHistory } from "../history/flow";
+  import { occasionIcons } from "./icons";
   import { fixChipLabel, keepOccasion, listOccasions, readOccasion, readOptIn, readRecallLine, writeOptIn } from "./menu";
   import type { OccasionDetail, OccasionSummary } from "./types";
 
@@ -182,7 +183,7 @@
     <p class="hint">No occasions are available.</p>
   {:else}
     <fieldset class="cards">
-      <legend>Choose an occasion</legend>
+      <legend>Occasion</legend>
       {#each occasions as occasion (occasion.id)}
         <label>
           <input
@@ -192,6 +193,22 @@
             checked={selected === occasion.id}
             onchange={() => select(occasion.id)}
           />
+          <span class="occ-icon" aria-hidden="true">
+            <svg
+              viewBox="0 0 24 24"
+              width="18"
+              height="18"
+              fill="none"
+              stroke="var(--accent)"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              {#each occasionIcons[occasion.id] ?? [] as d (d)}
+                <path {d} />
+              {/each}
+            </svg>
+          </span>
           {occasion.name}
         </label>
       {/each}
@@ -208,7 +225,7 @@
         <p class="banner" role="status">{line}</p>
       {/if}
       <fieldset class="menu">
-        <legend>Fixes you are open to</legend>
+        <legend>Fixes to try</legend>
         {#each detail.fixes as fix (fix.id)}
           <label>
             <input type="checkbox" checked={ticked.includes(fix.id)} onchange={() => toggle(fix.id)} />
@@ -220,7 +237,7 @@
       {#if writeProblem}
         <ErrorNotice error={writeProblem} />
       {/if}
-      <a class="btn-primary bring" href="#/capture">Bring the look</a>
+      <a class="btn-primary bring" href="#/capture">Continue</a>
     {/if}
   {/if}
 </section>
@@ -279,6 +296,7 @@
     position: relative;
     display: flex;
     align-items: center;
+    gap: 0.55rem;
     min-height: 2.75rem;
     padding: 0.6rem 0.85rem;
     background: var(--raised);
@@ -288,10 +306,24 @@
     cursor: pointer;
   }
 
+  /* The icon badge the tile's figure sits in: a soft accent disc, so the
+   * stroke reads on it the way the checked chip's tick does. */
+  .occ-icon {
+    flex: none;
+    width: 2.15rem;
+    height: 2.15rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* The picked tile carries a clean border all the way round, not a sliver
+   * on one side: the accent edge bounds the whole card on the soft fill. */
   fieldset.cards label:has(input:checked) {
     background: var(--accent-soft);
-    border: 1px solid var(--line-soft);
-    border-left: 3px solid var(--accent);
+    border: 2px solid var(--accent);
   }
 
   fieldset.cards input,
@@ -381,7 +413,9 @@
   }
 
   a.bring {
-    display: inline-flex;
+    display: flex;
+    width: 100%;
+    justify-content: center;
     align-items: center;
     min-height: 2.75rem;
     margin-top: 1rem;

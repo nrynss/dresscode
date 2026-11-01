@@ -70,10 +70,16 @@ const states: ScreenState[] = [
     ready: () => withText("label", "Family function"),
     open: async () => {
       // The drawer hides the judge buttons until asked; open it so the gate
-      // judges the buttons a reader who wants a sample sees, then the fix
-      // menu beside them.
+      // judges the buttons a reader who wants a sample sees — the circular
+      // face thumbnail on each one included — then the fix menu beside them.
       await openSampleDrawer();
-      await waitUntil(() => document.querySelector(".sample-row button"), "the sample buttons");
+      await waitUntil(
+        () =>
+          document.querySelectorAll(".sample-row button .sample-avatar").length === 5
+            ? document.querySelector(".sample-row button")
+            : null,
+        "the sample buttons with their avatars",
+      );
       await openFixMenu();
       // The tick auto-saves, and the decluttered screen draws no confirmation:
       // the write itself is the proof, on the wire.

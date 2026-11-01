@@ -95,13 +95,13 @@ export async function gate(mode: Mode): Promise<void> {
 export async function openFixMenu(): Promise<void> {
   const occasion = firstInputOf("Family function");
   occasion.click();
-  await waitUntil(() => withText("legend", "Fixes you are open to"), "the fix menu");
+  await waitUntil(() => withText("legend", "Fixes to try"), "the fix menu");
 }
 
 /** Open the front door's sample-look drawer, so the judge buttons face the
  * gate the way a reader who wants a sample sees them. */
 export async function openSampleDrawer(): Promise<void> {
-  const summary = withText("summary", "Try a sample look");
+  const summary = withText("summary", "Sample looks");
   expect(summary, "the sample drawer summary").not.toBeNull();
   (summary as HTMLElement).click();
   await waitUntil(() => document.querySelector("details.samples[open]"), "the sample drawer opens");

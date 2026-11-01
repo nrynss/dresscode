@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, expect, test } from "vitest";
 import { installMock, pinAnswer, preferFixture } from "../../lib/api/mock";
 import type { ApiFixture } from "../../lib/api/types";
+import { occasionIcons } from "./icons";
 import { fixChipLabel, listOccasions, readOccasion, readOptIn, readRecallLine, resetOccasionMenu, writeOptIn } from "./menu";
 import type { OccasionFix } from "./types";
 
@@ -204,4 +205,59 @@ test("the occasion screen does not grade a person", () => {
   const menu = readFileSync(fileURLToPath(new URL("./menu.ts", import.meta.url)), "utf8");
   expect(screen).not.toMatch(banned);
   expect(menu).not.toMatch(banned);
+});
+
+test("every occasion tile carries its drawn icon", () => {
+  expect(Object.keys(occasionIcons).sort()).toEqual([
+    "date",
+    "family-function",
+    "festival",
+    "funeral",
+    "interview",
+  ]);
+  for (const [id, paths] of Object.entries(occasionIcons)) {
+    expect(paths.length, `${id} draws a figure`).toBeGreaterThan(0);
+    for (const d of paths) {
+      expect(d.startsWith("M"), `${id} draws on the 24-box`).toBe(true);
+      expect(d, `${id} draws no fill`).not.toContain("fill");
+    }
+  }
+});
+
+test("the front door carries the short copy, the icon tiles and the clean selection border", () => {
+  const screen = readFileSync(fileURLToPath(new URL("./occasion.svelte", import.meta.url)), "utf8");
+  const app = readFileSync(fileURLToPath(new URL("../../app/app.svelte", import.meta.url)), "utf8");
+
+  // The shortened front-door copy, verbatim — these strings go through the
+  // writing review.
+  expect(screen).toContain("<legend>Occasion</legend>");
+  expect(screen).toContain("<legend>Fixes to try</legend>");
+  expect(screen).toContain(">Continue</a>");
+  expect(app).toContain("<summary>Sample looks</summary>");
+  expect(screen).not.toContain("Choose an occasion");
+  expect(screen).not.toContain("Fixes you are open to");
+  expect(screen).not.toContain("Bring the look");
+  expect(app).not.toContain("Try a sample look");
+
+  // The tile: an icon badge drawn per occasion, and the picked tile bounded
+  // by a clean full accent border — not the crescent sliver on one side.
+  expect(screen).toContain('class="occ-icon" aria-hidden="true"');
+  expect(screen).toMatch(/fieldset\.cards label:has\(input:checked\)\s*\{[^}]*border:\s*2px solid var\(--accent\)/);
+  expect(screen).not.toContain("border-left: 3px solid var(--accent)");
+
+  // The CTA spans the column with its label centred: the declaration the
+  // browser-backed guard measures the rendering of.
+  expect(screen).toMatch(/a\.bring\s*\{[^}]*display:\s*flex;\s*width:\s*100%;\s*justify-content:\s*center;/);
+
+  // The sample buttons' face thumbnails name only media ids the mock really
+  // serves, so no thumbnail points at a path that answers nothing.
+  const served = [
+    "/media/5e1f1e00000000000000000000000001",
+    "/media/2e4de200000000000000000000000001",
+  ];
+  const named = [...app.matchAll(/\/media\/[0-9a-f]+/g)].map((match) => match[0]);
+  expect(named.length, "the avatar table names served media paths").toBeGreaterThan(0);
+  for (const path of named) {
+    expect(served, `${path} is served`).toContain(path);
+  }
 });
