@@ -393,8 +393,7 @@ func livePrepare(t *testing.T, secrets liveSecrets) liveWorld {
 	world.recorded = recorded
 
 	liveAssertShipped(t, secrets, shipped, recorded.Settings)
-	liveLogf(t, secrets, "shipped lines read from dresscode.toml.example: judge met %.5f over %d overrides; "+
-		"check change_made %.5f same_person %.5f criterion_met %.5f model %q",
+	liveLogf(t, secrets, liveShippedReadFormat,
 		shipped.Judge.Met, len(shipped.Judge.PerCriterion),
 		shipped.Check.ChangeMade, shipped.Check.SamePerson, shipped.Check.CriterionMet, shipped.Check.Model)
 	return world
@@ -442,7 +441,7 @@ func liveAssertShipped(t *testing.T, secrets liveSecrets, got config.Settings, w
 		liveFatalf(t, secrets, "the shipped settings are not the evaluated ones, so a live sweep would report "+
 			"numbers that are not the shipped line's; stopped before any call: %s", strings.Join(mismatch, "; "))
 	}
-	liveLogf(t, secrets, "consistency: the shipped [judge] and [check] numbers equal the offline evaluation's chosen settings: true")
+	liveLogf(t, secrets, liveConsistencyLine)
 }
 
 // liveJudgeRead runs one judge recording live, at the shipped lines, and
@@ -529,7 +528,7 @@ func liveJudgeReads(ctx context.Context, t *testing.T, world liveWorld, sys syst
 			return nil, err
 		}
 		last := spend.calls[len(spend.calls)-1]
-		liveLogf(t, world.secrets, "live judge %-32s issue=%-24s tokens=%d neurons=%.2f booked=%s",
+		liveLogf(t, world.secrets, liveJudgeRowFormat,
 			strings.TrimSuffix(filepath.Base(file), ".json"), read.Issue, last.tokens, last.neurons, last.booked)
 		reads = append(reads, read)
 	}
@@ -641,7 +640,7 @@ func liveCheckReads(ctx context.Context, t *testing.T, world liveWorld, sys syst
 			return nil, nil, nil, err
 		}
 		last := spend.calls[len(spend.calls)-1]
-		liveLogf(t, world.secrets, "live check %-36s change=%.4f same=%.4f met=%.4f shown=%-5v tokens=%d booked=%s",
+		liveLogf(t, world.secrets, liveCheckRowFormat,
 			truth.Exchange, outcome.read.Change, outcome.read.Same, outcome.read.Met, outcome.shown,
 			last.tokens, last.booked)
 		reads = append(reads, outcome.read)
@@ -734,16 +733,14 @@ func TestLiveProbe(t *testing.T) {
 	if len(spend.calls) != 2 {
 		liveFatalf(t, secrets, "the probe made %d calls, want 2", len(spend.calls))
 	}
-	liveLogf(t, secrets, "probe: two calls, one judge and one check, %s", liveOrdering)
+	liveLogf(t, secrets, probeTwoCallsLine, liveOrdering)
 	liveLogf(t, secrets, "PROBE COST (response usage -> documented rate -> ledger booking)")
 	liveLogf(t, secrets, "  %-32s %-11s %8s %10s %14s", "call", "model", "tokens", "neurons", "booked")
 	for _, c := range spend.calls {
-		liveLogf(t, secrets, "  %-32s %-11s %8d %10.2f %14s", c.label, c.model, c.tokens, c.neurons, c.booked)
+		liveLogf(t, secrets, probeCostRowFormat, c.label, c.model, c.tokens, c.neurons, c.booked)
 	}
-	liveLogf(t, secrets, "probe judge %s read %d criteria and named the biggest issue %q",
-		liveProbeJudge, len(judge.Probabilities), judge.Issue)
-	liveLogf(t, secrets, "probe check %s gates %.4f / %.4f / %.4f; shown at the shipped lines: %v",
-		liveProbeCheck, check.read.Change, check.read.Same, check.read.Met, check.shown)
+	liveLogf(t, secrets, probeJudgeLineFormat, liveProbeJudge, len(judge.Probabilities), judge.Issue)
+	liveLogf(t, secrets, probeCheckLineFormat, liveProbeCheck, check.read.Change, check.read.Same, check.read.Met, check.shown)
 
 	// The projection. The sweep is 37 judge calls on clef, 2 checks on
 	// clef and 2 on clef-flash; the flash recordings send the same bytes
@@ -757,7 +754,7 @@ func TestLiveProbe(t *testing.T) {
 	flashCheck := liveNeurons(checkCall.tokens, flashRate)
 	projectedNeurons, projectedDollars := projectLiveSweep(judgeCall.neurons, checkCall.neurons, flashCheck,
 		liveJudgeCalls, liveCheckCalls/2, liveCheckCalls/2)
-	liveLogf(t, secrets, "  projected sweep: %d judge x %.2f + 2 clef check x %.2f + 2 flash check x %.2f = %.0f neurons = %s",
+	liveLogf(t, secrets, probeProjectionFormat,
 		liveJudgeCalls, judgeCall.neurons, checkCall.neurons, flashCheck, projectedNeurons, projectedDollars)
 	// The projection is checked against both limits here, and a reach fails
 	// this test: that is the operator's precondition for the sweep, not a
@@ -767,17 +764,20 @@ func TestLiveProbe(t *testing.T) {
 		liveFatalf(t, secrets, "the projected sweep %s reaches the sweep ceiling %s; the sweep does not run",
 			projectedDollars, cost.Price(liveSweepCeiling))
 	}
-	liveLogf(t, secrets, "  sweep ceiling %s; the projection fits under it: true", cost.Price(liveSweepCeiling))
+	// Both fit lines print the computed answer, %v of the same comparison
+	// the fatal above just made, like the pinned test re-emits them - never
+	// a literal "true" that could sit under a run that failed the check.
+	liveLogf(t, secrets, probeCeilingLine, cost.Price(liveSweepCeiling), projectedDollars < liveSweepCeiling)
 	if projectedNeurons >= float64(liveFreeDailyNeurons) {
 		liveFatalf(t, secrets, "the projected sweep %.0f neurons reaches the free plan's %d neuron day; the sweep does not run",
 			projectedNeurons, liveFreeDailyNeurons)
 	}
-	liveLogf(t, secrets, "  free plan allows %d neurons a day; the projection fits under it: true", liveFreeDailyNeurons)
+	liveLogf(t, secrets, probeFreeLine, liveFreeDailyNeurons, projectedNeurons < float64(liveFreeDailyNeurons))
 	total, err := ledger.Total()
 	if err != nil {
 		liveFatalf(t, secrets, "ledger total: %v", err)
 	}
-	liveLogf(t, secrets, "  probe booked %d charges, total %s; budget spent %s, remaining %s",
+	liveLogf(t, secrets, probeBookedLine,
 		len(ledger.Charges()), total, budget.Spent(), liveRemaining(t, secrets, budget))
 }
 
@@ -807,8 +807,7 @@ func TestLiveEvaluation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), liveSweepDeadline)
 	defer cancel()
 
-	liveLogf(t, secrets, "live sweep: %d judge calls and %d check calls on Workers AI, %s",
-		liveJudgeCalls, liveCheckCalls, liveOrdering)
+	liveLogf(t, secrets, liveSweepOpenFormat, liveJudgeCalls, liveCheckCalls, liveOrdering)
 	judgeReads, err := liveJudgeReads(ctx, t, world, client, spend)
 	if err != nil {
 		liveFatalf(t, secrets, "live judging: %v", err)
@@ -860,18 +859,18 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	}
 
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "JUDGING: live against recorded (%d samples, %d cells)", len(reads), recorded.Cells)
+	liveLogf(t, secrets, liveJudgingHeaderFormat, len(reads), recorded.Cells)
 	liveLogf(t, secrets, "  %-46s %-14s %s", "reading", "recorded", "live")
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "cells agreeing at 0.5",
-		fmt.Sprintf("%d/%d", recorded.AgreeAtHalf, recorded.Cells), nums.LiveHalf, recorded.Cells)
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "cells agreeing at the shipped lines",
-		fmt.Sprintf("%d/%d", recorded.ChosenTotal, recorded.Cells), nums.LiveLines, recorded.Cells)
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "curves' best total (no line beats it)",
-		fmt.Sprintf("%d/%d", nums.RecBestTotal, recorded.Cells), nums.LiveMaxTotal, recorded.Cells)
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "criteria separating perfectly",
-		fmt.Sprintf("%d/%d", nums.RecApart, len(recorded.Curves)), nums.LiveApart, len(liveCurves))
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "biggest issue names a miss (or none)",
-		fmt.Sprintf("%d/%d", recorded.Issues.Named, recorded.Issues.Of), liveIssues(reads), len(reads))
+	liveLogf(t, secrets, liveHeadlineFormat, "cells agreeing at 0.5",
+		fmt.Sprintf(livePairFormat, recorded.AgreeAtHalf, recorded.Cells), nums.LiveHalf, recorded.Cells)
+	liveLogf(t, secrets, liveHeadlineFormat, "cells agreeing at the shipped lines",
+		fmt.Sprintf(livePairFormat, recorded.ChosenTotal, recorded.Cells), nums.LiveLines, recorded.Cells)
+	liveLogf(t, secrets, liveHeadlineFormat, "curves' best total (no line beats it)",
+		fmt.Sprintf(livePairFormat, nums.RecBestTotal, recorded.Cells), nums.LiveMaxTotal, recorded.Cells)
+	liveLogf(t, secrets, liveHeadlineFormat, "criteria separating perfectly",
+		fmt.Sprintf(livePairFormat, nums.RecApart, len(recorded.Curves)), nums.LiveApart, len(liveCurves))
+	liveLogf(t, secrets, liveHeadlineFormat, "biggest issue names a miss (or none)",
+		fmt.Sprintf(livePairFormat, recorded.Issues.Named, recorded.Issues.Of), liveIssues(reads), len(reads))
 	liveLogf(t, secrets, liveMovedCountFormat, len(nums.Moved), recorded.Cells)
 	liveLogf(t, secrets, liveFlippedCountFormat, len(nums.Flipped))
 	liveLogf(t, secrets, liveDriftFormat, drift.MeanMove, drift.Cells, drift.Inside05, drift.AtLeast10, drift.Past045)
@@ -892,9 +891,9 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 		recAt, liveAt := agreement(rec.Cells, line), agreement(c.Cells, line)
 		mark := ""
 		if recAt != liveAt || rec.MaxAgreement != c.MaxAgreement || rec.Apart != c.Apart {
-			mark = "   <-- differs from recorded"
+			mark = liveMarkDiffers
 		}
-		liveLogf(t, secrets, "  %-32s %3d %6d/%-3d %6d/%-3d %8d/%-3d %8d/%-3d %10.5f %5t/%-5t%s",
+		liveLogf(t, secrets, liveCriterionFormat,
 			c.ID, len(c.Cells),
 			rec.MaxAgreement, len(c.Cells),
 			c.MaxAgreement, len(c.Cells),
@@ -906,29 +905,28 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	// The named cells: the 0.5 anchors, the cells no line saves, every
 	// value that moved, and every cell that crossed the shipped line.
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "  CELLS OFF THE EXPECTED SIDE AT 0.5 - recorded %d, live %d",
-		len(recorded.OffAtHalf), len(nums.OffHalf))
+	liveLogf(t, secrets, liveOffHeaderFmt, len(recorded.OffAtHalf), len(nums.OffHalf))
 	liveLogf(t, secrets, "    recorded (docs/clef.md's thirteen):")
-	livePrintCells(t, secrets, "      ", recorded.OffAtHalf)
+	livePrintCells(t, secrets, recorded.OffAtHalf)
 	liveLogf(t, secrets, "    live:")
-	livePrintCells(t, secrets, "      ", nums.OffHalf)
+	livePrintCells(t, secrets, nums.OffHalf)
 	liveCompareCells(t, secrets, "0.5", recorded.OffAtHalf, nums.OffHalf)
 
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "  IRREDUCIBLE CELLS AT THE SHIPPED LINE - recorded %d, live %d (no line on this set saves them)",
+	liveLogf(t, secrets, liveWrongHeaderFmt,
 		len(recorded.Wrong), len(nums.Wrong))
 	liveLogf(t, secrets, "    recorded:")
-	livePrintCells(t, secrets, "      ", recorded.Wrong)
+	livePrintCells(t, secrets, recorded.Wrong)
 	liveLogf(t, secrets, "    live:")
-	livePrintCells(t, secrets, "      ", nums.Wrong)
+	livePrintCells(t, secrets, nums.Wrong)
 	liveCompareCells(t, secrets, "the shipped line", recorded.Wrong, nums.Wrong)
 
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "  LIVE VALUES THAT DIFFER FROM THE RECORDED ONES: %d of %d cells", len(nums.Moved), recorded.Cells)
+	liveLogf(t, secrets, liveMovedBlockFmt, len(nums.Moved), recorded.Cells)
 	for _, m := range nums.Moved {
 		liveLogf(t, secrets, "    %s", m)
 	}
-	liveLogf(t, secrets, "  CELLS ON THE OTHER SIDE OF THE SHIPPED LINE LIVE THAN RECORDED: %d", len(nums.Flipped))
+	liveLogf(t, secrets, liveFlippedBlockFmt, len(nums.Flipped))
 	for _, f := range nums.Flipped {
 		liveLogf(t, secrets, "    %s", f)
 	}
@@ -941,7 +939,7 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	for _, c := range liveCurves {
 		line := world.settings.lineFor(c)
 		for _, cell := range c.Cells {
-			liveLogf(t, secrets, "    %-30s %-28s recorded=%.4f live=%.4f line=%.5f expected-met=%-5v live-agrees=%-5v",
+			liveLogf(t, secrets, liveCellRowFormat,
 				cell.Sample, c.ID, recValues[cell.Sample+" "+c.ID], cell.Value, line, cell.Expected,
 				(cell.Value >= line) == cell.Expected)
 		}
@@ -949,51 +947,36 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 }
 
 // livePrintCells logs one list of off-cells, each with the value that
-// put it on the wrong side and what the ground truth expected.
-func livePrintCells(t *testing.T, secrets liveSecrets, indent string, cells []OffCell) {
+// put it on the wrong side and what the ground truth expected. The line is
+// printed from liveOffCellFormat, the same constant the pinned test
+// re-emits the transcript's off-cell lists from: one copy of the text.
+func livePrintCells(t *testing.T, secrets liveSecrets, cells []OffCell) {
 	t.Helper()
 	if len(cells) == 0 {
-		liveLogf(t, secrets, "%s(none)", indent)
+		liveLogf(t, secrets, "      (none)")
 		return
 	}
 	for _, c := range cells {
-		liveLogf(t, secrets, "%s%s %-28s value=%.4f expected-met=%-5v", indent, c.Sample, c.Criterion, c.Value, c.Expected)
+		liveLogf(t, secrets, liveOffCellFormat, c.Sample, c.Criterion, c.Value, c.Expected)
 	}
 }
 
 // liveCompareCells says whether the live list names exactly the cells the
 // recorded list names, and which side each list has that the other lacks.
+// The set difference is liveOffDiff's and the three lines are the constants
+// liveReproduceFmt, liveOffOnlyLiveFmt and liveOffOnlyRecFmt, all in
+// live_report_test.go: the sweep has no copy of this logic or this text,
+// and the pin that checks them against the committed transcript is the
+// gate's, not a paid run's.
 func liveCompareCells(t *testing.T, secrets liveSecrets, where string, recorded, live []OffCell) {
 	t.Helper()
-	key := func(c OffCell) string { return c.Sample + " " + c.Criterion }
-	inRecorded := make(map[string]OffCell, len(recorded))
-	for _, c := range recorded {
-		inRecorded[key(c)] = c
-	}
-	inLive := make(map[string]OffCell, len(live))
-	for _, c := range live {
-		inLive[key(c)] = c
-	}
-	var onlyLive, onlyRecorded []string
-	for k, c := range inLive {
-		if _, ok := inRecorded[k]; !ok {
-			onlyLive = append(onlyLive, fmt.Sprintf("%s %s (live %.4f, expected met %v)", c.Sample, c.Criterion, c.Value, c.Expected))
-		}
-	}
-	for k, c := range inRecorded {
-		if _, ok := inLive[k]; !ok {
-			onlyRecorded = append(onlyRecorded, fmt.Sprintf("%s %s (recorded %.4f, expected met %v)", c.Sample, c.Criterion, c.Value, c.Expected))
-		}
-	}
-	sort.Strings(onlyLive)
-	sort.Strings(onlyRecorded)
-	reproduced := len(onlyLive) == 0 && len(onlyRecorded) == 0
-	liveLogf(t, secrets, "    the cells off the expected side at %s reproduce exactly: %v", where, reproduced)
+	onlyLive, onlyRecorded := liveOffDiff(recorded, live)
+	liveLogf(t, secrets, liveReproduceFmt, where, len(onlyLive) == 0 && len(onlyRecorded) == 0)
 	for _, entry := range onlyLive {
-		liveLogf(t, secrets, "      off at %s live only: %s", where, entry)
+		liveLogf(t, secrets, liveOffOnlyLiveFmt, where, entry)
 	}
 	for _, entry := range onlyRecorded {
-		liveLogf(t, secrets, "      off at %s recorded only: %s", where, entry)
+		liveLogf(t, secrets, liveOffOnlyRecFmt, where, entry)
 	}
 }
 
@@ -1022,7 +1005,7 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 		if !ok {
 			liveFatalf(t, secrets, "no recorded read for %q", r.Exchange)
 		}
-		liveLogf(t, secrets, "  %-36s %-12s %6v %9.4f %9.4f %9.4f   %.4f / %.4f / %.4f",
+		liveLogf(t, secrets, liveReadRowFormat,
 			r.Exchange, r.Model, r.Bad, r.Change, r.Same, r.Met, rec.Change, rec.Same, rec.Met)
 	}
 
@@ -1043,9 +1026,9 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 	for _, row := range rows {
 		mark := ""
 		if row.Differs {
-			mark = "   <-- differs from recorded"
+			mark = liveMarkDiffers
 		}
-		liveLogf(t, secrets, "  %-14s %-12s %8.4f %8.4f %10.5f %8.4f %10v %8v %10.5f %10.4f%s",
+		liveLogf(t, secrets, liveGateRowFormat,
 			row.Gate, row.Model, row.Honest, row.Bad, row.Line, row.Margin,
 			row.Separates, row.SeparatesHalf, row.LiveMid, row.RecMargin, mark)
 	}
@@ -1061,11 +1044,9 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 	badShown, goodDiscarded := liveDecisionCounts(decisions)
 	liveLogf(t, secrets, "")
 	liveLogf(t, secrets, "  DECISIONS AT THE SHIPPED LINES (through pipeline.Check on the live call)")
-	liveLogf(t, secrets, "    recorded: known bad renders shown %d, honest renders discarded %d",
-		recorded.BadShown, recorded.GoodDiscarded)
-	liveLogf(t, secrets, "    live:     known bad renders shown %d, honest renders discarded %d",
-		badShown, goodDiscarded)
-	liveLogf(t, secrets, "    every known bad render rejected and no honest render lost - recorded %v, live %v",
+	liveLogf(t, secrets, liveDecRecFormat, recorded.BadShown, recorded.GoodDiscarded)
+	liveLogf(t, secrets, liveDecLiveFormat, badShown, goodDiscarded)
+	liveLogf(t, secrets, liveDecBothFormat,
 		recorded.BadShown == 0 && recorded.GoodDiscarded == 0, badShown == 0 && goodDiscarded == 0)
 	recOutcomes := map[string]CheckOutcome{}
 	for _, o := range recorded.Outcomes {
@@ -1078,9 +1059,9 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 		}
 		mark := ""
 		if rec.Shown != o.shown || rec.Bad != o.read.Bad {
-			mark = "   <-- differs from recorded"
+			mark = liveMarkDiffers
 		}
-		liveLogf(t, secrets, "    %-36s %-12s bad=%-5v shown live=%-5v shown recorded=%-5v%s words=%q",
+		liveLogf(t, secrets, liveDecisionFormat,
 			o.read.Exchange, o.read.Model, o.read.Bad, o.shown, rec.Shown, mark, o.words)
 	}
 
@@ -1108,10 +1089,10 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 		recVocab[c.Exchange+" "+c.Attribute] = c
 	}
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "  LOOK VOCABULARY (%d cells: %d attributes over %d reads)",
+	liveLogf(t, secrets, liveVocabHeaderFormat,
 		len(vocabulary), len(world.vocab.Attributes), len(world.gt.Checks))
 	for _, ta := range tallies {
-		liveLogf(t, secrets, "    %-12s live %d/%d correct, recorded %d/%d",
+		liveLogf(t, secrets, liveVocabTallyFormat,
 			ta.Model, ta.LiveCorrect, ta.LiveOf, ta.RecCorrect, ta.RecOf)
 	}
 	liveLogf(t, secrets, "    every attribute cell, live beside recorded:")
@@ -1119,9 +1100,9 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 		key := c.Exchange + " " + c.Attribute
 		mark := ""
 		if diffKeys[key] {
-			mark = "   <-- differs from recorded"
+			mark = liveMarkDiffers
 		}
-		liveLogf(t, secrets, "      %-36s %-16s truth=%-18s live=%-18s recorded=%-18s correct=%-5v%s",
+		liveLogf(t, secrets, liveVocabCellFormat,
 			c.Exchange, c.Attribute, c.Truth, c.Answer, recVocab[key].Answer, c.Correct, mark)
 	}
 	liveMisses := liveVocabularyMisses(vocabulary)
@@ -1151,20 +1132,18 @@ func liveReportCost(t *testing.T, world liveWorld, spend *liveSpend, ledger *cos
 	liveLogf(t, secrets, "COST: the live sweep (Workers AI only; no YouCam call was made, no YouCam key read)")
 	liveLogf(t, secrets, "  %-36s %-12s %8s %10s %14s", "call", "model", "tokens", "neurons", "booked")
 	for _, c := range spend.calls {
-		liveLogf(t, secrets, "  %-36s %-12s %8d %10.2f %14s", c.label, c.model, c.tokens, c.neurons, c.booked)
+		liveLogf(t, secrets, liveCostRowFormat, c.label, c.model, c.tokens, c.neurons, c.booked)
 	}
 	total, err := ledger.Total()
 	if err != nil {
 		liveFatalf(t, secrets, "ledger total: %v", err)
 	}
-	liveLogf(t, secrets, "  calls made: %d (%s)", len(spend.calls), liveCounted(liveCallsByModel(spend.calls)))
-	liveLogf(t, secrets, "  input tokens reported: %d, output tokens %d",
-		spend.tokens(), spend.output())
-	liveLogf(t, secrets, "  neurons implied by the documented rates: %.0f", spend.neurons())
-	liveLogf(t, secrets, "  dollars booked by the ledger: %s (sum of the calls %s)", total, spend.dollars())
-	liveLogf(t, secrets, "  budget ceiling %s, spent %s, remaining %s",
+	liveLogf(t, secrets, liveCallsMadeFormat, len(spend.calls), liveCounted(liveCallsByModel(spend.calls)))
+	liveLogf(t, secrets, liveTokensLineFormat, spend.tokens(), spend.output())
+	liveLogf(t, secrets, liveNeuronsLineFormat, spend.neurons())
+	liveLogf(t, secrets, liveDollarsLineFormat, total, spend.dollars())
+	liveLogf(t, secrets, liveBudgetLineFormat,
 		cost.Price(liveSweepCeiling), spend.budget.Spent(), liveRemaining(t, secrets, spend.budget))
-	liveLogf(t, secrets, "  free plan daily allowance %d neurons; the sweep stayed under it: %v",
-		liveFreeDailyNeurons, spend.neurons() < liveFreeDailyNeurons)
+	liveLogf(t, secrets, liveFreeAllowFormat, liveFreeDailyNeurons, spend.neurons() < liveFreeDailyNeurons)
 	liveLogf(t, secrets, "  the offline evaluation replays the same recordings with zero calls and zero spend")
 }

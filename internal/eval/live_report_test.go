@@ -760,6 +760,7 @@ const (
 	liveVocabCellFormat   = "      %-36s %-16s truth=%-18s live=%-18s recorded=%-18s correct=%-5v%s"
 	liveCostRowFormat     = "  %-36s %-12s %8d %10.2f %14s"
 	liveHeadlineFormat    = "  %-46s %-14s %d/%d"
+	livePairFormat        = "%d/%d"
 	liveMarkDiffers       = "   <-- differs from recorded"
 	probeCostRowFormat    = "  %-32s %-11s %8d %10.2f %14s"
 	probeJudgeLineFormat  = "probe judge %s read %d criteria and named the biggest issue %q"
@@ -1723,19 +1724,19 @@ func TestLiveTranscriptJudging(t *testing.T) {
 	livePinLineWith(t, d, "JUDGING:", "the judging header",
 		fmt.Sprintf(liveJudgingHeaderFormat, len(reads), recorded.Cells))
 	livePinLine(t, d, "the 0.5 headline", fmt.Sprintf(liveHeadlineFormat, "cells agreeing at 0.5",
-		fmt.Sprintf("%d/%d", recorded.AgreeAtHalf, recorded.Cells), nums.LiveHalf, recorded.Cells),
+		fmt.Sprintf(livePairFormat, recorded.AgreeAtHalf, recorded.Cells), nums.LiveHalf, recorded.Cells),
 		d.headline(t, "agreeHalf"))
 	livePinLine(t, d, "the shipped-lines headline", fmt.Sprintf(liveHeadlineFormat, "cells agreeing at the shipped lines",
-		fmt.Sprintf("%d/%d", recorded.ChosenTotal, recorded.Cells), nums.LiveLines, recorded.Cells),
+		fmt.Sprintf(livePairFormat, recorded.ChosenTotal, recorded.Cells), nums.LiveLines, recorded.Cells),
 		d.headline(t, "agreeLines"))
 	livePinLine(t, d, "the best-total headline", fmt.Sprintf(liveHeadlineFormat, "curves' best total (no line beats it)",
-		fmt.Sprintf("%d/%d", nums.RecBestTotal, recorded.Cells), nums.LiveMaxTotal, recorded.Cells),
+		fmt.Sprintf(livePairFormat, nums.RecBestTotal, recorded.Cells), nums.LiveMaxTotal, recorded.Cells),
 		d.headline(t, "bestTotal"))
 	livePinLine(t, d, "the apart headline", fmt.Sprintf(liveHeadlineFormat, "criteria separating perfectly",
-		fmt.Sprintf("%d/%d", nums.RecApart, len(recorded.Curves)), nums.LiveApart, len(liveCurves)),
+		fmt.Sprintf(livePairFormat, nums.RecApart, len(recorded.Curves)), nums.LiveApart, len(liveCurves)),
 		d.headline(t, "apart"))
 	livePinLine(t, d, "the issues headline", fmt.Sprintf(liveHeadlineFormat, "biggest issue names a miss (or none)",
-		fmt.Sprintf("%d/%d", recorded.Issues.Named, recorded.Issues.Of), liveIssues(reads), len(reads)),
+		fmt.Sprintf(livePairFormat, recorded.Issues.Named, recorded.Issues.Of), liveIssues(reads), len(reads)),
 		d.headline(t, "issues"))
 	livePinLine(t, d, "the moved count", fmt.Sprintf(liveMovedCountFormat, len(nums.Moved), recorded.Cells),
 		d.headline(t, "movedOf"))
@@ -2086,10 +2087,10 @@ func TestLiveTranscriptCheck(t *testing.T) {
 		if found == nil {
 			t.Fatalf("live pin: no vocabulary tally for %q", want.model)
 		}
-		if got := fmt.Sprintf("%d/%d", found.LiveCorrect, found.LiveOf); got != want.live {
+		if got := fmt.Sprintf(livePairFormat, found.LiveCorrect, found.LiveOf); got != want.live {
 			t.Errorf("live pin: %s live vocabulary: %s, want %s", want.model, got, want.live)
 		}
-		if got := fmt.Sprintf("%d/%d", found.RecCorrect, found.RecOf); got != want.recorded {
+		if got := fmt.Sprintf(livePairFormat, found.RecCorrect, found.RecOf); got != want.recorded {
 			t.Errorf("live pin: %s recorded vocabulary: %s, want %s", want.model, got, want.recorded)
 		}
 	}
@@ -2202,6 +2203,13 @@ func TestLiveTranscriptCost(t *testing.T) {
 	neurons := liveCallsNeurons(calls)
 	if got := fmt.Sprintf("%.3f", neurons); got != "1822.626" {
 		t.Errorf("live pin: %s: one pass implies %s neurons, want 1822.626", d.name, got)
+	}
+	// docs/evaluation.md's live subsection says the sweep cost "under a
+	// fifth of the free plan's 10,000 neurons"; that sentence is run here
+	// so the fraction has a pin like every other number there.
+	if neurons >= liveFreeDailyNeurons/5 {
+		t.Errorf("live pin: %s: one pass implies %.0f neurons, want under a fifth of the %d-neuron day",
+			d.name, neurons, liveFreeDailyNeurons)
 	}
 	if tokens := liveCallsTokens(calls); tokens != 90403 {
 		t.Errorf("live pin: %s: %d input tokens reported, want 90403", d.name, tokens)
