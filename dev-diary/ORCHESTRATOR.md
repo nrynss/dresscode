@@ -77,9 +77,30 @@ If step 4 fails, `main` is broken. Record a finding against the task at once, an
 
 - Set the task to `status: done` in its phase file, and tick its exit criteria only where they are true.
 - Update the README status board and add a handoff-log entry at the top: what exists, what surprised, and what the next agent must not have to work out again. Only the orchestrator edits `dev-diary/README.md`, so parallel branches never conflict on it.
-- Remove the worktree and delete its branch, after `git cherry main <branch>` shows no `+` lines and the worktree is clean. Never remove a worktree with unmerged or uncommitted work; report it instead.
+- Remove the worktree and delete its branch **in the same hand as the close**: `git worktree remove <path>` then `git branch -d <branch>`, after `git cherry main <branch>` shows no `+` lines and the worktree is clean. A landed task with a branch still on it is a finished close, not a paused one — the next session reads an unlanded-looking branch as in-flight work. Never remove a worktree with unmerged or uncommitted work; report it instead.
 - Record the landing in Lambo with `lambo_record_action`, and every decision with `lambo_derive`: what was decided and why.
 - Tell the user what landed, what was found, and what is ready next.
+
+---
+
+## Cleanup
+
+Every task is dispatched in a worktree under `~/work/dresscode-wt/`, and a UI task starts a dev server inside it. Both outlive the agent that made them, and the protocol only cleans the task being landed, so the residue accumulates silently. It is the orchestrator's to clear.
+
+- **Landing removes both halves.** Worktree and branch go in the close hand, not "later". `git branch -d` (never `-D`) is the guard: it refuses anything `git cherry` says is unlanded, so a `-d` that fails is a finding, not an obstacle.
+- **A dev server is a leak.** `git worktree remove` fails with "Directory not empty" when a server is still rewriting `web/.vite/deps`, and a dead agent never kills its own server. So the brief says so (see the template), and the sweep checks for it. A stopped agent's worktree is removed the same hand the task is re-dispatched or retired.
+- **Review worktrees go when their round reports.** A detached review checkout at an old tip cannot test a newer claim; keep it only while that round's findings are still live.
+
+### The sweep
+
+Run at the end of each phase, and whenever the worktree list and the directory disagree:
+
+1. `git worktree prune`, then compare `git worktree list` with `ls ~/work/dresscode-wt`. A directory in no registry is a remnant.
+2. A remnant may hold work. Check every non-cache file in it against `main` (`git hash-object <file>` vs `git rev-parse main:<path>`). Identical or absent, it is cache and goes. Anything else, stop and read it before deleting.
+3. Branches: for each `task-*` branch not in the worktree registry, `git cherry main <branch>` must show no `+` lines before `git branch -d`.
+4. Servers: `ps -eo pid,args | grep vite` — any server whose path is not a registered worktree is orphaned. Stop it, then re-check that nothing still holds a removed path.
+
+Report what the sweep removed and what it refused to remove.
 
 ---
 
@@ -106,6 +127,9 @@ Prove it: <tests, the gate, the pins this task needs>.
 
 Dev-diary: set <id> to `in-review` in its phase file, and add your notes under the task.
 Do not edit dev-diary/README.md; put your handoff-log text in your report.
+
+If you start a dev server, kill it before you report. Nothing else can remove this
+worktree while it holds web/.vite/deps open.
 
 Report: branch, `git log --oneline main..HEAD`, each Done-when clause with its evidence,
 anything unmet, and anything surprising.
