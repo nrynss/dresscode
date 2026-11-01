@@ -927,9 +927,10 @@ func (sm *sampleRuntime) publish(jobID string, frames []job.Progress) {
 // the same sample asks for the same pictures, and a copy of a picture this
 // owner already has is a second blob, a second row and a second write of
 // the same bytes for one story. What the reuse may NOT do is hand one blob
-// to two live looks, because the erasure side is not reference counted -
-// shareableGroup says which groups are safe to share and why, and the short
-// answer is that a look deletion erases exactly the media its renders name.
+// to two live looks. The erasure side counts references now
+// (internal/privacy/references.go - a blob goes only when nothing names
+// it), and the rule below is the simpler invariant kept on top of that
+// count: a render id is named by exactly one look.
 //
 // So the frugality is the selfie and the rows, not the render. The five
 // sample selfies are 1,359,634 bytes between them and a repeat open writes
@@ -974,14 +975,14 @@ func (sm *sampleRuntime) keep(ctx context.Context, owner, group string, img syst
 // the owner's media and the owner's rows together. Either way the sharers go
 // with the bytes, so no live look is left naming a blob that is gone.
 //
-// A render group is not. Two live looks naming one render blob is a hazard,
-// not a saving: deleteBlobIDs (internal/privacy/privacy.go) erases each id a
-// look deletion lists after one owner check and no reference count, so
-// deleting either look would erase the picture the other one still shows.
-// The paid path cannot reach that shape - every paid render mints its own
-// id - and the sample open does not either. Every render keeps its own blob.
-// Reference counting the erasure instead is internal/privacy's to write, not
-// this file's, and chartered elsewhere (T4.9).
+// A render group is not, and stays unshared even though the count would
+// now protect it: deleteBlobIDs (internal/privacy/privacy.go) consults
+// internal/privacy/references.go, so a blob a second look still names
+// survives the first look's deletion. Sharing renders is avoided anyway
+// because the simpler invariant is worth more than the bytes - every
+// render mints its own id, so a render id is named by exactly one look
+// and no deletion has to be reasoned about against a survivor. (T4.9
+// landed the count; the rule below predates it and is kept.)
 func shareableGroup(group string) bool {
 	return group == groupSelfie
 }

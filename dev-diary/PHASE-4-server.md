@@ -247,7 +247,7 @@ requires:   T4.4, T4.6
 fixture-ok: yes
 size:       M · heavy (two store invariants; chartered `S · light`, which was wrong — see T4.6's five rounds for why a store invariant is never small)
 owns:       internal/privacy/
-status:     in-review
+status:     done
 ```
 Two holes T4.6's review found while it was not looking for them. Both are the same product promise, not polish: a person's data goes away when they ask, and it goes away *completely* — every row, and every byte no surviving row still names. Split out of the original T4.9, whose third item was a different promise (a free route must not grow an account without limit) and is now **T4.10**; the split is so the loop on this one stays narrow, which T4.6's five rounds taught the hard way.
 
