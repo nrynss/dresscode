@@ -428,7 +428,7 @@ requires:   T3.9b
 fixture-ok: no
 size:       M · mid
 owns:       internal/domain/, internal/pipeline/, testdata/occasions/, testdata/api/, docs/occasions.md
-status:     in-review
+status:     done
 ```
 The user's decision (2026-11-02): **a phrase table becomes occasions data** for the look-in-words line, **a display-name field** for the simulation entry, and the remembered sentences **share the table**. Three display strings are currently hand-written English in fixtures the mechanical pipeline cannot derive: the look line (`"gold jhumkas, red lip, open collar"` vs the data-order join `"jhumkas, gold, red, …"`), the shop simulation name (`"Closed-mouth smile"` vs the fix's `changes` sentence), and the memory sentences (`"Family function kept the gold jhumkas."` — already byte-matching via the fix id's name).
 
