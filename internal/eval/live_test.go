@@ -13,8 +13,13 @@
 // sweep's 41, 43 paid calls in one command, across the two ceilings above
 // ($0.09 combined). The probe first, always - it prices the sweep, and it
 // fails if the projection reaches the sweep's ceiling or the free plan's
-// daily neurons, which is what stops the sweep from running on a probe that
-// said it should not.
+// daily neurons. That stop rule is the operator's precondition: a red probe
+// says do not run the sweep, but what fails is the probe's own exit code,
+// not a lock on the separate sweep command. What bounds a sweep that runs
+// regardless is its $0.08 meter ceiling - the backstop. The meter refuses a
+// call whose reserve does not fit, so a sweep books at most 8 cents:
+// 80,000,000 nanodollars at the client's 11,000 nanodollars per neuron is
+// ~7,272 neurons, under the free plan's 10,000-neuron day.
 //
 // It dials Workers AI and nothing else. No YouCam client is built here
 // and no YouCam key is read. The photos are the committed sample people's
@@ -66,73 +71,32 @@ import (
 )
 
 // The live run's own numbers. None of them is a threshold: the lines this
-// measures with are read from the committed settings file.
+// measures with are read from the committed settings file. The ceilings,
+// the day allowance, the call counts, the ordering note and the probe's two
+// exchanges live in live_report_test.go, untagged, so the pinned tests
+// project and price against the same constants the sweep runs on.
 const (
 	// liveWorkersBase is the only address this file hands the client, and
 	// liveWorkersHost the only host its transport admits.
 	liveWorkersBase = "https://api.cloudflare.com"
 	liveWorkersHost = "api.cloudflare.com"
 
-	// liveProbeCeiling covers the probe's two calls. liveSweepCeiling is
-	// 8 cents, about four times the sweep's expected settle (~1,950
-	// neurons, ~$0.022): the client reserves double its token estimate for
-	// each call, so the ceiling sits above the expected settle, not at it.
-	// The meter refuses a call whose reserve does not fit, which is the
-	// guard that stops a runaway loop.
-	liveProbeCeiling = cost.Cent
-	liveSweepCeiling = 8 * cost.Cent
-
-	// liveFreeDailyNeurons is the Workers AI free plan's day allowance
-	// (docs/clef.md, Cost). The sweep is projected against it.
-	liveFreeDailyNeurons = 10_000
-
-	// liveJudgeCalls and liveCheckCalls are the sweep's expected calls:
-	// every judge recording and every check recording, once each.
-	liveJudgeCalls = 37
-	liveCheckCalls = 4
-
 	liveCallTimeout   = 2 * time.Minute
 	liveProbeDeadline = 6 * time.Minute
 	liveSweepDeadline = 32 * time.Minute
-
-	// liveOrdering states what the sweep does not do: no t.Parallel, one
-	// call after another, so the ledger and the budget tell one story.
-	liveOrdering = "sequential calls, no t.Parallel, fail fast on the first call error"
 )
 
-// The rate card, and where each number comes from. The two neuron rates -
-// 21,818 per million input tokens on clef, 3,455 on clef-flash - and the
-// free plan's 10,000 neurons a day are docs/clef.md's (Cost). The dollar
-// rate is not: $0.011 per 1,000 neurons is the client's own booking rate,
-// internal/systemone/workersai.go:48-55 (`nanodollarsPerNeuron`), the same
-// figure T2.2 recorded in dev-diary/PHASE-2-clients.md:29.
-//
-// liveNeuronsPerMillion is a second copy of systemone's private table
-// (workersai.go:57-62), which a test cannot read. The copy is not tied by
-// inspection: liveImpliedPrice works out what these rates would book for a
-// call, and liveSpend.record compares it against what the ledger did book,
-// fatalling the run on the first call where the two disagree. A rate card
-// that drifted from the client's therefore stops the sweep instead of
-// printing a row nobody compared.
-const liveNanodollarsPerNeuron = 11_000
+// The rate card this run measures against - liveNanodollarsPerNeuron,
+// liveTokenCap and liveNeuronsPerMillion, with the provenance of each
+// number and the tie to the client's own table - lives in
+// live_report_test.go, untagged, so the gate's pinned tests check it against
+// the committed transcripts as well as the live sweep reading it here.
+// liveSpend.record below is the tie: it fatals the run on the first call
+// where this file's implied price and the ledger's booking disagree.
 
-// liveTokenCap mirrors systemone's private maxEstimateTokens (workersai.go:
-// 54), the cap on the token count its pricing arithmetic applies. This copy
-// needs it for the same reason: so the implied price equals the booked one
-// on any input, not only on the ones expected.
-const liveTokenCap = 20_000_000
-
-var liveNeuronsPerMillion = map[string]int64{
-	systemone.ModelClef:      21_818,
-	systemone.ModelClefFlash: 3_455,
-}
-
-// The probe's two calls: the full-size family-function judge recording and
-// the honest second-visit check on the shipped model.
-const (
-	liveProbeJudge = "judge-V04-family-function"
-	liveProbeCheck = "check-clef-V04-to-V05"
-)
+// The probe's two calls, liveProbeJudge and liveProbeCheck, are named in
+// live_report_test.go, untagged, so the pinned probe test reads the same
+// two exchanges the probe dials.
 
 // liveSecrets holds the two environment values. Only scrub reads them, so
 // neither can reach a log line, an error or a failure message.
@@ -265,16 +229,8 @@ func liveNewClient(t *testing.T, secrets liveSecrets, ceiling cost.Price) (*syst
 	return client, budget, ledger
 }
 
-// liveCall is one call's own accounting: what the response reported, what
-// the documented rate implies, what the ledger booked.
-type liveCall struct {
-	label   string
-	model   string
-	tokens  int
-	output  int
-	neurons float64
-	booked  cost.Price
-}
+// liveCall, the rate card and liveImpliedPrice live in
+// live_report_test.go; liveSpend below builds and totals them.
 
 // liveSpend tracks the calls made through one ledger. The calls are
 // sequential, so a finished call's charge is the ledger's last entry.
@@ -325,59 +281,28 @@ func (s *liveSpend) record(label, model string, before int, usage systemone.Usag
 	return nil
 }
 
-// liveImpliedPrice is this file's copy of the client's own arithmetic: the
-// neurons the documented rate implies for a call's reported input tokens,
-// priced at liveNanodollarsPerNeuron and rounded up to the nanodollar -
-// which is how internal/systemone/workersai.go prices a settle (tokenPrice,
-// workersai.go:386-393, with the same cap on the token count). It exists so
-// the rate table this file prints from can be checked against the money the
-// ledger actually booked, call by call.
-func liveImpliedPrice(tokens int, neuronsPerMillion int64) cost.Price {
-	if tokens > liveTokenCap {
-		tokens = liveTokenCap
-	}
-	const scale = 1_000_000
-	product := int64(tokens) * neuronsPerMillion * liveNanodollarsPerNeuron
-	return cost.Price((product + scale - 1) / scale)
-}
+// liveImpliedPrice and liveNeurons - the client's arithmetic and the
+// documented rate, both in live_report_test.go - are what record above
+// compares the ledger against; the pinned tests re-run the same comparison
+// against the transcripts' booked prices.
 
-// liveNeurons is the documented rate applied to a call's reported input
-// tokens, as a float for reporting. The client prices in exact integers,
-// so the ledger total stays the money figure.
-func liveNeurons(tokens int, perMillion int64) float64 {
-	return float64(tokens) * float64(perMillion) / 1e6
-}
-
+// The per-pass totals delegate to the lifted sums in
+// live_report_test.go, so the sweep's report and the pinned tests read the
+// same arithmetic.
 func (s *liveSpend) tokens() int64 {
-	var total int64
-	for _, c := range s.calls {
-		total += int64(c.tokens)
-	}
-	return total
+	return liveCallsTokens(s.calls)
 }
 
 func (s *liveSpend) neurons() float64 {
-	var total float64
-	for _, c := range s.calls {
-		total += c.neurons
-	}
-	return total
+	return liveCallsNeurons(s.calls)
 }
 
 func (s *liveSpend) output() int64 {
-	var total int64
-	for _, c := range s.calls {
-		total += int64(c.output)
-	}
-	return total
+	return liveCallsOutputTokens(s.calls)
 }
 
 func (s *liveSpend) dollars() cost.Price {
-	var total cost.Price
-	for _, c := range s.calls {
-		total += c.booked
-	}
-	return total
+	return liveCallsDollars(s.calls)
 }
 
 // liveWorld is everything this file reads before it dials: the ground
@@ -468,8 +393,7 @@ func livePrepare(t *testing.T, secrets liveSecrets) liveWorld {
 	world.recorded = recorded
 
 	liveAssertShipped(t, secrets, shipped, recorded.Settings)
-	liveLogf(t, secrets, "shipped lines read from dresscode.toml.example: judge met %.5f over %d overrides; "+
-		"check change_made %.5f same_person %.5f criterion_met %.5f model %q",
+	liveLogf(t, secrets, liveShippedReadFormat,
 		shipped.Judge.Met, len(shipped.Judge.PerCriterion),
 		shipped.Check.ChangeMade, shipped.Check.SamePerson, shipped.Check.CriterionMet, shipped.Check.Model)
 	return world
@@ -517,7 +441,7 @@ func liveAssertShipped(t *testing.T, secrets liveSecrets, got config.Settings, w
 		liveFatalf(t, secrets, "the shipped settings are not the evaluated ones, so a live sweep would report "+
 			"numbers that are not the shipped line's; stopped before any call: %s", strings.Join(mismatch, "; "))
 	}
-	liveLogf(t, secrets, "consistency: the shipped [judge] and [check] numbers equal the offline evaluation's chosen settings: true")
+	liveLogf(t, secrets, liveConsistencyLine)
 }
 
 // liveJudgeRead runs one judge recording live, at the shipped lines, and
@@ -604,7 +528,7 @@ func liveJudgeReads(ctx context.Context, t *testing.T, world liveWorld, sys syst
 			return nil, err
 		}
 		last := spend.calls[len(spend.calls)-1]
-		liveLogf(t, world.secrets, "live judge %-32s issue=%-24s tokens=%d neurons=%.2f booked=%s",
+		liveLogf(t, world.secrets, liveJudgeRowFormat,
 			strings.TrimSuffix(filepath.Base(file), ".json"), read.Issue, last.tokens, last.neurons, last.booked)
 		reads = append(reads, read)
 	}
@@ -716,7 +640,7 @@ func liveCheckReads(ctx context.Context, t *testing.T, world liveWorld, sys syst
 			return nil, nil, nil, err
 		}
 		last := spend.calls[len(spend.calls)-1]
-		liveLogf(t, world.secrets, "live check %-36s change=%.4f same=%.4f met=%.4f shown=%-5v tokens=%d booked=%s",
+		liveLogf(t, world.secrets, liveCheckRowFormat,
 			truth.Exchange, outcome.read.Change, outcome.read.Same, outcome.read.Met, outcome.shown,
 			last.tokens, last.booked)
 		reads = append(reads, outcome.read)
@@ -770,9 +694,11 @@ func liveVocabularyCells(world liveWorld, answers map[string]systemone.Response)
 // prove the key works and to price one call of each before the 41-call
 // sweep. Run it first: its last lines project the sweep's cost against the
 // sweep's ceiling and against the free plan's daily neuron allowance, and a
-// projection that reaches either limit fails this test outright, so a green
-// probe is the permission for the sweep to run and a red one stops it before
-// its third call.
+// projection that reaches either limit fails this test. That fail is the
+// operator's precondition for running the sweep - a red probe says do not
+// run it - while the sweep's own $0.08 meter ceiling is the backstop that
+// bounds a run at ~7,272 neurons, under the 10,000-neuron free day, even if
+// the sweep is run when the probe said otherwise.
 //
 // It reads the shipped lines and the recordings exactly as the sweep does,
 // but reports nothing about agreement: two calls cannot measure that, and
@@ -807,16 +733,14 @@ func TestLiveProbe(t *testing.T) {
 	if len(spend.calls) != 2 {
 		liveFatalf(t, secrets, "the probe made %d calls, want 2", len(spend.calls))
 	}
-	liveLogf(t, secrets, "probe: two calls, one judge and one check, %s", liveOrdering)
+	liveLogf(t, secrets, probeTwoCallsLine, liveOrdering)
 	liveLogf(t, secrets, "PROBE COST (response usage -> documented rate -> ledger booking)")
 	liveLogf(t, secrets, "  %-32s %-11s %8s %10s %14s", "call", "model", "tokens", "neurons", "booked")
 	for _, c := range spend.calls {
-		liveLogf(t, secrets, "  %-32s %-11s %8d %10.2f %14s", c.label, c.model, c.tokens, c.neurons, c.booked)
+		liveLogf(t, secrets, probeCostRowFormat, c.label, c.model, c.tokens, c.neurons, c.booked)
 	}
-	liveLogf(t, secrets, "probe judge %s read %d criteria and named the biggest issue %q",
-		liveProbeJudge, len(judge.Probabilities), judge.Issue)
-	liveLogf(t, secrets, "probe check %s gates %.4f / %.4f / %.4f; shown at the shipped lines: %v",
-		liveProbeCheck, check.read.Change, check.read.Same, check.read.Met, check.shown)
+	liveLogf(t, secrets, probeJudgeLineFormat, liveProbeJudge, len(judge.Probabilities), judge.Issue)
+	liveLogf(t, secrets, probeCheckLineFormat, liveProbeCheck, check.read.Change, check.read.Same, check.read.Met, check.shown)
 
 	// The projection. The sweep is 37 judge calls on clef, 2 checks on
 	// clef and 2 on clef-flash; the flash recordings send the same bytes
@@ -828,29 +752,32 @@ func TestLiveProbe(t *testing.T) {
 		liveFatalf(t, secrets, "no documented neuron rate for %q", systemone.ModelClefFlash)
 	}
 	flashCheck := liveNeurons(checkCall.tokens, flashRate)
-	projectedNeurons := float64(liveJudgeCalls)*judgeCall.neurons +
-		float64(liveCheckCalls/2)*checkCall.neurons + float64(liveCheckCalls/2)*flashCheck
-	projectedDollars := cost.Price(projectedNeurons * liveNanodollarsPerNeuron)
-	liveLogf(t, secrets, "  projected sweep: %d judge x %.2f + 2 clef check x %.2f + 2 flash check x %.2f = %.0f neurons = %s",
+	projectedNeurons, projectedDollars := projectLiveSweep(judgeCall.neurons, checkCall.neurons, flashCheck,
+		liveJudgeCalls, liveCheckCalls/2, liveCheckCalls/2)
+	liveLogf(t, secrets, probeProjectionFormat,
 		liveJudgeCalls, judgeCall.neurons, checkCall.neurons, flashCheck, projectedNeurons, projectedDollars)
-	// The stop rule the header promises, enforced rather than printed: a
-	// projection that reaches either limit fails this test, so the sweep
-	// never runs on a probe that said it should not.
+	// The projection is checked against both limits here, and a reach fails
+	// this test: that is the operator's precondition for the sweep, not a
+	// lock on it. The sweep's meter ceiling is the backstop that bounds a
+	// run whatever the probe printed.
 	if projectedDollars >= liveSweepCeiling {
 		liveFatalf(t, secrets, "the projected sweep %s reaches the sweep ceiling %s; the sweep does not run",
 			projectedDollars, cost.Price(liveSweepCeiling))
 	}
-	liveLogf(t, secrets, "  sweep ceiling %s; the projection fits under it: true", cost.Price(liveSweepCeiling))
+	// Both fit lines print the computed answer, %v of the same comparison
+	// the fatal above just made, like the pinned test re-emits them - never
+	// a literal "true" that could sit under a run that failed the check.
+	liveLogf(t, secrets, probeCeilingLine, cost.Price(liveSweepCeiling), projectedDollars < liveSweepCeiling)
 	if projectedNeurons >= float64(liveFreeDailyNeurons) {
 		liveFatalf(t, secrets, "the projected sweep %.0f neurons reaches the free plan's %d neuron day; the sweep does not run",
 			projectedNeurons, liveFreeDailyNeurons)
 	}
-	liveLogf(t, secrets, "  free plan allows %d neurons a day; the projection fits under it: true", liveFreeDailyNeurons)
+	liveLogf(t, secrets, probeFreeLine, liveFreeDailyNeurons, projectedNeurons < float64(liveFreeDailyNeurons))
 	total, err := ledger.Total()
 	if err != nil {
 		liveFatalf(t, secrets, "ledger total: %v", err)
 	}
-	liveLogf(t, secrets, "  probe booked %d charges, total %s; budget spent %s, remaining %s",
+	liveLogf(t, secrets, probeBookedLine,
 		len(ledger.Charges()), total, budget.Spent(), liveRemaining(t, secrets, budget))
 }
 
@@ -880,8 +807,7 @@ func TestLiveEvaluation(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), liveSweepDeadline)
 	defer cancel()
 
-	liveLogf(t, secrets, "live sweep: %d judge calls and %d check calls on Workers AI, %s",
-		liveJudgeCalls, liveCheckCalls, liveOrdering)
+	liveLogf(t, secrets, liveSweepOpenFormat, liveJudgeCalls, liveCheckCalls, liveOrdering)
 	judgeReads, err := liveJudgeReads(ctx, t, world, client, spend)
 	if err != nil {
 		liveFatalf(t, secrets, "live judging: %v", err)
@@ -919,87 +845,39 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	if err != nil {
 		liveFatalf(t, secrets, "live curves: %v", err)
 	}
-	recCurves := make(map[string]Curve, len(recorded.Curves))
-	recValues := map[string]float64{}
-	recBestTotal, recApartCount := 0, 0
-	for _, c := range recorded.Curves {
-		recCurves[c.ID] = c
-		recBestTotal += c.MaxAgreement
-		if c.Apart {
-			recApartCount++
-		}
-		for _, cell := range c.Cells {
-			recValues[cell.Sample+" "+c.ID] = cell.Value
-		}
+	// The judging arithmetic is the lifted, pure one from
+	// live_report_test.go: the same totals, the same named cells, the same
+	// moved and flipped lines, and a live curve or cell with no recorded
+	// twin an error the run stops on, not a zero that prints.
+	nums, recValues, err := computeLiveJudgeNumbers(liveCurves, recorded, world.settings)
+	if err != nil {
+		liveFatalf(t, secrets, "live judging numbers: %v", err)
 	}
-
-	// The shipped line each criterion reads under, and the recorded
-	// report's own line for it (the two are the same number, which
-	// liveAssertShipped already checked).
-	lineOf := func(id string) float64 {
-		if v, ok := world.settings.PerCriterion[id]; ok {
-			return v
-		}
-		return world.settings.Met
+	drift, err := measureLiveDrift(liveCurves, recValues)
+	if err != nil {
+		liveFatalf(t, secrets, "live drift: %v", err)
 	}
-
-	liveHalf, liveLines, liveMaxTotal := 0, 0, 0
-	var offHalfLive, wrongLive []OffCell
-	var moved, flipped []string
-	for _, c := range liveCurves {
-		if _, ok := recCurves[c.ID]; !ok {
-			liveFatalf(t, secrets, "no recorded curve for %q", c.ID)
-		}
-		line := lineOf(c.ID)
-		half := agreement(c.Cells, readingAt)
-		at := agreement(c.Cells, line)
-		liveHalf += half
-		liveLines += at
-		liveMaxTotal += c.MaxAgreement
-		for _, name := range offAt(c.Cells, readingAt) {
-			offHalfLive = append(offHalfLive, OffCell{Sample: name, Criterion: c.ID,
-				Value: valueOf(t, secrets, c.Cells, name), Expected: expectedOf(t, secrets, c.Cells, name)})
-		}
-		for _, name := range offAt(c.Cells, line) {
-			wrongLive = append(wrongLive, OffCell{Sample: name, Criterion: c.ID,
-				Value: valueOf(t, secrets, c.Cells, name), Expected: expectedOf(t, secrets, c.Cells, name)})
-		}
-		for _, cell := range c.Cells {
-			recValue, known := recValues[cell.Sample+" "+c.ID]
-			if !known {
-				liveFatalf(t, secrets, "no recorded value for %s %s", cell.Sample, c.ID)
-			}
-			if cell.Value != recValue {
-				moved = append(moved, fmt.Sprintf("%s %s: recorded %.4f, live %.4f, delta %+.4f",
-					cell.Sample, c.ID, recValue, cell.Value, cell.Value-recValue))
-			}
-			if (cell.Value >= line) != (recValue >= line) {
-				flipped = append(flipped, fmt.Sprintf("%s %s: recorded %.4f, live %.4f, line %.5f, expected met=%v",
-					cell.Sample, c.ID, recValue, cell.Value, line, cell.Expected))
-			}
-		}
-	}
-	sort.Strings(moved)
-	sort.Strings(flipped)
-	sortOffCells(offHalfLive)
-	sortOffCells(wrongLive)
 
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "JUDGING: live against recorded (%d samples, %d cells)", len(reads), recorded.Cells)
+	liveLogf(t, secrets, liveJudgingHeaderFormat, len(reads), recorded.Cells)
 	liveLogf(t, secrets, "  %-46s %-14s %s", "reading", "recorded", "live")
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "cells agreeing at 0.5",
-		fmt.Sprintf("%d/%d", recorded.AgreeAtHalf, recorded.Cells), liveHalf, recorded.Cells)
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "cells agreeing at the shipped lines",
-		fmt.Sprintf("%d/%d", recorded.ChosenTotal, recorded.Cells), liveLines, recorded.Cells)
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "curves' best total (no line beats it)",
-		fmt.Sprintf("%d/%d", recBestTotal, recorded.Cells), liveMaxTotal, recorded.Cells)
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "criteria separating perfectly",
-		fmt.Sprintf("%d/%d", recApartCount, len(recorded.Curves)), liveApartCount(liveCurves), len(liveCurves))
-	liveLogf(t, secrets, "  %-46s %-14s %d/%d", "biggest issue names a miss (or none)",
-		fmt.Sprintf("%d/%d", recorded.Issues.Named, recorded.Issues.Of), liveIssues(reads), len(reads))
-	liveLogf(t, secrets, "  cells whose live value differs from the recorded one: %d of %d",
-		len(moved), recorded.Cells)
-	liveLogf(t, secrets, "  cells that sit on the other side of the shipped line live than recorded: %d", len(flipped))
+	liveLogf(t, secrets, liveHeadlineFormat, "cells agreeing at 0.5",
+		fmt.Sprintf(livePairFormat, recorded.AgreeAtHalf, recorded.Cells), nums.LiveHalf, recorded.Cells)
+	liveLogf(t, secrets, liveHeadlineFormat, "cells agreeing at the shipped lines",
+		fmt.Sprintf(livePairFormat, recorded.ChosenTotal, recorded.Cells), nums.LiveLines, recorded.Cells)
+	liveLogf(t, secrets, liveHeadlineFormat, "curves' best total (no line beats it)",
+		fmt.Sprintf(livePairFormat, nums.RecBestTotal, recorded.Cells), nums.LiveMaxTotal, recorded.Cells)
+	liveLogf(t, secrets, liveHeadlineFormat, "criteria separating perfectly",
+		fmt.Sprintf(livePairFormat, nums.RecApart, len(recorded.Curves)), nums.LiveApart, len(liveCurves))
+	liveLogf(t, secrets, liveHeadlineFormat, "biggest issue names a miss (or none)",
+		fmt.Sprintf(livePairFormat, recorded.Issues.Named, recorded.Issues.Of), liveIssues(reads), len(reads))
+	liveLogf(t, secrets, liveMovedCountFormat, len(nums.Moved), recorded.Cells)
+	liveLogf(t, secrets, liveFlippedCountFormat, len(nums.Flipped))
+	liveLogf(t, secrets, liveDriftFormat, drift.MeanMove, drift.Cells, drift.Inside05, drift.AtLeast10, drift.Past045)
+	liveLogf(t, secrets, liveLargestFormat, drift.LargestCell, drift.LargestFrom, drift.LargestTo)
+	if len(drift.Identical) > 0 {
+		liveLogf(t, secrets, liveIdenticalFormat, strings.Join(drift.Identical, ", "))
+	}
 
 	// Per criterion: the recorded curve's best against the live curve's
 	// best, and the shipped line's agreement on each side.
@@ -1008,14 +886,14 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	liveLogf(t, secrets, "  %-32s %3s %10s %10s %11s %11s %10s %11s",
 		"criterion", "n", "rec best", "live best", "rec at line", "live at line", "line", "apart r/l")
 	for _, c := range liveCurves {
-		rec := recCurves[c.ID]
-		line := lineOf(c.ID)
+		rec := nums.RecCurves[c.ID]
+		line := world.settings.lineFor(c)
 		recAt, liveAt := agreement(rec.Cells, line), agreement(c.Cells, line)
 		mark := ""
 		if recAt != liveAt || rec.MaxAgreement != c.MaxAgreement || rec.Apart != c.Apart {
-			mark = "   <-- differs from recorded"
+			mark = liveMarkDiffers
 		}
-		liveLogf(t, secrets, "  %-32s %3d %6d/%-3d %6d/%-3d %8d/%-3d %8d/%-3d %10.5f %5t/%-5t%s",
+		liveLogf(t, secrets, liveCriterionFormat,
 			c.ID, len(c.Cells),
 			rec.MaxAgreement, len(c.Cells),
 			c.MaxAgreement, len(c.Cells),
@@ -1027,30 +905,29 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	// The named cells: the 0.5 anchors, the cells no line saves, every
 	// value that moved, and every cell that crossed the shipped line.
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "  CELLS OFF THE EXPECTED SIDE AT 0.5 - recorded %d, live %d",
-		len(recorded.OffAtHalf), len(offHalfLive))
+	liveLogf(t, secrets, liveOffHeaderFmt, len(recorded.OffAtHalf), len(nums.OffHalf))
 	liveLogf(t, secrets, "    recorded (docs/clef.md's thirteen):")
-	livePrintCells(t, secrets, "      ", recorded.OffAtHalf)
+	livePrintCells(t, secrets, recorded.OffAtHalf)
 	liveLogf(t, secrets, "    live:")
-	livePrintCells(t, secrets, "      ", offHalfLive)
-	liveCompareCells(t, secrets, "0.5", recorded.OffAtHalf, offHalfLive)
+	livePrintCells(t, secrets, nums.OffHalf)
+	liveCompareCells(t, secrets, "0.5", recorded.OffAtHalf, nums.OffHalf)
 
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "  IRREDUCIBLE CELLS AT THE SHIPPED LINE - recorded %d, live %d (no line on this set saves them)",
-		len(recorded.Wrong), len(wrongLive))
+	liveLogf(t, secrets, liveWrongHeaderFmt,
+		len(recorded.Wrong), len(nums.Wrong))
 	liveLogf(t, secrets, "    recorded:")
-	livePrintCells(t, secrets, "      ", recorded.Wrong)
+	livePrintCells(t, secrets, recorded.Wrong)
 	liveLogf(t, secrets, "    live:")
-	livePrintCells(t, secrets, "      ", wrongLive)
-	liveCompareCells(t, secrets, "the shipped line", recorded.Wrong, wrongLive)
+	livePrintCells(t, secrets, nums.Wrong)
+	liveCompareCells(t, secrets, "the shipped line", recorded.Wrong, nums.Wrong)
 
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "  LIVE VALUES THAT DIFFER FROM THE RECORDED ONES: %d of %d cells", len(moved), recorded.Cells)
-	for _, m := range moved {
+	liveLogf(t, secrets, liveMovedBlockFmt, len(nums.Moved), recorded.Cells)
+	for _, m := range nums.Moved {
 		liveLogf(t, secrets, "    %s", m)
 	}
-	liveLogf(t, secrets, "  CELLS ON THE OTHER SIDE OF THE SHIPPED LINE LIVE THAN RECORDED: %d", len(flipped))
-	for _, f := range flipped {
+	liveLogf(t, secrets, liveFlippedBlockFmt, len(nums.Flipped))
+	for _, f := range nums.Flipped {
 		liveLogf(t, secrets, "    %s", f)
 	}
 
@@ -1060,142 +937,47 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	liveLogf(t, secrets, "")
 	liveLogf(t, secrets, "  EVERY CELL, LIVE BESIDE RECORDED (line = the shipped line it reads against)")
 	for _, c := range liveCurves {
-		line := lineOf(c.ID)
+		line := world.settings.lineFor(c)
 		for _, cell := range c.Cells {
-			liveLogf(t, secrets, "    %-30s %-28s recorded=%.4f live=%.4f line=%.5f expected-met=%-5v live-agrees=%-5v",
+			liveLogf(t, secrets, liveCellRowFormat,
 				cell.Sample, c.ID, recValues[cell.Sample+" "+c.ID], cell.Value, line, cell.Expected,
 				(cell.Value >= line) == cell.Expected)
 		}
 	}
 }
 
-// sortOffCells puts a live cell list in the recorded report's own order:
-// sample first, criterion second.
-func sortOffCells(cells []OffCell) {
-	sort.Slice(cells, func(i, j int) bool {
-		if cells[i].Sample != cells[j].Sample {
-			return cells[i].Sample < cells[j].Sample
-		}
-		return cells[i].Criterion < cells[j].Criterion
-	})
-}
-
 // livePrintCells logs one list of off-cells, each with the value that
-// put it on the wrong side and what the ground truth expected.
-func livePrintCells(t *testing.T, secrets liveSecrets, indent string, cells []OffCell) {
+// put it on the wrong side and what the ground truth expected. The line is
+// printed from liveOffCellFormat, the same constant the pinned test
+// re-emits the transcript's off-cell lists from: one copy of the text.
+func livePrintCells(t *testing.T, secrets liveSecrets, cells []OffCell) {
 	t.Helper()
 	if len(cells) == 0 {
-		liveLogf(t, secrets, "%s(none)", indent)
+		liveLogf(t, secrets, "      (none)")
 		return
 	}
 	for _, c := range cells {
-		liveLogf(t, secrets, "%s%s %-28s value=%.4f expected-met=%-5v", indent, c.Sample, c.Criterion, c.Value, c.Expected)
+		liveLogf(t, secrets, liveOffCellFormat, c.Sample, c.Criterion, c.Value, c.Expected)
 	}
 }
 
 // liveCompareCells says whether the live list names exactly the cells the
 // recorded list names, and which side each list has that the other lacks.
+// The set difference is liveOffDiff's and the three lines are the constants
+// liveReproduceFmt, liveOffOnlyLiveFmt and liveOffOnlyRecFmt, all in
+// live_report_test.go: the sweep has no copy of this logic or this text,
+// and the pin that checks them against the committed transcript is the
+// gate's, not a paid run's.
 func liveCompareCells(t *testing.T, secrets liveSecrets, where string, recorded, live []OffCell) {
 	t.Helper()
-	key := func(c OffCell) string { return c.Sample + " " + c.Criterion }
-	inRecorded := make(map[string]OffCell, len(recorded))
-	for _, c := range recorded {
-		inRecorded[key(c)] = c
-	}
-	inLive := make(map[string]OffCell, len(live))
-	for _, c := range live {
-		inLive[key(c)] = c
-	}
-	var onlyLive, onlyRecorded []string
-	for k, c := range inLive {
-		if _, ok := inRecorded[k]; !ok {
-			onlyLive = append(onlyLive, fmt.Sprintf("%s %s (live %.4f, expected met %v)", c.Sample, c.Criterion, c.Value, c.Expected))
-		}
-	}
-	for k, c := range inRecorded {
-		if _, ok := inLive[k]; !ok {
-			onlyRecorded = append(onlyRecorded, fmt.Sprintf("%s %s (recorded %.4f, expected met %v)", c.Sample, c.Criterion, c.Value, c.Expected))
-		}
-	}
-	sort.Strings(onlyLive)
-	sort.Strings(onlyRecorded)
-	reproduced := len(onlyLive) == 0 && len(onlyRecorded) == 0
-	liveLogf(t, secrets, "    the cells off the expected side at %s reproduce exactly: %v", where, reproduced)
+	onlyLive, onlyRecorded := liveOffDiff(recorded, live)
+	liveLogf(t, secrets, liveReproduceFmt, where, len(onlyLive) == 0 && len(onlyRecorded) == 0)
 	for _, entry := range onlyLive {
-		liveLogf(t, secrets, "      off at %s live only: %s", where, entry)
+		liveLogf(t, secrets, liveOffOnlyLiveFmt, where, entry)
 	}
 	for _, entry := range onlyRecorded {
-		liveLogf(t, secrets, "      off at %s recorded only: %s", where, entry)
+		liveLogf(t, secrets, liveOffOnlyRecFmt, where, entry)
 	}
-}
-
-// valueOf and expectedOf read one sample's cell out of a curve. The name
-// comes from offAt, which walks the same cells, so a miss is a bug in this
-// file rather than a state the sweep can be in: it fails, the way the loops
-// beside it fail on a miss, instead of printing a cell at 0.0000 / expected
-// false.
-func valueOf(t *testing.T, secrets liveSecrets, cells []Cell, sample string) float64 {
-	t.Helper()
-	for _, c := range cells {
-		if c.Sample == sample {
-			return c.Value
-		}
-	}
-	liveFatalf(t, secrets, "no cell for sample %q in this curve's %d cells", sample, len(cells))
-	return 0 // unreachable: liveFatalf ends the test; the compiler cannot see that
-}
-
-func expectedOf(t *testing.T, secrets liveSecrets, cells []Cell, sample string) bool {
-	t.Helper()
-	for _, c := range cells {
-		if c.Sample == sample {
-			return c.Expected
-		}
-	}
-	liveFatalf(t, secrets, "no cell for sample %q in this curve's %d cells", sample, len(cells))
-	return false // unreachable: liveFatalf ends the test; the compiler cannot see that
-}
-
-func liveApartCount(curves []Curve) int {
-	apart := 0
-	for _, c := range curves {
-		if c.Apart {
-			apart++
-		}
-	}
-	return apart
-}
-
-// liveIssues counts the live biggest-issue answers that name one of the
-// variant's misses, or none when the variant misses nothing - the rule the
-// recorded report scores with.
-//
-// That rule is a copy, not a call: this mirrors internal/eval/judge.go:
-// 308-326 (the ground truth's shape for the biggest issue, counted into
-// report.Issues). The extraction that would remove the duplication is a
-// product-file edit and outside this task, so the copy stands. Read it as a
-// standing risk: an edit to judge.go:308-326 that does not come here leaves
-// the live biggest-issue count scored by different rules than the recorded
-// one, and the 28/37 beside 31/37 line is where the difference would show.
-func liveIssues(reads []JudgeRead) int {
-	named := 0
-	for _, r := range reads {
-		yes := false
-		if len(r.Sample.Miss) == 0 {
-			yes = r.Issue == "none"
-		} else {
-			for _, miss := range r.Sample.Miss {
-				if r.Issue == miss {
-					yes = true
-					break
-				}
-			}
-		}
-		if yes {
-			named++
-		}
-	}
-	return named
 }
 
 // liveReportCheck prints the live render check beside the recorded: the
@@ -1213,26 +995,6 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 	for _, r := range recorded.Reads {
 		recReads[r.Exchange] = r
 	}
-	lines := map[string]float64{
-		"change_made":   world.lines.ChangeMade,
-		"same_person":   world.lines.SamePerson,
-		"criterion_met": world.lines.CriterionMet,
-	}
-	// gateValue names one gate off a read. The gate names come from
-	// gateNames, so an unrecognised one is a bug in this file, not a state
-	// the sweep can be in: it fails instead of reporting a gate at 0.0000.
-	gateValue := func(r CheckRead, name string) float64 {
-		switch name {
-		case "change_made":
-			return r.Change
-		case "same_person":
-			return r.Same
-		case "criterion_met":
-			return r.Met
-		}
-		liveFatalf(t, secrets, "unknown gate %q; gateNames and this switch disagree", name)
-		return 0 // unreachable: liveFatalf ends the test; the compiler cannot see that
-	}
 
 	liveLogf(t, secrets, "")
 	liveLogf(t, secrets, "RENDER CHECK: live against recorded (the honest pair and the known bad proxy, per model)")
@@ -1243,86 +1005,48 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 		if !ok {
 			liveFatalf(t, secrets, "no recorded read for %q", r.Exchange)
 		}
-		liveLogf(t, secrets, "  %-36s %-12s %6v %9.4f %9.4f %9.4f   %.4f / %.4f / %.4f",
+		liveLogf(t, secrets, liveReadRowFormat,
 			r.Exchange, r.Model, r.Bad, r.Change, r.Same, r.Met, rec.Change, rec.Same, rec.Met)
 	}
 
 	// Per gate and model: does the shipped line still separate the honest
 	// render from the known bad proxy, and with what margin against the
 	// live reads? The live curves' own plateau midpoint prints beside it,
-	// so a re-measurement can see where the live set would sit.
+	// so a re-measurement can see where the live set would sit. The table's
+	// arithmetic is the lifted one (live_report_test.go): a missing read
+	// pair or recorded row is an error, fatal here, not a zero margin.
+	rows, err := computeLiveGateRows(reads, recorded, world.lines)
+	if err != nil {
+		liveFatalf(t, secrets, "live gate rows: %v", err)
+	}
 	liveLogf(t, secrets, "")
 	liveLogf(t, secrets, "  GATES (separates = the honest render at or above the line, the known bad render under it)")
 	liveLogf(t, secrets, "  %-14s %-12s %8s %8s %10s %8s %10s %8s %10s %10s",
 		"gate", "model", "honest", "bad", "line", "margin", "separates", "at 0.5", "live mid", "rec margin")
-	for _, name := range gateNames {
-		for _, model := range liveReadModels(reads) {
-			var good, bad float64
-			found := false
-			for _, r := range reads {
-				if r.Model != model {
-					continue
-				}
-				found = true
-				if r.Bad {
-					bad = gateValue(r, name)
-				} else {
-					good = gateValue(r, name)
-				}
-			}
-			if !found {
-				liveFatalf(t, secrets, "no live check read on model %q", model)
-			}
-			// The recorded gate this row prints beside. The live set runs on
-			// the same three gates and the same two models, so a missing row
-			// is a disagreement between the two reports, not a state to print
-			// a zero margin for.
-			var rec GateCurve
-			recFound := false
-			for _, g := range recorded.Gates {
-				if g.Gate == name && g.Model == model {
-					rec, recFound = g, true
-				}
-			}
-			if !recFound {
-				liveFatalf(t, secrets, "no recorded gate %q on model %q among the recorded report's %d gate rows",
-					name, model, len(recorded.Gates))
-			}
-			line := lines[name]
-			cells := []Cell{
-				{Sample: "honest", Value: good, Expected: true},
-				{Sample: "bad", Value: bad, Expected: false},
-			}
-			margin := nearestDistance(cells, line)
-			curve := gateCurve(name, model, good, bad)
-			separates := good >= line && bad < line
-			half := good >= readingAt && bad < readingAt
-			mark := ""
-			if !separates || !half || rec.Margin != margin {
-				mark = "   <-- differs from recorded"
-			}
-			liveLogf(t, secrets, "  %-14s %-12s %8.4f %8.4f %10.5f %8.4f %10v %8v %10.5f %10.4f%s",
-				name, model, good, bad, line, margin, separates, half, curve.Chosen, rec.Margin, mark)
+	for _, row := range rows {
+		mark := ""
+		if row.Differs {
+			mark = liveMarkDiffers
 		}
+		liveLogf(t, secrets, liveGateRowFormat,
+			row.Gate, row.Model, row.Honest, row.Bad, row.Line, row.Margin,
+			row.Separates, row.SeparatesHalf, row.LiveMid, row.RecMargin, mark)
 	}
 
 	// The decisions at the shipped lines, as the real pipeline made them.
-	badShown, goodDiscarded := 0, 0
+	decisions := make([]liveCheckDecision, 0, len(outcomes))
 	for _, o := range outcomes {
-		if o.read.Bad && o.shown {
-			badShown++
-		}
-		if !o.read.Bad && !o.shown {
-			goodDiscarded++
-		}
+		decisions = append(decisions, liveCheckDecision{
+			Exchange: o.read.Exchange, Model: o.read.Model,
+			Bad: o.read.Bad, Shown: o.shown, Words: o.words,
+		})
 	}
+	badShown, goodDiscarded := liveDecisionCounts(decisions)
 	liveLogf(t, secrets, "")
 	liveLogf(t, secrets, "  DECISIONS AT THE SHIPPED LINES (through pipeline.Check on the live call)")
-	liveLogf(t, secrets, "    recorded: known bad renders shown %d, honest renders discarded %d",
-		recorded.BadShown, recorded.GoodDiscarded)
-	liveLogf(t, secrets, "    live:     known bad renders shown %d, honest renders discarded %d",
-		badShown, goodDiscarded)
-	liveLogf(t, secrets, "    every known bad render rejected and no honest render lost - recorded %v, live %v",
+	liveLogf(t, secrets, liveDecRecFormat, recorded.BadShown, recorded.GoodDiscarded)
+	liveLogf(t, secrets, liveDecLiveFormat, badShown, goodDiscarded)
+	liveLogf(t, secrets, liveDecBothFormat,
 		recorded.BadShown == 0 && recorded.GoodDiscarded == 0, badShown == 0 && goodDiscarded == 0)
 	recOutcomes := map[string]CheckOutcome{}
 	for _, o := range recorded.Outcomes {
@@ -1335,73 +1059,54 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 		}
 		mark := ""
 		if rec.Shown != o.shown || rec.Bad != o.read.Bad {
-			mark = "   <-- differs from recorded"
+			mark = liveMarkDiffers
 		}
-		liveLogf(t, secrets, "    %-36s %-12s bad=%-5v shown live=%-5v shown recorded=%-5v%s words=%q",
+		liveLogf(t, secrets, liveDecisionFormat,
 			o.read.Exchange, o.read.Model, o.read.Bad, o.shown, rec.Shown, mark, o.words)
 	}
 
 	// The look vocabulary: correct cells per model, every answer beside
-	// the recorded one, and the misses named.
-	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, "  LOOK VOCABULARY (%d cells: %d attributes over %d reads)",
-		len(vocabulary), len(world.vocab.Attributes), len(world.gt.Checks))
-	recVocab := map[string]VocabularyCell{}
+	// the recorded one, and the misses named. The counting and the
+	// cell-by-cell comparison are lifted (live_report_test.go): an answer
+	// whose exchange has no ground truth check, or a live cell with no
+	// recorded twin, is an error this run fatals on - the shape its
+	// neighbours fatal in, not a silent skip or a blank printed beside.
+	modelOf := liveModelByExchange(world.gt.Checks)
+	tallies, err := tallyLiveVocabulary(liveTruthModels(world.gt.Checks), vocabulary, recorded.Vocabulary.Cells, modelOf)
+	if err != nil {
+		liveFatalf(t, secrets, "live vocabulary tally: %v", err)
+	}
+	diffs, err := diffLiveVocabulary(vocabulary, recorded.Vocabulary.Cells)
+	if err != nil {
+		liveFatalf(t, secrets, "live vocabulary diff: %v", err)
+	}
+	diffKeys := make(map[string]bool, len(diffs))
+	for _, d := range diffs {
+		diffKeys[d.Exchange+" "+d.Attribute] = true
+	}
+	recVocab := make(map[string]VocabularyCell, len(recorded.Vocabulary.Cells))
 	for _, c := range recorded.Vocabulary.Cells {
 		recVocab[c.Exchange+" "+c.Attribute] = c
 	}
-	for _, model := range liveTruthModels(world) {
-		liveCorrect, liveOf := 0, 0
-		recCorrect, recOf := 0, 0
-		for _, c := range vocabulary {
-			if liveExchangeModel(world, c.Exchange) != model {
-				continue
-			}
-			liveOf++
-			if c.Correct {
-				liveCorrect++
-			}
-		}
-		for _, c := range recorded.Vocabulary.Cells {
-			if liveExchangeModel(world, c.Exchange) != model {
-				continue
-			}
-			recOf++
-			if c.Correct {
-				recCorrect++
-			}
-		}
-		liveLogf(t, secrets, "    %-12s live %d/%d correct, recorded %d/%d",
-			model, liveCorrect, liveOf, recCorrect, recOf)
+	liveLogf(t, secrets, "")
+	liveLogf(t, secrets, liveVocabHeaderFormat,
+		len(vocabulary), len(world.vocab.Attributes), len(world.gt.Checks))
+	for _, ta := range tallies {
+		liveLogf(t, secrets, liveVocabTallyFormat,
+			ta.Model, ta.LiveCorrect, ta.LiveOf, ta.RecCorrect, ta.RecOf)
 	}
 	liveLogf(t, secrets, "    every attribute cell, live beside recorded:")
 	for _, c := range vocabulary {
-		rec, ok := recVocab[c.Exchange+" "+c.Attribute]
-		if !ok {
-			liveFatalf(t, secrets, "no recorded vocabulary cell for %s %s", c.Exchange, c.Attribute)
-		}
+		key := c.Exchange + " " + c.Attribute
 		mark := ""
-		if rec.Answer != c.Answer || rec.Correct != c.Correct {
-			mark = "   <-- differs from recorded"
+		if diffKeys[key] {
+			mark = liveMarkDiffers
 		}
-		liveLogf(t, secrets, "      %-36s %-16s truth=%-18s live=%-18s recorded=%-18s correct=%-5v%s",
-			c.Exchange, c.Attribute, c.Truth, c.Answer, rec.Answer, c.Correct, mark)
+		liveLogf(t, secrets, liveVocabCellFormat,
+			c.Exchange, c.Attribute, c.Truth, c.Answer, recVocab[key].Answer, c.Correct, mark)
 	}
-	var liveMisses, recMisses []string
-	for _, c := range vocabulary {
-		if !c.Correct {
-			liveMisses = append(liveMisses, fmt.Sprintf("%s %s: answered %s, true %s",
-				c.Exchange, c.Attribute, c.Answer, c.Truth))
-		}
-	}
-	for _, c := range recorded.Vocabulary.Cells {
-		if !c.Correct {
-			recMisses = append(recMisses, fmt.Sprintf("%s %s: answered %s, true %s",
-				c.Exchange, c.Attribute, c.Answer, c.Truth))
-		}
-	}
-	sort.Strings(liveMisses)
-	sort.Strings(recMisses)
+	liveMisses := liveVocabularyMisses(vocabulary)
+	recMisses := liveVocabularyMisses(recorded.Vocabulary.Cells)
 	liveLogf(t, secrets, "    recorded misses:")
 	for _, m := range recMisses {
 		liveLogf(t, secrets, "      %s", m)
@@ -1417,44 +1122,6 @@ func liveReportCheck(t *testing.T, world liveWorld, reads []CheckRead,
 	}
 }
 
-// liveReadModels lists the models the live check reads ran on, sorted.
-func liveReadModels(reads []CheckRead) []string {
-	var out []string
-	seen := map[string]bool{}
-	for _, r := range reads {
-		if !seen[r.Model] {
-			seen[r.Model] = true
-			out = append(out, r.Model)
-		}
-	}
-	sort.Strings(out)
-	return out
-}
-
-// liveTruthModels is the same list from the ground truth, so the
-// vocabulary count can be cut per model.
-func liveTruthModels(world liveWorld) []string {
-	var out []string
-	seen := map[string]bool{}
-	for _, c := range world.gt.Checks {
-		if !seen[c.Model] {
-			seen[c.Model] = true
-			out = append(out, c.Model)
-		}
-	}
-	sort.Strings(out)
-	return out
-}
-
-func liveExchangeModel(world liveWorld, exchange string) string {
-	for _, c := range world.gt.Checks {
-		if c.Exchange == exchange {
-			return c.Model
-		}
-	}
-	return ""
-}
-
 // liveReportCost prints what the sweep cost: calls, the input tokens the
 // responses reported, the neurons and dollars they imply, the ledger's
 // total, and the budget the run finished inside.
@@ -1465,38 +1132,18 @@ func liveReportCost(t *testing.T, world liveWorld, spend *liveSpend, ledger *cos
 	liveLogf(t, secrets, "COST: the live sweep (Workers AI only; no YouCam call was made, no YouCam key read)")
 	liveLogf(t, secrets, "  %-36s %-12s %8s %10s %14s", "call", "model", "tokens", "neurons", "booked")
 	for _, c := range spend.calls {
-		liveLogf(t, secrets, "  %-36s %-12s %8d %10.2f %14s", c.label, c.model, c.tokens, c.neurons, c.booked)
+		liveLogf(t, secrets, liveCostRowFormat, c.label, c.model, c.tokens, c.neurons, c.booked)
 	}
 	total, err := ledger.Total()
 	if err != nil {
 		liveFatalf(t, secrets, "ledger total: %v", err)
 	}
-	byModel := map[string]int{}
-	for _, c := range spend.calls {
-		byModel[c.model]++
-	}
-	liveLogf(t, secrets, "  calls made: %d (%s)", len(spend.calls), liveCounted(byModel))
-	liveLogf(t, secrets, "  input tokens reported: %d, output tokens %d",
-		spend.tokens(), spend.output())
-	liveLogf(t, secrets, "  neurons implied by the documented rates: %.0f", spend.neurons())
-	liveLogf(t, secrets, "  dollars booked by the ledger: %s (sum of the calls %s)", total, spend.dollars())
-	liveLogf(t, secrets, "  budget ceiling %s, spent %s, remaining %s",
+	liveLogf(t, secrets, liveCallsMadeFormat, len(spend.calls), liveCounted(liveCallsByModel(spend.calls)))
+	liveLogf(t, secrets, liveTokensLineFormat, spend.tokens(), spend.output())
+	liveLogf(t, secrets, liveNeuronsLineFormat, spend.neurons())
+	liveLogf(t, secrets, liveDollarsLineFormat, total, spend.dollars())
+	liveLogf(t, secrets, liveBudgetLineFormat,
 		cost.Price(liveSweepCeiling), spend.budget.Spent(), liveRemaining(t, secrets, spend.budget))
-	liveLogf(t, secrets, "  free plan daily allowance %d neurons; the sweep stayed under it: %v",
-		liveFreeDailyNeurons, spend.neurons() < liveFreeDailyNeurons)
+	liveLogf(t, secrets, liveFreeAllowFormat, liveFreeDailyNeurons, spend.neurons() < liveFreeDailyNeurons)
 	liveLogf(t, secrets, "  the offline evaluation replays the same recordings with zero calls and zero spend")
-}
-
-// liveCounted renders a per-model call count for one log line.
-func liveCounted(counts map[string]int) string {
-	keys := make([]string, 0, len(counts))
-	for k := range counts {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	parts := make([]string, 0, len(keys))
-	for _, k := range keys {
-		parts = append(parts, fmt.Sprintf("%d on %s", counts[k], k))
-	}
-	return strings.Join(parts, ", ")
 }
