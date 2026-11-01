@@ -286,7 +286,7 @@ func (r *Recorder) envelope(exchange string, req Request, resp Response, elapsed
 // still has to be written. It reads the request only, never a reply, so
 // the recorder runs it before the inner client and spends nothing on a
 // picture it cannot store. A resolver's answer is checked against the
-// bytes that were sent; anything else goes into the recording directory
+// bytes the call carries; anything else goes into the recording directory
 // under its own digest, which is why the same photo in a second exchange
 // never appears there twice.
 func (r *Recorder) settleImages(req Request) (imagePlan, error) {
