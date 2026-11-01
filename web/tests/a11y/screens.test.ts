@@ -123,6 +123,12 @@ const states: ScreenState[] = [
     ready: () => withText("p", cleanSentence),
   },
   {
+    name: "the verdict screen with the missed-criteria drawer open",
+    hash: "#/look/verdict",
+    ready: () => withText("h3", "A fix"),
+    open: openReasonsDrawer,
+  },
+  {
     name: "the render screen with the swipe and the verdict buttons",
     hash: "#/look/render",
     ready: () => withText("button", "Shop the look"),

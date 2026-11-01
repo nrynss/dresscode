@@ -358,13 +358,21 @@ test("no digit anywhere and no id on the screen", () => {
     expect(occasion.name).not.toMatch(/\d/);
   }
 
-  // The wiring is the twice-accepted pattern, and the home link names the
-  // screen the way the account screen already names it.
-  const shell = readFileSync(path.join(webRoot, "src/app/app.svelte"), "utf8");
-  expect(shell).toContain("historyHash");
-  expect(shell).toContain('route === "/history"');
-  expect(shell).toContain("<History />");
-  expect(shell).toContain("Style history");
+  // The wiring is the twice-accepted pattern, re-homed with the tab-bar
+  // shell. The route branch stays in app.svelte, and isHistoryHash is the
+  // symbol that decides it there, so the import pin reads that name now.
+  // The visible way in moved with the deleted footer into the shell's fixed
+  // tab bar, so the link and label pins read shell.svelte. Both are pinned
+  // as the markup a swap would have to survive: the bare words `historyHash`
+  // and `History` sit in the shell's import list and in isHistoryHash's own
+  // name, so a plain-word check could never see the href or a rename go.
+  const app = readFileSync(path.join(webRoot, "src/app/app.svelte"), "utf8");
+  expect(app).toContain("isHistoryHash");
+  expect(app).toContain('route === "/history"');
+  expect(app).toContain("<History />");
+  const shell = readFileSync(path.join(webRoot, "src/app/shell.svelte"), "utf8");
+  expect(shell).toContain("href={historyHash}");
+  expect(shell).toContain("<span>History</span>");
 });
 
 test("a body that cannot be read is refused", () => {

@@ -378,9 +378,13 @@ test("the screen and the shell link show no digit", () => {
     /@media \(prefers-reduced-motion: no-preference\)\s*\{[\s\S]*?animation: stage-pulse/,
   );
 
+  // The verdict is a hash branch of the app, not a footer text link: the
+  // bottom blog row and its `See the verdict` link are gone with the tab-bar
+  // shell, so what is true of `app.svelte` is the branch, not a label.
   const shell = readFileSync(path.join(here, "../../../app/app.svelte"), "utf8");
-  expect(shell).toContain("verdictHash");
-  expect(shell).toContain("See the verdict");
+  expect(shell).toContain("isVerdictHash");
   expect(shell).toContain('route === "/look/verdict"');
+  expect(shell).toContain("<Verdict />");
+  expect(shell).not.toContain("See the verdict");
   expect(verdictHash).toBe("#/look/verdict");
 });
