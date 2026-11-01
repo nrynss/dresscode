@@ -370,3 +370,177 @@ for (const state of states) {
     },
   );
 }
+
+/** The front door's drawn geometry, measured the way a reader sees it: the
+ * sample drawer open, an occasion picked, the fix menu and the continue link
+ * on the page. jsdom lays nothing out, so the full-width CTA, the circular
+ * avatar chips and the selected tile's full border are measured here and
+ * nowhere else. No assertion reads pixels: an `<img>` load bypasses the mock
+ * (feedback.md), so the avatars are judged by box, radius and src alone. */
+interface FrontDoor {
+  continueWidth: number;
+  columnWidth: number;
+  tile: {
+    top: number;
+    right: number;
+    bottom: number;
+    left: number;
+    style: string;
+    colour: string;
+    background: string;
+  };
+  accent: string;
+  accentSoft: string;
+  avatars: { width: number; height: number; radius: string; src: string }[];
+}
+
+async function waitInDocument(predicate: string, label: string): Promise<void> {
+  const deadline = Date.now() + 10_000;
+  for (;;) {
+    try {
+      if (await evaluate(predicate)) return;
+    } catch {
+      // A context mid-swap; try again on a fresh one.
+    }
+    if (Date.now() > deadline) throw new Error(`${label} never appeared`);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+}
+
+async function measureFrontDoor(theme: string): Promise<FrontDoor> {
+  await send("Emulation.setDeviceMetricsOverride", {
+    width: 375,
+    height: 667,
+    deviceScaleFactor: 1,
+    mobile: true,
+  });
+  // The picker eases its border and fill over 150 ms under
+  // `prefers-reduced-motion: no-preference`; reading the picked tile
+  // mid-glide would measure a colour between the line and the accent. The
+  // reduced world is emulated, so the drawn state is the settled one — and
+  // the reduced-motion clause is the one these assertions then measure.
+  await send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-motion", value: "reduce" }],
+  });
+  if (!onOrigin) await navigate(`${baseUrl}/`);
+  await evaluate(`localStorage.setItem("chaaya-theme", ${JSON.stringify(theme)}); true`);
+  await navigate("about:blank");
+  await navigate(`${baseUrl}/`);
+  await waitInDocument(`document.querySelector("nav.tab-bar") !== null`, "the shell");
+
+  // Open the sample drawer, so the chips are laid out as a reader sees them.
+  await evaluate(`(() => {
+    const summary = [...document.querySelectorAll("details.samples > summary")].find(
+      (el) => el.textContent?.trim() === "Sample looks",
+    );
+    if (!summary) throw new Error("no sample drawer on the front door");
+    summary.click();
+    return true;
+  })()`);
+  await waitInDocument(
+    `document.querySelectorAll(".sample-row button .sample-avatar").length === 5`,
+    "the five sample avatars",
+  );
+
+  // Pick the recorded occasion, so the selected tile and the continue link
+  // are the live ones.
+  await evaluate(`(() => {
+    const label = [...document.querySelectorAll("fieldset.cards label")].find(
+      (el) => el.textContent?.trim() === "Family function",
+    );
+    if (!label) throw new Error("no family function card");
+    const input = label.querySelector("input");
+    if (!input) throw new Error("no card input");
+    input.click();
+    return true;
+  })()`);
+  await waitInDocument(`document.querySelector("a.bring") !== null`, "the continue link");
+
+  const avatars = await evaluate<FrontDoor["avatars"]>(`[...document.querySelectorAll(".sample-row button .sample-avatar")].map((img) => {
+    const box = img.getBoundingClientRect();
+    const cs = getComputedStyle(img);
+    return {
+      width: Math.round(box.width * 10) / 10,
+      height: Math.round(box.height * 10) / 10,
+      radius: cs.borderRadius,
+      src: img.getAttribute("src") ?? "",
+    };
+  })`);
+  const door = JSON.parse(
+    await evaluate<string>(`(() => {
+    const round = (n) => Math.round(n * 10) / 10;
+    const link = document.querySelector("a.bring");
+    if (!link) throw new Error("no continue link");
+    const section = link.closest("section");
+    if (!section) throw new Error("no section around the continue link");
+    const sectionCs = getComputedStyle(section);
+    const sectionBox = section.getBoundingClientRect();
+    const column = sectionBox.width - parseFloat(sectionCs.paddingLeft) - parseFloat(sectionCs.paddingRight);
+    const tile = [...document.querySelectorAll("fieldset.cards label")].find((el) => el.matches(":has(input:checked)"));
+    if (!tile) throw new Error("no selected tile");
+    const cs = getComputedStyle(tile);
+    const probe = document.createElement("span");
+    probe.style.display = "none";
+    document.body.append(probe);
+    const colourOf = (role) => {
+      probe.style.color = "var(" + role + ")";
+      return getComputedStyle(probe).color;
+    };
+    const accent = colourOf("--accent");
+    const accentSoft = colourOf("--accent-soft");
+    probe.remove();
+    return JSON.stringify({
+      continueWidth: round(link.getBoundingClientRect().width),
+      columnWidth: round(column),
+      tile: {
+        top: round(parseFloat(cs.borderTopWidth)),
+        right: round(parseFloat(cs.borderRightWidth)),
+        bottom: round(parseFloat(cs.borderBottomWidth)),
+        left: round(parseFloat(cs.borderLeftWidth)),
+        style: cs.borderTopStyle,
+        colour: cs.borderTopColor,
+        background: cs.backgroundColor,
+      },
+      accent,
+      accentSoft,
+    });
+  })()`),
+  ) as Omit<FrontDoor, "avatars">;
+  return { ...door, avatars };
+}
+
+for (const theme of ["light", "dark"] as const) {
+  test(
+    `in a real browser, the front door's continue link, selected tile and sample avatars hold their drawn geometry, ${theme}`,
+    { timeout: 120_000 },
+    async () => {
+      const door = await measureFrontDoor(theme);
+
+      // The continue CTA spans the phone column with its label centred.
+      expect(door.columnWidth, "the picker column is a real phone column").toBeGreaterThan(300);
+      expect(door.continueWidth, "the continue link spans the column").toBeGreaterThanOrEqual(door.columnWidth - 1);
+
+      // The picked tile: a clean border all the way round, in the accent,
+      // on the soft accent fill — not the crescent sliver on one side.
+      for (const side of ["top", "right", "bottom", "left"] as const) {
+        expect(door.tile[side], `the selected tile's ${side} border is the full 2 px`).toBeGreaterThan(1.5);
+        expect(door.tile[side], `the selected tile's ${side} border is the full 2 px`).toBeLessThan(2.5);
+      }
+      expect(door.tile.style, "the selected tile's border is solid").toBe("solid");
+      expect(door.tile.colour, "the selected tile's border is the accent").toBe(door.accent);
+      expect(door.tile.background, "the selected tile sits on the soft accent").toBe(door.accentSoft);
+
+      // The sample people: a circular avatar chip on every button. The bytes
+      // are never asserted — the rig's server answers /media with the app
+      // shell, so only the box, the circle and the served path are honest.
+      expect(door.avatars, "every sample button carries an avatar").toHaveLength(5);
+      for (const avatar of door.avatars) {
+        expect(avatar.radius, "an avatar is drawn as a circle").toBe("999px");
+        expect(avatar.width, "an avatar is a 2.25rem chip").toBeGreaterThan(30);
+        expect(avatar.width, "an avatar is a 2.25rem chip").toBeLessThan(42);
+        expect(Math.abs(avatar.width - avatar.height), "an avatar is round, not oval").toBeLessThanOrEqual(1);
+        expect(avatar.src, "an avatar names a served media path").toMatch(/^\/media\/[0-9a-f]+$/);
+      }
+    },
+  );
+}

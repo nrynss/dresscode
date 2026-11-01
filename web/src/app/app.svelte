@@ -20,6 +20,27 @@
     name: string;
   }
 
+  /** The circular face thumbnail beside each sample button. The paths name
+   * only the media ids the sample-media map really serves (the mock's
+   * `virtual:dresscode-sample-media` and the dev middleware, from
+   * `web/vite.config.ts`), so no thumbnail names a path that answers nothing.
+   * Only two sample photographs are served — the woman sample person's
+   * recorded family-function selfie and the sibling variant beside it — so
+   * the strip alternates the two. The thumbnail is decoration beside the
+   * button's own name: it carries `alt=""` and `aria-hidden`, and it names no
+   * person. */
+  const sampleAvatars: Record<string, string> = {
+    "sample-date": "/media/2e4de200000000000000000000000001",
+    "sample-family": "/media/5e1f1e00000000000000000000000001",
+    "sample-interview": "/media/2e4de200000000000000000000000001",
+    "sample-festival": "/media/5e1f1e00000000000000000000000001",
+    "sample-funeral": "/media/2e4de200000000000000000000000001",
+  };
+
+  function sampleAvatar(id: string): string {
+    return sampleAvatars[id] ?? "/media/5e1f1e00000000000000000000000001";
+  }
+
   /** Hash route. The shell has no router. */
   function currentRoute(): string {
     if (typeof window === "undefined") return "/";
@@ -133,7 +154,7 @@
       wants one, and the buttons are the honest marker that the list came
       back. -->
     <details class="samples disclosure">
-      <summary>Try a sample look</summary>
+      <summary>Sample looks</summary>
       {#if sampleProblem}
         <ErrorNotice error={sampleProblem} />
       {:else if openingSamples}
@@ -142,6 +163,7 @@
         <div class="sample-row">
           {#each samples as sample (sample.id)}
             <button type="button" disabled={startingSample} onclick={() => void startSample(sample.id)}>
+              <img class="sample-avatar" src={sampleAvatar(sample.id)} alt="" aria-hidden="true" />
               {sample.name}
             </button>
           {/each}
@@ -170,5 +192,25 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
+  }
+
+  /* A sample button reads as a person to try: the circular face thumbnail
+   * rides beside the name. The strip is inside the app-wide accordion card,
+   * on the surface the recipe already drew, so the avatar's edge uses the
+   * line against that surface. */
+  .sample-row button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.9rem 0.35rem 0.35rem;
+  }
+
+  .sample-avatar {
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 999px;
+    object-fit: cover;
+    border: 1px solid var(--line);
+    flex: none;
   }
 </style>
