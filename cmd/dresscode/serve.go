@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -84,6 +85,9 @@ func runServe(args []string, stdout, stderr io.Writer, lookup func(string) (stri
 	addr := fs.String("addr", defaultServeAddr, "address to listen on")
 	drain := fs.Duration("drain", defaultDrain, "how long running jobs may finish after the listener is down")
 	if err := fs.Parse(args); err != nil {
+		if errors.Is(err, flag.ErrHelp) {
+			return 0
+		}
 		return 2
 	}
 	if fs.NArg() != 0 {
@@ -194,7 +198,16 @@ func runServe(args []string, stdout, stderr io.Writer, lookup func(string) (stri
 	cancel()
 	drainCtx, cancel := context.WithTimeout(ctx, *drain)
 	if err := srv.Drain(drainCtx, 250*time.Millisecond); err != nil {
-		fmt.Fprintf(stdout, "%s: jobs still running after the drain, the unfinished rows stay for the restart\n", reason)
+		// The grace ran out: name the rows still running, the ones the
+		// next boot interrupts and resumes from their snapshots.
+		leftMsg := fmt.Sprintf("%s: jobs still running after the drain, the unfinished rows stay for the restart", reason)
+		leftCtx, leftCancel := context.WithTimeout(context.Background(), time.Second)
+		if names, leftErr := srv.Leftover(leftCtx); leftErr == nil && len(names) > 0 {
+			leftMsg = fmt.Sprintf("%s: jobs still running after the drain (%s), the unfinished rows stay for the restart",
+				reason, strings.Join(names, ", "))
+		}
+		leftCancel()
+		fmt.Fprintln(stdout, leftMsg)
 	}
 	cancel()
 	_ = httpSrv.Close()

@@ -109,12 +109,9 @@ type Server struct {
 	log      *slog.Logger
 	spend    map[string]*spendSlot
 	handler  http.Handler
-	// jobs is the job rows on this server's handle, for Drain. Open
-	// leaves it nil; Compose opens it.
+	// jobs is the job rows on this server's handle, for Drain and the
+	// leftover read. Open leaves it nil; Compose opens it.
 	jobs job.Store
-	// books is the server's own spend wiring. Open leaves it nil;
-	// Compose opens it.
-	books *books
 }
 
 // spendSlot is the handler behind one gated route. The gate calls it
@@ -383,12 +380,14 @@ type Wiring struct {
 // settings' daily ceiling, and both are rewritten from the settings on
 // every open, so the books and the settings file agree. Every spend the
 // look routes make belongs to a session that took a judge lease, so the
-// YouCam runner meters into the judging share; the development meter is
-// built beside it for the spends that are not judge sessions, and no
-// production path spends through it today - a sample open spends nothing
-// by construction, and no other route reaches YouCam. The look start's
-// pre-read is the development share's remaining headroom, the seam
-// LooksConfig.UnitsLeft was built for.
+// YouCam runner meters into the judging share. No production path spends
+// a YouCam unit outside a judge lease - a sample open spends nothing by
+// construction, and no other route reaches YouCam - so no development
+// meter is built; the next one reserves against the development share
+// through the books' keyed budget, the account `Spend.Development` hands
+// out, not a meter of its own. The look start's pre-read is the
+// development share's remaining headroom, the seam LooksConfig.UnitsLeft
+// was built for.
 //
 // A mount that fails fails Compose: the server is closed and the error
 // comes back, because a server that cannot mount what it claims is a
@@ -422,6 +421,16 @@ func Compose(ctx context.Context, cfg Config, wiring Wiring) (*Server, error) {
 		return nil, fmt.Errorf("server: compose: the code key is empty")
 	}
 
+	// The wiring's clock is the whole server's: Open rides it with the
+	// books and every mount, so a test that moves Wiring.Now moves the
+	// sessions, the books and the look rows together, which is the
+	// contract the field declares.
+	now := wiring.Now
+	if now == nil {
+		now = cfg.now()
+	}
+	cfg.Now = now
+
 	srv, err := Open(ctx, cfg)
 	if err != nil {
 		return nil, err
@@ -433,11 +442,10 @@ func Compose(ctx context.Context, cfg Config, wiring Wiring) (*Server, error) {
 		}
 	}()
 
-	books, err := openBooks(ctx, srv.db, wiring.Settings, cfg.now(), cfg.logOrDiscard())
+	books, err := openBooks(ctx, srv.db, wiring.Settings, now, cfg.logOrDiscard())
 	if err != nil {
 		return nil, fmt.Errorf("server: compose: %w", err)
 	}
-	srv.books = books
 
 	dollarsMeter, err := cost.NewContextMeter(books.dollars.Account(), books.dollars)
 	if err != nil {
@@ -461,7 +469,6 @@ func Compose(ctx context.Context, cfg Config, wiring Wiring) (*Server, error) {
 		return nil, fmt.Errorf("server: compose: %w", err)
 	}
 
-	now := cfg.now()
 	log := cfg.logOrDiscard()
 	if err := srv.MountLooks(ctx, LooksConfig{
 		OccasionsDir: wiring.Settings.Paths.Occasions,
@@ -522,19 +529,24 @@ func Compose(ctx context.Context, cfg Config, wiring Wiring) (*Server, error) {
 
 // books is the server's own spend wiring: the two cost namespaces the
 // ops commands read, opened on the server's one database handle, with
-// the settings file's ceilings rewritten onto them at open. The meters
-// are what the spend runs through: judging for the sessions that took a
-// judge lease, development for every spend that is not a judge session.
+// the settings file's ceilings rewritten onto them at open. Every field
+// has a reader in Compose: keyed is the look start's pre-read, dollars
+// is the meter the Clef factory takes, and judging is the meter the
+// YouCam runner settles into.
 type books struct {
-	units   *coststore.Store
-	keyed   *coststore.KeyedBudget
+	// keyed is the two-owner split over the units pool. Its development
+	// share is the read the look start makes before it takes a judge
+	// seat (LooksConfig.UnitsLeft). No meter is built over the share
+	// here, because no production path spends a unit outside a judge
+	// lease; the next one takes the account `Spend.Development` hands
+	// out, not a meter of its own.
+	keyed *coststore.KeyedBudget
+	// dollars is the Workers AI books. Compose builds the context meter
+	// the Clef factory takes over its account.
 	dollars *coststore.Store
-	// judging meters the look routes' spend into the judging share.
+	// judging meters the look routes' spend into the judging share. It
+	// is LooksConfig.Meter, the YouCam runner's own.
 	judging *cost.Meter
-	// development meters the spend that is not a judge session. No
-	// production path holds it today; the meter exists so the next one
-	// takes the books' own account instead of opening a private one.
-	development *cost.Meter
 }
 
 // openBooks opens the two spend namespaces on db. The settings file owns
@@ -590,24 +602,14 @@ func openBooks(ctx context.Context, db *sqlite.DB, settings *config.Settings, no
 	if err != nil {
 		return nil, err
 	}
-	developmentAccount, err := keyed.Owner(ctx, config.OwnerDevelopment)
-	if err != nil {
-		return nil, err
-	}
 	judging, err := cost.NewContextMeter(judgingAccount, unitStore)
 	if err != nil {
 		return nil, err
 	}
-	development, err := cost.NewContextMeter(developmentAccount, unitStore)
-	if err != nil {
-		return nil, err
-	}
 	return &books{
-		units:       unitStore,
-		keyed:       keyed,
-		dollars:     dollarStore,
-		judging:     judging,
-		development: development,
+		keyed:   keyed,
+		dollars: dollarStore,
+		judging: judging,
 	}, nil
 }
 
@@ -746,6 +748,29 @@ func (s *Server) Drain(ctx context.Context, every time.Duration) error {
 		case <-time.After(every):
 		}
 	}
+}
+
+// Leftover names the jobs the drain is still waiting for: the unfinished
+// rows on the one jobs store, all kinds together, by id. It is the read
+// the shutdown posture's timeout report makes, so a process that runs
+// out of its grace names what it leaves for the next boot to interrupt
+// and resume from their snapshots.
+func (s *Server) Leftover(ctx context.Context) ([]string, error) {
+	if s == nil || s.db == nil {
+		return nil, fmt.Errorf("server: leftover: closed server")
+	}
+	if s.jobs == nil {
+		return nil, fmt.Errorf("server: leftover: the job rows are not open")
+	}
+	left, err := s.jobs.Unfinished(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("server: leftover: %w", err)
+	}
+	ids := make([]string, 0, len(left))
+	for _, rec := range left {
+		ids = append(ids, rec.ID)
+	}
+	return ids, nil
 }
 
 // serveApp serves the built app. A client-side route has no file, so an

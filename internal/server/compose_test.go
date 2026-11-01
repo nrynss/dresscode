@@ -18,12 +18,16 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -75,6 +79,13 @@ type composeEnv struct {
 // gate is opened wide: this test reads routes, it does not measure the
 // gate, which server_test.go pins.
 func newComposeEnv(t *testing.T, answers storyAnswers) *composeEnv {
+	return newComposeEnvClock(t, answers, nil)
+}
+
+// newComposeEnvClock is newComposeEnv with the wiring's clock named. A
+// nil clock is the wall's, which is what most tests want; the wiring
+// clock is how a test moves the whole server's time at once.
+func newComposeEnvClock(t *testing.T, answers storyAnswers, now func() time.Time) *composeEnv {
 	t.Helper()
 	dir := t.TempDir()
 	app := filepath.Join(dir, "app")
@@ -114,6 +125,7 @@ func newComposeEnv(t *testing.T, answers storyAnswers) *composeEnv {
 		Memory:  env.mem,
 		Mail:    env.mail,
 		CodeKey: []byte("test-signin-code-key-32b!!!!!!!"),
+		Now:     now,
 	})
 	if err != nil {
 		t.Fatalf("compose: %v", err)
@@ -686,4 +698,305 @@ func TestAComposedRestartInterruptsAnUnfinishedLookRow(t *testing.T) {
 	if creates != 0 || uploads != 0 || polls != 0 || fetches != 0 {
 		t.Fatalf("the restart spent youcam calls %d %d %d %d, want all zero", creates, uploads, polls, fetches)
 	}
+}
+
+// TestAWiringClockStampsTheComposedServer is the proof Wiring.Now's
+// contract asks for: one clock on the wiring, and the sessions, the
+// books and the look rows all carry its stamps, none of them the wall
+// clock's. The clock steps so the runner's waits see time move; the
+// stamps stay inside the wiring clock's first hour, which the wall -
+// years past it - cannot answer with.
+func TestAWiringClockStampsTheComposedServer(t *testing.T) {
+	base := time.Date(2021, 7, 1, 12, 0, 0, 0, time.UTC)
+	ceil := base.Add(time.Hour).Unix()
+	var steps atomic.Int64
+	clock := func() time.Time {
+		return base.Add(time.Duration(steps.Add(1)) * 250 * time.Millisecond)
+	}
+	env := newComposeEnvClock(t, earringAnswers(), clock)
+	ctx := context.Background()
+	stamped := func(table, id string) int64 {
+		t.Helper()
+		var at int64
+		if err := env.srv.db.Reader().QueryRowContext(ctx,
+			`SELECT created_at FROM `+table+` WHERE id = ?`, id).Scan(&at); err != nil {
+			t.Fatal(err)
+		}
+		if at < base.Unix() || at > ceil {
+			t.Fatalf("the %s row is stamped %d, want the wiring clock's %d..%d", table, at, base.Unix(), ceil)
+		}
+		return at
+	}
+
+	// Sessions: the guest a first visit mints is stamped by the identity
+	// service Open built, on the wiring's clock.
+	userID, cookie := bootUser(t, env.handler)
+	stamped("users", userID)
+	// The opted-in menu is what makes the story the recorded one, whose
+	// render settles the unit the books proof reads.
+	for _, fix := range []string{"family-gold-jhumkas", "family-festive-top"} {
+		if _, err := env.srv.db.Writer().ExecContext(ctx,
+			`INSERT INTO opt_ins (user_id, occasion, fix_id) VALUES (?, ?, ?)`,
+			userID, "family-function", fix); err != nil {
+			t.Fatalf("opt in %s: %v", fix, err)
+		}
+	}
+
+	// Look rows: the paid look's row rides the same clock through the
+	// look mount.
+	selfieID := env.seedSelfie(t, userID)
+	start := do(t, env.handler, http.MethodPost, "/api/looks", cookie,
+		strings.NewReader(fmt.Sprintf(`{"occasion":"family-function","selfie_id":%q}`, selfieID)), headerJSON)
+	if start.Code != http.StatusAccepted {
+		t.Fatalf("start %d %s", start.Code, start.Body.String())
+	}
+	var started struct {
+		LookID string `json:"look_id"`
+		JobID  string `json:"job_id"`
+	}
+	if err := json.Unmarshal(start.Body.Bytes(), &started); err != nil {
+		t.Fatal(err)
+	}
+	env.waitDone(started.JobID, cookie)
+	stamped("looks", started.LookID)
+
+	// Books: the unit the recorded render settles lands in the
+	// spend_youcam charge ledger with the wiring clock's stamp, the
+	// ledger `dresscode budget` reads through a second handle. The
+	// charge ledger stamps unix millis; the window moves with it.
+	milliCeil := base.Add(time.Hour).UnixMilli()
+	rows, err := env.srv.db.Reader().QueryContext(ctx, `SELECT created_at FROM spend_youcam_charge`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rows.Close()
+	settled := 0
+	for rows.Next() {
+		var at int64
+		if err := rows.Scan(&at); err != nil {
+			t.Fatal(err)
+		}
+		settled++
+		if at < base.UnixMilli() || at > milliCeil {
+			t.Fatalf("a settled charge is stamped %d, want the wiring clock's %d..%d millis", at, base.UnixMilli(), milliCeil)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatal(err)
+	}
+	if settled == 0 {
+		t.Fatal("the books settled nothing, want the recorded render's one unit")
+	}
+}
+
+// TestTheDrainCarriesAMidFlightLookAndNamesItsLeftover drives the
+// shutdown posture's two waits with a look actually in flight, the case
+// the posture's prose claims: a stream attached to the look receives
+// its whole story while the drain waits, and a drain that runs out of
+// its grace names the row it leaves for the restart to interrupt and
+// resume.
+func TestTheDrainCarriesAMidFlightLookAndNamesItsLeftover(t *testing.T) {
+	env := newComposeEnv(t, earringAnswers())
+	ctx := context.Background()
+	userID, cookie := bootUser(t, env.handler)
+	selfieID := env.seedSelfie(t, userID)
+	// The opted-in menu is what makes the story the recorded one, with
+	// its measure, render and check stages: the same rows the composed
+	// test seats, through the table the opt-in route serves.
+	for _, fix := range []string{"family-gold-jhumkas", "family-festive-top"} {
+		if _, err := env.srv.db.Writer().ExecContext(ctx,
+			`INSERT INTO opt_ins (user_id, occasion, fix_id) VALUES (?, ?, ?)`,
+			userID, "family-function", fix); err != nil {
+			t.Fatalf("opt in %s: %v", fix, err)
+		}
+	}
+
+	// The posture's own listener and server, the objects runServe drives.
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	httpSrv := &http.Server{Handler: env.handler}
+	serveDone := make(chan error, 1)
+	go func() { serveDone <- httpSrv.Serve(listener) }()
+	t.Cleanup(func() { _ = httpSrv.Close() })
+
+	startLook := func() string {
+		t.Helper()
+		start := do(t, env.handler, http.MethodPost, "/api/looks", cookie,
+			strings.NewReader(fmt.Sprintf(`{"occasion":"family-function","selfie_id":%q}`, selfieID)), headerJSON)
+		if start.Code != http.StatusAccepted {
+			t.Fatalf("start %d %s", start.Code, start.Body.String())
+		}
+		var started struct {
+			JobID string `json:"job_id"`
+		}
+		if err := json.Unmarshal(start.Body.Bytes(), &started); err != nil {
+			t.Fatal(err)
+		}
+		return started.JobID
+	}
+	waitLeftover := func(jobID string) []string {
+		t.Helper()
+		deadline := time.Now().Add(5 * time.Second)
+		for {
+			names, err := env.srv.Leftover(ctx)
+			if err != nil {
+				t.Fatalf("leftover: %v", err)
+			}
+			for _, name := range names {
+				if name == jobID {
+					return names
+				}
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("the leftover read never named %s; it names %v", jobID, names)
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+	park := func() (release func()) {
+		t.Helper()
+		ch := make(chan struct{})
+		env.clef.parkJudge = ch
+		var once sync.Once
+		release = func() { once.Do(func() { close(ch) }) }
+		t.Cleanup(release)
+		return release
+	}
+
+	// The look parks at its first Clef ask, before any frame is
+	// published, the way the rig holds a step for a stream test.
+	release := park()
+	jobID := startLook()
+
+	// The subscriber attaches while the look is held: Keel registers the
+	// subscription before it writes the header, so the 200 is the
+	// subscription, and the frames arrive as they are published.
+	streamCtx, cancelStream := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelStream()
+	req, err := http.NewRequestWithContext(streamCtx, http.MethodGet,
+		fmt.Sprintf("http://%s/api/jobs/%s/events", listener.Addr(), jobID), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.AddCookie(cookie)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK || resp.Header.Get("Content-Type") != "text/event-stream" {
+		t.Fatalf("stream status %d type %q", resp.StatusCode, resp.Header.Get("Content-Type"))
+	}
+	framesCh := make(chan []lookFrame, 1)
+	go func() { framesCh <- parseFrames(resp.Body) }()
+
+	// First wait: the listener stops taking requests. The attached
+	// stream is a request in flight, so the wait runs out its grace, the
+	// way runServe answers the posture's first step.
+	grace, graceCancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	if err := httpSrv.Shutdown(grace); err == nil {
+		t.Fatal("the shutdown found no request to wait out, want the attached stream")
+	}
+	graceCancel()
+
+	// Second wait: the drain. It sees the unfinished look and holds - it
+	// does not return while the job is in flight.
+	drainErrCh := make(chan error, 1)
+	go func() { drainErrCh <- env.srv.Drain(ctx, 25*time.Millisecond) }()
+	waitLeftover(jobID)
+	select {
+	case err := <-drainErrCh:
+		t.Fatalf("the drain returned %v while the look was still unfinished", err)
+	case <-time.After(250 * time.Millisecond):
+	}
+
+	// The look finishes inside the drain: the release lets the story
+	// run, the frames go out over the stream the shutdown left attached,
+	// and the drain answers clean once the terminal lands.
+	release()
+	var frames []lookFrame
+	select {
+	case frames = <-framesCh:
+	case <-time.After(15 * time.Second):
+		t.Fatal("the stream never reached its terminal frame")
+	}
+	cancelStream()
+	var stages []string
+	for _, f := range frames {
+		if f.Name == "done" {
+			continue
+		}
+		var progress struct {
+			Stage string `json:"stage"`
+		}
+		if err := json.Unmarshal(f.Data, &progress); err != nil {
+			t.Fatalf("frame %s: %v", f.Name, err)
+		}
+		stages = append(stages, progress.Stage)
+	}
+	wantStages := []string{"judge", "pick", "measure", "render", "check", "shop"}
+	if len(stages) != len(wantStages) {
+		t.Fatalf("the stream carried %v, want the story's %v", stages, wantStages)
+	}
+	for i := range wantStages {
+		if stages[i] != wantStages[i] {
+			t.Fatalf("the stream carried %v, want the story's %v", stages, wantStages)
+		}
+	}
+	select {
+	case err := <-drainErrCh:
+		if err != nil {
+			t.Fatalf("the drain answered %v, want nil once the look went terminal", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("the drain never returned")
+	}
+	_ = httpSrv.Close()
+	if err := <-serveDone; err != nil && !errors.Is(err, http.ErrServerClosed) {
+		t.Fatalf("serve: %v", err)
+	}
+
+	// Second arm: a look still in flight when the grace runs out. The
+	// drain gives up and the leftover read names the row it leaves, the
+	// read the timeout report makes; the row stays running, the state
+	// the next boot's recovery interrupts and resumes. The stub learns
+	// the second story's answers: the first look consumed the pick and
+	// the check the fixture carried.
+	env.clef.mu.Lock()
+	env.clef.picks = append(env.clef.picks, pickAnswer3{choice: "family-gold-jhumkas"})
+	env.clef.checks = append(env.clef.checks, checkAnswer3{change: 0.99, same: 0.99, met: 0.99})
+	env.clef.mu.Unlock()
+	release2 := park()
+	job2 := startLook()
+	waitLeftover(job2)
+	drainCtx, cancelDrain := context.WithTimeout(ctx, 150*time.Millisecond)
+	err = env.srv.Drain(drainCtx, 25*time.Millisecond)
+	cancelDrain()
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("the out-of-grace drain answered %v, want the deadline", err)
+	}
+	names, err := env.srv.Leftover(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, name := range names {
+		if name == job2 {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("the drain's leftover names %v, want the in-flight %s", names, job2)
+	}
+	var status string
+	if err := env.srv.db.Reader().QueryRowContext(ctx,
+		`SELECT status FROM jobs WHERE id = ?`, job2).Scan(&status); err != nil {
+		t.Fatal(err)
+	}
+	if status != "running" {
+		t.Fatalf("the leftover look row is %s, want running for the restart", status)
+	}
+	release2()
+	env.waitDone(job2, cookie)
 }

@@ -290,6 +290,13 @@ func TestServeRefusesABrokenBoot(t *testing.T) {
 			t.Fatalf("the budget help is missing %q:\n%s", want, help.String())
 		}
 	}
+
+	// The serve command's own help answers clean, the posture of the
+	// other commands.
+	help.Reset()
+	if code := runServe([]string{"-h"}, help, help, serveEnv, nil); code != 0 {
+		t.Fatalf("serve help exit %d:\n%s", code, help.String())
+	}
 }
 
 const appIndexHTML = "<!doctype html><title>Dresscode</title>"
