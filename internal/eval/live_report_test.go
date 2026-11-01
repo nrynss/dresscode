@@ -26,6 +26,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/nrynss/dresscode/internal/domain"
 	"github.com/nrynss/dresscode/internal/pipeline"
 	"github.com/nrynss/dresscode/internal/systemone"
 	"github.com/nrynss/keel/cost"
@@ -1374,6 +1375,110 @@ func liveJudgeReadsFromTranscript(t *testing.T, d liveTranscriptData, byID map[s
 	return reads
 }
 
+// liveCheckReadsFromTranscript rebuilds the live check reads the sweep
+// logged. A check row carries no model column, so the model comes from the
+// ground truth's check for that exchange - and a row whose exchange the
+// ground truth does not list is fatal here. That is the shape T3.9b's review
+// asked for: the old liveExchangeModel handed back an empty model on a miss,
+// which would drop the read from both per-model gate rows and from both
+// vocabulary tallies without a word. Nothing here falls back.
+func liveCheckReadsFromTranscript(t *testing.T, d liveTranscriptData, gt GroundTruth) []CheckRead {
+	t.Helper()
+	truthOf := make(map[string]CheckTruth, len(gt.Checks))
+	for _, c := range gt.Checks {
+		truthOf[c.Exchange] = c
+	}
+	reads := make([]CheckRead, 0, len(d.checkRows))
+	for _, r := range d.checkRows {
+		truth, ok := truthOf[r.exchange]
+		if !ok {
+			t.Fatalf("live pin: %s: check read %q is not in the ground truth's checks", d.name, r.exchange)
+		}
+		reads = append(reads, CheckRead{Exchange: truth.Exchange, Model: truth.Model, Bad: truth.Bad,
+			Change: r.change, Same: r.same, Met: r.met})
+	}
+	return reads
+}
+
+// liveDecisionsFromTranscript rebuilds the decision rows the sweep printed
+// through pipeline.Check on the live call: the shipped lines' verdict and the
+// look line it composed.
+func liveDecisionsFromTranscript(d liveTranscriptData) []liveCheckDecision {
+	out := make([]liveCheckDecision, 0, len(d.decisionRows))
+	for _, r := range d.decisionRows {
+		out = append(out, liveCheckDecision{Exchange: r.exchange, Model: r.model,
+			Bad: r.bad, Shown: r.shownLive, Words: r.words})
+	}
+	return out
+}
+
+// liveVocabularyFromTranscript rebuilds the live attribute answers in the
+// same order the sweep built them: the ground truth's checks sorted by
+// exchange, then every attribute in the vocabulary's order. The row's own
+// exchange and attribute are compared against that order, so a change to
+// either the transcription's shape or the vocabulary's order fails here
+// rather than shifting one cell's answer onto another's row. Each truth and
+// each correct flag is re-derived from the ground truth, never taken from the
+// transcript.
+func liveVocabularyFromTranscript(t *testing.T, d liveTranscriptData, gt GroundTruth,
+	vocab *domain.Vocabulary) []VocabularyCell {
+	t.Helper()
+	truths := append([]CheckTruth(nil), gt.Checks...)
+	sort.Slice(truths, func(i, j int) bool { return truths[i].Exchange < truths[j].Exchange })
+	rowOf := make(map[string]liveVocabCellRow, len(d.vocabRows))
+	for _, r := range d.vocabRows {
+		rowOf[r.exchange+" "+r.attribute] = r
+	}
+	if len(d.vocabRows) != len(truths)*len(vocab.Attributes) {
+		t.Fatalf("live pin: %s: %d vocabulary rows, want %d (%d reads x %d attributes)",
+			d.name, len(d.vocabRows), len(truths)*len(vocab.Attributes), len(truths), len(vocab.Attributes))
+	}
+	var cells []VocabularyCell
+	for _, truth := range truths {
+		for _, attr := range vocab.Attributes {
+			row, ok := rowOf[truth.Exchange+" "+attr.ID]
+			if !ok {
+				t.Fatalf("live pin: %s: no vocabulary row for %s %s", d.name, truth.Exchange, attr.ID)
+			}
+			cells = append(cells, VocabularyCell{
+				Exchange: truth.Exchange, Attribute: attr.ID,
+				Answer: row.answer, Truth: truth.Look[attr.ID],
+				Correct: row.answer == truth.Look[attr.ID], Note: truth.Notes[attr.ID],
+			})
+		}
+	}
+	for i, row := range d.vocabRows {
+		c := cells[i]
+		if row.exchange != c.Exchange || row.attribute != c.Attribute {
+			t.Fatalf("live pin: %s: vocabulary row %d is %s %s, the transcription's order says %s %s",
+				d.name, i, row.exchange, row.attribute, c.Exchange, c.Attribute)
+		}
+		if row.truth != c.Truth {
+			t.Errorf("live pin: %s: %s %s: transcript truth %q, ground truth %q",
+				d.name, c.Exchange, c.Attribute, row.truth, c.Truth)
+		}
+		if row.correct != c.Correct {
+			t.Errorf("live pin: %s: %s %s: transcript correct=%v, scored against the ground truth correct=%v (answered %q, true %q)",
+				d.name, c.Exchange, c.Attribute, row.correct, c.Correct, c.Answer, c.Truth)
+		}
+	}
+	return cells
+}
+
+// liveVocabulary loads the same vocabulary the sweep read: its attribute
+// count and order are the header and the cell lists' shape.
+func liveVocabulary(t *testing.T) *domain.Vocabulary {
+	t.Helper()
+	loaded, err := domain.Load(filepath.Join(repoRoot(t), "testdata", "occasions"))
+	if err != nil {
+		t.Fatalf("live pin: vocabulary: %v", err)
+	}
+	if len(loaded.Vocabulary.Attributes) == 0 {
+		t.Fatalf("live pin: the occasions data carries no vocabulary")
+	}
+	return &loaded.Vocabulary
+}
+
 // ---- Comparing a re-emitted line with the transcript's own ----
 
 func livePinLine(t *testing.T, d liveTranscriptData, label, want, got string) {
@@ -1724,5 +1829,555 @@ func TestLiveTranscriptJudging(t *testing.T) {
 	if len(gt.Samples) != liveJudgeCalls {
 		t.Errorf("live pin: the ground truth carries %d samples, the sweep judged %d",
 			len(gt.Samples), liveJudgeCalls)
+	}
+}
+
+// TestLiveTranscriptCheck replays the sweep's render-check report the same
+// way: the committed transcript's four live reads in, the lifted helpers over
+// them, and every number docs/evaluation.md's live re-run quotes back out -
+// the twelve gate values, the six separations, the shipped lines' decisions,
+// the vocabulary tallies and the one cell that moved. No tag, no key, no
+// call, no spend.
+func TestLiveTranscriptCheck(t *testing.T) {
+	d := parseLiveTranscript(t, "sweep-1.txt")
+	gt, _ := loadLiveGroundTruth(t)
+	vocab := liveVocabulary(t)
+	rep := runOnce(t)
+	recorded := rep.Check
+	lines := pipeline.Lines{
+		ChangeMade:   rep.Settings.CheckChangeMade,
+		SamePerson:   rep.Settings.CheckSamePerson,
+		CriterionMet: rep.Settings.CheckCriterionMet,
+	}
+
+	reads := liveCheckReadsFromTranscript(t, d, gt)
+	if len(reads) != liveCheckCalls {
+		t.Fatalf("live pin: %s: %d check reads, want %d", d.name, len(reads), liveCheckCalls)
+	}
+	recReads := make(map[string]CheckRead, len(recorded.Reads))
+	for _, r := range recorded.Reads {
+		recReads[r.Exchange] = r
+	}
+
+	// The read table: the live gates beside the recorded triple.
+	if len(d.readRows) != len(reads) {
+		t.Fatalf("live pin: %s: %d read rows, want %d", d.name, len(d.readRows), len(reads))
+	}
+	for i, r := range reads {
+		rec, ok := recReads[r.Exchange]
+		if !ok {
+			t.Fatalf("live pin: %s: no recorded read for %q", d.name, r.Exchange)
+		}
+		livePinLine(t, d, r.Exchange, fmt.Sprintf(liveReadRowFormat, r.Exchange, r.Model, r.Bad,
+			r.Change, r.Same, r.Met, rec.Change, rec.Same, rec.Met), d.readRows[i].raw)
+	}
+
+	// The gate table: twelve values, six separations, the margins' move and
+	// the intervals the shipped lines sit inside.
+	rows, err := computeLiveGateRows(reads, recorded, lines)
+	if err != nil {
+		t.Fatalf("live pin: %s: live gate rows: %v", d.name, err)
+	}
+	if len(rows) != 6 || len(d.gateRows) != 6 {
+		t.Fatalf("live pin: %s: %d computed gate rows, %d transcript rows, want 6 and 6", d.name, len(rows), len(d.gateRows))
+	}
+	for i, row := range rows {
+		mark := ""
+		if row.Differs {
+			mark = liveMarkDiffers
+		}
+		livePinLine(t, d, row.Gate+"/"+row.Model, fmt.Sprintf(liveGateRowFormat, row.Gate, row.Model,
+			row.Honest, row.Bad, row.Line, row.Margin, row.Separates, row.SeparatesHalf,
+			row.LiveMid, row.RecMargin, mark), d.gateRows[i].raw)
+	}
+	// One table of the doc's literals: every honest and every proxy value,
+	// the shipped line, the live margin and the recorded margin beside it.
+	for _, want := range []struct {
+		gate, model                               string
+		honest, bad, line, margin, recMargin, mid string
+	}{
+		{"change_made", systemone.ModelClef, "0.9820", "0.0136", "0.50085", "0.4811", "0.4858", "0.49780"},
+		{"change_made", systemone.ModelClefFlash, "0.9437", "0.0350", "0.50085", "0.4428", "0.4523", "0.48935"},
+		{"same_person", systemone.ModelClef, "0.9246", "0.0352", "0.48355", "0.4410", "0.4230", "0.47990"},
+		{"same_person", systemone.ModelClefFlash, "0.9434", "0.0269", "0.48355", "0.4567", "0.4400", "0.48515"},
+		{"criterion_met", systemone.ModelClef, "0.9744", "0.0228", "0.50315", "0.4713", "0.4774", "0.49860"},
+		{"criterion_met", systemone.ModelClefFlash, "0.9748", "0.0188", "0.50315", "0.4717", "0.4761", "0.49680"},
+	} {
+		var found *liveGateRow
+		for i := range rows {
+			if rows[i].Gate == want.gate && rows[i].Model == want.model {
+				found = &rows[i]
+			}
+		}
+		if found == nil {
+			t.Fatalf("live pin: %s: no gate row for %s/%s", d.name, want.gate, want.model)
+		}
+		for _, cell := range []struct{ label, got, want string }{
+			{"honest", fmt.Sprintf("%.4f", found.Honest), want.honest},
+			{"bad", fmt.Sprintf("%.4f", found.Bad), want.bad},
+			{"line", fmt.Sprintf("%.5f", found.Line), want.line},
+			{"margin", fmt.Sprintf("%.4f", found.Margin), want.margin},
+			{"recorded margin", fmt.Sprintf("%.4f", found.RecMargin), want.recMargin},
+			{"live plateau mid", fmt.Sprintf("%.5f", found.LiveMid), want.mid},
+		} {
+			if cell.got != cell.want {
+				t.Errorf("live pin: %s/%s %s: %s, want %s", want.gate, want.model, cell.label, cell.got, cell.want)
+			}
+		}
+		// Every gate separates on both readings, and the shipped line stays
+		// inside the live interval - docs/evaluation.md's "no line outside
+		// its interval".
+		if !found.Separates || !found.SeparatesHalf {
+			t.Errorf("live pin: %s/%s: separates=%v at the shipped line, at 0.5=%v, want both true",
+				want.gate, want.model, found.Separates, found.SeparatesHalf)
+		}
+		if !(found.PlateauLow < found.Line && found.Line < found.PlateauHigh) {
+			t.Errorf("live pin: %s/%s: line %.5f sits outside the live interval (%.4f, %.4f)",
+				want.gate, want.model, found.Line, found.PlateauLow, found.PlateauHigh)
+		}
+		if found.PlateauLow != found.Bad || found.PlateauHigh != found.Honest {
+			t.Errorf("live pin: %s/%s: interval (%.4f, %.4f), want the proxy %.4f and the honest %.4f",
+				want.gate, want.model, found.PlateauLow, found.PlateauHigh, found.Bad, found.Honest)
+		}
+	}
+	// The margins' move: 0.0044 to 0.018, largest on clef's same_person.
+	low, high := math.Inf(1), math.Inf(-1)
+	for _, row := range rows {
+		move := math.Abs(row.Margin - row.RecMargin)
+		if move < low {
+			low = move
+		}
+		if move > high {
+			high = move
+		}
+	}
+	if fmt.Sprintf("%.4f", low) != "0.0044" || fmt.Sprintf("%.4f", high) != "0.0180" {
+		t.Errorf("live pin: the six margins move %.4f to %.4f, want 0.0044 to 0.0180", low, high)
+	}
+	for _, row := range rows {
+		if math.Abs(row.Margin-row.RecMargin) == high {
+			if row.Gate != "same_person" || row.Model != systemone.ModelClef {
+				t.Errorf("live pin: the largest margin move is on %s/%s, want same_person/clef", row.Gate, row.Model)
+			}
+		}
+	}
+
+	// The decisions through the real pipeline at the shipped lines.
+	decisions := liveDecisionsFromTranscript(d)
+	badShown, honestDiscarded := liveDecisionCounts(decisions)
+	if badShown != 0 || honestDiscarded != 0 {
+		t.Errorf("live pin: live decisions showed %d known bad renders, discarded %d honest ones, want 0 and 0",
+			badShown, honestDiscarded)
+	}
+	if recorded.BadShown != 0 || recorded.GoodDiscarded != 0 {
+		t.Errorf("live pin: the recorded report showed %d bad, discarded %d honest, want 0 and 0",
+			recorded.BadShown, recorded.GoodDiscarded)
+	}
+	livePinTrimmed(t, d, "the recorded decision counts",
+		fmt.Sprintf(liveDecRecFormat, recorded.BadShown, recorded.GoodDiscarded), strings.TrimSpace(d.headline(t, "decRec")))
+	livePinTrimmed(t, d, "the live decision counts",
+		fmt.Sprintf(liveDecLiveFormat, badShown, honestDiscarded), strings.TrimSpace(d.headline(t, "decLive")))
+	livePinTrimmed(t, d, "both sides clean", fmt.Sprintf(liveDecBothFormat,
+		recorded.BadShown == 0 && recorded.GoodDiscarded == 0, badShown == 0 && honestDiscarded == 0),
+		strings.TrimSpace(d.headline(t, "rejected")))
+	recOutcomes := make(map[string]CheckOutcome, len(recorded.Outcomes))
+	for _, o := range recorded.Outcomes {
+		recOutcomes[o.Exchange] = o
+	}
+	if len(d.decisionRows) != len(decisions) {
+		t.Fatalf("live pin: %s: %d decision rows, want %d", d.name, len(d.decisionRows), len(decisions))
+	}
+	for i, dec := range decisions {
+		rec, ok := recOutcomes[dec.Exchange]
+		if !ok {
+			t.Fatalf("live pin: %s: no recorded outcome for %q", d.name, dec.Exchange)
+		}
+		mark := ""
+		if rec.Shown != dec.Shown || rec.Bad != dec.Bad {
+			mark = liveMarkDiffers
+		}
+		row := d.decisionRows[i]
+		livePinLine(t, d, dec.Exchange, fmt.Sprintf(liveDecisionFormat, dec.Exchange, dec.Model, dec.Bad,
+			dec.Shown, rec.Shown, mark, dec.Words), row.raw)
+		if row.words == "" {
+			t.Errorf("live pin: %s: %s printed an empty look line", d.name, dec.Exchange)
+		}
+	}
+	// The doc's promise, word for word: the honest render's line is the
+	// recorded one on both models.
+	for _, r := range d.decisionRows {
+		if r.bad {
+			continue
+		}
+		if r.words != "jhumkas, gold, red, mandarin, tied-back, black, flat, festive-top" {
+			t.Errorf("live pin: the honest %s line is %q, want the recorded words", r.model, r.words)
+		}
+		if !r.shownLive || !r.shownRec {
+			t.Errorf("live pin: the honest %s render shown live=%v recorded=%v, want both true", r.model, r.shownLive, r.shownRec)
+		}
+	}
+
+	// The look vocabulary: the header, both tallies, every cell, both miss
+	// lists and the line that compares them.
+	liveCells := liveVocabularyFromTranscript(t, d, gt, vocab)
+	modelOf := liveModelByExchange(gt.Checks)
+	tallies, err := tallyLiveVocabulary(liveTruthModels(gt.Checks), liveCells, recorded.Vocabulary.Cells, modelOf)
+	if err != nil {
+		t.Fatalf("live pin: %s: vocabulary tally: %v", d.name, err)
+	}
+	diffs, err := diffLiveVocabulary(liveCells, recorded.Vocabulary.Cells)
+	if err != nil {
+		t.Fatalf("live pin: %s: vocabulary diff: %v", d.name, err)
+	}
+	diffKeys := make(map[string]bool, len(diffs))
+	for _, df := range diffs {
+		diffKeys[df.Exchange+" "+df.Attribute] = true
+	}
+	recVocab := make(map[string]VocabularyCell, len(recorded.Vocabulary.Cells))
+	for _, c := range recorded.Vocabulary.Cells {
+		recVocab[c.Exchange+" "+c.Attribute] = c
+	}
+	livePinLineWith(t, d, "LOOK VOCABULARY (", "the vocabulary header",
+		fmt.Sprintf(liveVocabHeaderFormat, len(liveCells), len(vocab.Attributes), len(gt.Checks)))
+	if len(d.tallyRows) != len(tallies) {
+		t.Fatalf("live pin: %s: %d tally rows, want %d", d.name, len(d.tallyRows), len(tallies))
+	}
+	for i, ta := range tallies {
+		livePinLine(t, d, ta.Model+" tally", fmt.Sprintf(liveVocabTallyFormat, ta.Model,
+			ta.LiveCorrect, ta.LiveOf, ta.RecCorrect, ta.RecOf), d.tallyRows[i].raw)
+	}
+	for i, c := range liveCells {
+		key := c.Exchange + " " + c.Attribute
+		mark := ""
+		if diffKeys[key] {
+			mark = liveMarkDiffers
+		}
+		livePinLine(t, d, key, fmt.Sprintf(liveVocabCellFormat, c.Exchange, c.Attribute, c.Truth,
+			c.Answer, recVocab[key].Answer, c.Correct, mark), d.vocabRows[i].raw)
+	}
+	recMisses := liveVocabularyMisses(recorded.Vocabulary.Cells)
+	liveMisses := liveVocabularyMisses(liveCells)
+	livePinList(t, d, "the recorded vocabulary misses", recMisses, d.missRecorded)
+	livePinList(t, d, "the live vocabulary misses", liveMisses, d.missLive)
+	same := fmt.Sprint(recMisses) == fmt.Sprint(liveMisses)
+	repro := "    the recorded vocabulary misses reproduce exactly"
+	if !same {
+		repro = "    the vocabulary misses differ from the recorded ones"
+	}
+	livePinTrimmed(t, d, "the vocabulary comparison line", repro, strings.TrimSpace(d.headline(t, "vocabRepro")))
+
+	// The doc's literals, in one table.
+	for _, want := range []struct{ model, live, recorded string }{
+		{systemone.ModelClef, "19/22", "19/22"},
+		{systemone.ModelClefFlash, "18/22", "17/22"},
+	} {
+		var found *liveVocabTally
+		for i := range tallies {
+			if tallies[i].Model == want.model {
+				found = &tallies[i]
+			}
+		}
+		if found == nil {
+			t.Fatalf("live pin: no vocabulary tally for %q", want.model)
+		}
+		if got := fmt.Sprintf("%d/%d", found.LiveCorrect, found.LiveOf); got != want.live {
+			t.Errorf("live pin: %s live vocabulary: %s, want %s", want.model, got, want.live)
+		}
+		if got := fmt.Sprintf("%d/%d", found.RecCorrect, found.RecOf); got != want.recorded {
+			t.Errorf("live pin: %s recorded vocabulary: %s, want %s", want.model, got, want.recorded)
+		}
+	}
+	if len(diffs) != 1 {
+		t.Fatalf("live pin: %d vocabulary cells differ live from recorded, want the one the doc names", len(diffs))
+	}
+	df := diffs[0]
+	if df.Exchange != "check-clef-flash-V04-to-woman-white" || df.Attribute != "jewellery_colour" ||
+		df.Recorded != "gold" || df.Live != "none" {
+		t.Errorf("live pin: the differing cell is %s %s (%s -> %s), want flash's proxy jewellery_colour gold -> none",
+			df.Exchange, df.Attribute, df.Recorded, df.Live)
+	}
+	if len(recMisses) != 8 || len(liveMisses) != 7 {
+		t.Errorf("live pin: %d recorded misses and %d live, want 8 and 7 (the eighth is the one that did not survive)",
+			len(recMisses), len(liveMisses))
+	}
+}
+
+// liveCallsFromTranscript rebuilds one run's accounting: every call row the
+// transcript printed, with the neurons recomputed from the reported input
+// tokens at the documented rate. A row whose model is not on the rate card
+// fails the run - a model the pinned arithmetic cannot price is a model no
+// projection can cover.
+func liveCallsFromTranscript(t *testing.T, d liveTranscriptData) []liveCall {
+	t.Helper()
+	var calls []liveCall
+	for _, r := range d.costRows {
+		perMillion, ok := liveNeuronsPerMillion[r.model]
+		if !ok {
+			t.Fatalf("live pin: %s: no documented neuron rate for model %q", d.name, r.model)
+		}
+		calls = append(calls, liveCall{
+			label: r.label, model: r.model, tokens: r.tokens,
+			neurons: liveNeurons(r.tokens, perMillion), booked: parseLivePrice(t, d.name, r.booked),
+		})
+	}
+	return calls
+}
+
+// TestLiveTranscriptCost pins the money: every call row's tokens, neurons and
+// booking recomputed from the documented rate card, the run's totals, the
+// budget it finished inside, and the probe's projection of the sweep before
+// it ran. The formula is what is pinned, not only its printed rounding: each
+// call's implied price is compared against the cent the ledger did book,
+// which is the same tie the tagged sweep puts on the live service.
+func TestLiveTranscriptCost(t *testing.T) {
+	// ---- The sweep's first pass ----
+	d := parseLiveTranscript(t, "sweep-1.txt")
+	calls := liveCallsFromTranscript(t, d)
+	if len(calls) != liveJudgeCalls+liveCheckCalls {
+		t.Fatalf("live pin: %s: %d cost rows, want %d", d.name, len(calls), liveJudgeCalls+liveCheckCalls)
+	}
+	rowOf := make(map[string]liveCostRow, len(d.costRows))
+	for _, r := range d.costRows {
+		rowOf[r.label] = r
+	}
+	byExchange := make(map[string]liveCheckRow, len(d.checkRows))
+	for _, r := range d.checkRows {
+		byExchange[r.exchange] = r
+	}
+	for _, c := range calls {
+		r := rowOf[c.label]
+		// The formula: the documented rate on the reported tokens, rounded
+		// up to the nanodollar, equals what the ledger booked.
+		if got := liveImpliedPrice(c.tokens, liveNeuronsPerMillion[c.model]); got != c.booked {
+			t.Errorf("live pin: %s: %s implies %s, the ledger booked %s", d.name, c.label, got, c.booked)
+		}
+		if fmt.Sprintf("%.2f", c.neurons) != fmt.Sprintf("%.2f", r.neurons) {
+			t.Errorf("live pin: %s: %s prints %.2f neurons, the rate card says %.2f",
+				d.name, c.label, r.neurons, c.neurons)
+		}
+		livePinLine(t, d, c.label, fmt.Sprintf(liveCostRowFormat, c.label, c.model, c.tokens, c.neurons, c.booked), r.raw)
+		// Every call reported the token count its own call line printed.
+		if want := liveSweepTokensFor(t, d, c.label, byExchange); c.tokens != want {
+			t.Errorf("live pin: %s: %s books %d tokens in the cost table, %d in its call line",
+				d.name, c.label, c.tokens, want)
+		}
+	}
+	total := liveCallsDollars(calls)
+	if got := fmt.Sprintf("%s", total); got != "$0.020048907" {
+		t.Errorf("live pin: %s: one pass books %s, want $0.020048907", d.name, got)
+	}
+	neurons := liveCallsNeurons(calls)
+	if got := fmt.Sprintf("%.3f", neurons); got != "1822.626" {
+		t.Errorf("live pin: %s: one pass implies %s neurons, want 1822.626", d.name, got)
+	}
+	if tokens := liveCallsTokens(calls); tokens != 90403 {
+		t.Errorf("live pin: %s: %d input tokens reported, want 90403", d.name, tokens)
+	}
+	if out := liveCallsOutputTokens(calls); out != 0 {
+		t.Errorf("live pin: %s: %d output tokens, want 0 (the sweep books input only)", d.name, out)
+	}
+	remaining := cost.Price(liveSweepCeiling - total)
+	livePinTrimmed(t, d, "the calls-made line",
+		fmt.Sprintf(liveCallsMadeFormat, len(calls), liveCounted(liveCallsByModel(calls))),
+		strings.TrimSpace(d.headline(t, "callsMade")))
+	livePinTrimmed(t, d, "the tokens line", fmt.Sprintf(liveTokensLineFormat, 90403, 0),
+		strings.TrimSpace(d.headline(t, "tokensReported")))
+	livePinTrimmed(t, d, "the neurons line", fmt.Sprintf(liveNeuronsLineFormat, neurons),
+		strings.TrimSpace(d.headline(t, "neuronsImplied")))
+	livePinTrimmed(t, d, "the dollars line", fmt.Sprintf(liveDollarsLineFormat, total, total),
+		strings.TrimSpace(d.headline(t, "dollarsBooked")))
+	livePinTrimmed(t, d, "the budget line", fmt.Sprintf(liveBudgetLineFormat, cost.Price(liveSweepCeiling), total, remaining),
+		strings.TrimSpace(d.headline(t, "budget")))
+	livePinTrimmed(t, d, "the free-allowance line", fmt.Sprintf(liveFreeAllowFormat, liveFreeDailyNeurons, neurons < liveFreeDailyNeurons),
+		strings.TrimSpace(d.headline(t, "freeAllowance")))
+	// The doc's literals, in one table.
+	for _, want := range []struct{ label, got, want string }{
+		{"the ceiling", cost.Price(liveSweepCeiling).String(), "$0.08"},
+		{"spent", total.String(), "$0.020048907"},
+		{"remaining", remaining.String(), "$0.059951093"},
+		{"neurons printed", fmt.Sprintf("%.0f", neurons), "1823"},
+		{"under the free day", fmt.Sprint(neurons < liveFreeDailyNeurons), "true"},
+	} {
+		if want.got != want.want {
+			t.Errorf("live pin: %s is %s, want %s", want.label, want.got, want.want)
+		}
+	}
+
+	// ---- The probe, and the sweep it priced ----
+	p := parseLiveTranscript(t, "probe.txt")
+	pcalls := liveCallsFromTranscript(t, p)
+	if len(pcalls) != 2 {
+		t.Fatalf("live pin: %s: %d cost rows, want the two probe calls", p.name, len(pcalls))
+	}
+	var probeJudge, probeCheck liveCall
+	for _, c := range pcalls {
+		switch c.label {
+		case liveProbeJudge:
+			probeJudge = c
+		case liveProbeCheck:
+			probeCheck = c
+		default:
+			t.Fatalf("live pin: %s: unexpected probe call %q", p.name, c.label)
+		}
+	}
+	for _, r := range p.costRows {
+		c := probeJudge
+		if r.label == liveProbeCheck {
+			c = probeCheck
+		}
+		livePinLine(t, p, r.label, fmt.Sprintf(probeCostRowFormat, c.label, c.model, c.tokens, c.neurons, c.booked), r.raw)
+	}
+	probeTotal := liveCallsDollars(pcalls)
+	pb, ok := p.lineWith("probe booked")
+	if !ok {
+		t.Fatalf("live pin: %s: no probe booking line", p.name)
+	}
+	livePinLine(t, p, "the probe's booking", fmt.Sprintf(probeBookedLine, len(pcalls), probeTotal, probeTotal,
+		cost.Price(liveProbeCeiling-probeTotal)), pb)
+	// The projection, from the probe's two readings at full precision: 37
+	// judge calls on the probe's shape, 2 clef checks, 2 clef-flash checks
+	// on the same bytes.
+	projection, projectionPrice := projectLiveSweep(probeJudge.neurons, probeCheck.neurons,
+		liveNeurons(probeCheck.tokens, liveNeuronsPerMillion[systemone.ModelClefFlash]),
+		liveJudgeCalls, 2, 2)
+	if got := fmt.Sprintf("%.5f", projection); got != "1791.49739" {
+		t.Errorf("live pin: the projection is %s neurons, want 1791.49739", got)
+	}
+	if got := projectionPrice.String(); got != "$0.019706471" {
+		t.Errorf("live pin: the projection books %s, want $0.019706471", got)
+	}
+	livePinLineWith(t, p, "projected sweep:", "the projection line",
+		fmt.Sprintf(probeProjectionFormat, liveJudgeCalls, probeJudge.neurons, probeCheck.neurons,
+			liveNeurons(probeCheck.tokens, liveNeuronsPerMillion[systemone.ModelClefFlash]), projection, projectionPrice))
+	livePinLineWith(t, p, "sweep ceiling", "the ceiling line",
+		fmt.Sprintf(probeCeilingLine, cost.Price(liveSweepCeiling), projectionPrice < cost.Price(liveSweepCeiling)))
+	livePinLineWith(t, p, "free plan allows", "the free-plan line",
+		fmt.Sprintf(probeFreeLine, liveFreeDailyNeurons, projection < liveFreeDailyNeurons))
+	// The probe's two answers beside the sweep's: the same requests, the same
+	// readings, which is the determinism docs/evaluation.md leans on.
+	pj, ok := p.lineWith("probe judge")
+	if !ok {
+		t.Fatalf("live pin: %s: no probe judge line", p.name)
+	}
+	_, byID := loadLiveGroundTruth(t)
+	sample, ok := byID["V04"]
+	if !ok {
+		t.Fatalf("live pin: no ground truth for V04")
+	}
+	issue := ""
+	for _, r := range d.judgeRows {
+		if r.label == liveProbeJudge {
+			issue = r.issue
+		}
+	}
+	if issue == "" {
+		t.Fatalf("live pin: %s: the sweep never logged %s", d.name, liveProbeJudge)
+	}
+	livePinTrimmed(t, p, "the probe judge line",
+		fmt.Sprintf(probeJudgeLineFormat, liveProbeJudge, len(sample.Met)+len(sample.Miss), issue), pj)
+	pc, ok := p.lineWith("probe check")
+	if !ok {
+		t.Fatalf("live pin: %s: no probe check line", p.name)
+	}
+	shown := byExchange[liveProbeCheck]
+	livePinTrimmed(t, p, "the probe check line",
+		fmt.Sprintf(probeCheckLineFormat, liveProbeCheck, shown.change, shown.same, shown.met, shown.shown), pc)
+
+	// ---- The second pass, and the two runs together ----
+	d2 := parseLiveTranscript(t, "sweep-2.txt")
+	calls2 := liveCallsFromTranscript(t, d2)
+	if len(calls2) != len(calls) {
+		t.Fatalf("live pin: %s: %d cost rows, want %d", d2.name, len(calls2), len(calls))
+	}
+	// Replaying the second pass through the same pins: the totals, not the
+	// lines again (the lines are pinned identical to the first pass by
+	// TestLiveSweepsAgree).
+	for _, c := range calls2 {
+		if got := liveImpliedPrice(c.tokens, liveNeuronsPerMillion[c.model]); got != c.booked {
+			t.Errorf("live pin: %s: %s implies %s, the ledger booked %s", d2.name, c.label, got, c.booked)
+		}
+	}
+	total2 := liveCallsDollars(calls2)
+	neurons2 := liveCallsNeurons(calls2)
+	if total2 != total {
+		t.Errorf("live pin: %s books %s, the first pass booked %s", d2.name, total2, total)
+	}
+	if neurons2 != neurons {
+		t.Errorf("live pin: %s implies %.3f neurons, the first pass implied %.3f", d2.name, neurons2, neurons)
+	}
+	// The three paid runs together: what the day spent, in neurons and in
+	// dollars. Both figures are what docs/evaluation.md and the phase charter
+	// quote, and both passes plus the probe is what T3.9e budgets against.
+	allDollars := total + total2 + probeTotal
+	allNeurons := neurons + neurons2 + liveCallsNeurons(pcalls)
+	if got := allDollars.String(); got != "$0.041551003" {
+		t.Errorf("live pin: the paid runs book %s, want $0.041551003", got)
+	}
+	if got := fmt.Sprintf("%.3f", allNeurons); got != "3777.359" {
+		t.Errorf("live pin: the paid runs imply %s neurons, want 3777.359", got)
+	}
+	// The figure a reader adds out of the printed lines: each run's rounded
+	// neurons, and the rounded dollars to four places.
+	printed := fmt.Sprintf("%.0f", neurons) + "+" + fmt.Sprintf("%.0f", neurons2) + "+" + fmt.Sprintf("%.0f", liveCallsNeurons(pcalls))
+	if printed != "1823+1823+132" {
+		t.Errorf("live pin: the printed per-run neurons read %s, want 1823+1823+132 (3,778 in all)", printed)
+	}
+	// docs/evaluation.md and the phase charter quote this to four decimals,
+	// truncating: $0.0415 of the exact $0.041551003.
+	if !strings.HasPrefix(allDollars.String(), "$0.0415") {
+		t.Errorf("live pin: the paid runs book %s, want the $0.0415 the doc quotes at four decimals", allDollars)
+	}
+	if !strings.HasPrefix(total.String(), "$0.0200") {
+		t.Errorf("live pin: one pass books %s, want the $0.0200 the doc quotes", total)
+	}
+	if !strings.HasPrefix(remaining.String(), "$0.0599") {
+		t.Errorf("live pin: the pass leaves %s, want the $0.0600 the doc quotes", remaining)
+	}
+}
+
+// liveSweepTokensFor returns the input tokens the transcript logged for one
+// cost row's call: the per-call judge or check line the sweep printed beside
+// the same label. A cost row with no call line beside it is the print
+// changing shape, which is what these pins catch.
+func liveSweepTokensFor(t *testing.T, d liveTranscriptData, label string, byExchange map[string]liveCheckRow) int {
+	t.Helper()
+	if r, ok := byExchange[label]; ok {
+		return r.tokens
+	}
+	for _, r := range d.judgeRows {
+		if r.label == label {
+			return r.tokens
+		}
+	}
+	t.Fatalf("live pin: %s: %s is in the cost table but no call line carries it", d.name, label)
+	return 0
+}
+
+// TestLiveSweepsAgree pins the claim the paid re-record rests on: the two
+// 41-call passes printed the same report line for line, so the gap to the
+// recorded set is a service move and not call-to-call noise. The transcripts
+// differ only in the runner's timing lines, which carry no payload and are
+// not read here.
+func TestLiveSweepsAgree(t *testing.T) {
+	one := readLiveTranscript(t, "sweep-1.txt")
+	two := readLiveTranscript(t, "sweep-2.txt")
+	if len(one.lines) != len(two.lines) {
+		t.Fatalf("live pin: %s printed %d payload lines, %s printed %d", one.name, len(one.lines), two.name, len(two.lines))
+	}
+	for i := range one.lines {
+		if one.lines[i] != two.lines[i] {
+			t.Errorf("live pin: line %d differs:\n %s: %q\n %s: %q", i, one.name, one.lines[i], two.name, two.lines[i])
+		}
+	}
+	d1 := parseLiveTranscript(t, "sweep-1.txt")
+	d2 := parseLiveTranscript(t, "sweep-2.txt")
+	if len(d1.cellRows) != len(d2.cellRows) || len(d1.cellRows) != 273 {
+		t.Fatalf("live pin: %d every-cell rows in each pass, want 273", len(d1.cellRows))
+	}
+	for i := range d1.cellRows {
+		if d1.cellRows[i].live != d2.cellRows[i].live {
+			t.Errorf("live pin: %s %s read %.4f then %.4f", d1.cellRows[i].sample, d1.cellRows[i].criterion,
+				d1.cellRows[i].live, d2.cellRows[i].live)
+		}
 	}
 }
