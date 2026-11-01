@@ -323,8 +323,10 @@ func TestARecordingHoldsNoCredential(t *testing.T) {
 }
 
 // TestAFailedCallStoresNothing: a half-written or error-shaped recording
-// is worse than a missing one, because the next Open either fails on it
-// or serves a broken reply to a request nobody answered.
+// is worse than a missing one, because the next Open either fails on it or
+// serves a broken reply to a request nobody answered. The request carries
+// a photo, so this says what it looks like: an image the failed call
+// planned before it ran, and did not write after it did not work.
 func TestAFailedCallStoresNothing(t *testing.T) {
 	t.Parallel()
 	dir := filepath.Join(t.TempDir(), "clef")
@@ -332,7 +334,8 @@ func TestAFailedCallStoresNothing(t *testing.T) {
 	boom := fmt.Errorf("the call was refused: %s", workersTestToken)
 	fake.fail(boom)
 	recorder := newRecorder(t, RecorderConfig{Inner: fake, Dir: dir})
-	req := sampleRequest(t, nil)
+	photo := []byte{0xff, 0xd8, 0x05, 0x06}
+	req := sampleRequest(t, photo)
 
 	_, err := recorder.Record(context.Background(), "judge-date", req)
 	if !errors.Is(err, boom) {
@@ -342,16 +345,30 @@ func TestAFailedCallStoresNothing(t *testing.T) {
 		t.Fatalf("the call was not made")
 	}
 	assertNothingWritten(t, dir)
+	// Not the image either. It was settled as a file to write before the
+	// call, and a call that did not answer stores nothing at all, so the
+	// name never appears.
+	if entries, err := os.ReadDir(filepath.Join(dir, "images")); err == nil {
+		t.Fatalf("a failed call left %d image files behind: %v", len(entries), entries)
+	}
 
 	fake.set(noulResponse(0.5))
 	if _, err := recorder.Record(context.Background(), "judge-date", req); err != nil {
 		t.Fatalf("a name that failed once is not poisoned: %v", err)
 	}
+	raw := readFile(t, filepath.Join(dir, "judge-date.json"))
+	refs := imageRefs(t, raw)
+	if len(refs) != 1 {
+		t.Fatalf("the retried call references %d images, want the one photo", len(refs))
+	}
+	if got := readFile(t, filepath.Join(dir, filepath.FromSlash(refs[0]))); !bytes.Equal(got, photo) {
+		t.Fatal("the retried call did not write the photo it had planned")
+	}
 	replay := openDir(t, dir)
 	if _, err := replay.Ask(context.Background(), req); err != nil {
 		t.Fatal(err)
 	}
-	if strings.Contains(string(readFile(t, filepath.Join(dir, "judge-date.json"))), workersTestToken) {
+	if strings.Contains(string(raw), workersTestToken) {
 		t.Fatal("the failure's text reached the corpus")
 	}
 }
@@ -1370,8 +1387,9 @@ func imageRefs(t *testing.T, raw json.RawMessage) []string {
 }
 
 // assertSameEnvelopeShape compares a fresh recording against a committed
-// one: the same fields in the same places, the same request document,
-// and the same stored reply but for the milliseconds the call took.
+// one: the same fields in the same places, the same request document, the
+// same one-space indent, and the same stored reply but for the
+// milliseconds the call took.
 func assertSameEnvelopeShape(t *testing.T, committed, fresh string) {
 	t.Helper()
 	corpusRaw := readFile(t, committed)
@@ -1405,6 +1423,17 @@ func assertSameEnvelopeShape(t *testing.T, committed, fresh string) {
 	if got := string(objectAt(t, freshResponse, "status")); got != string(objectAt(t, corpusResponse, "status")) {
 		t.Fatalf("status %s, want %s", got, objectAt(t, corpusResponse, "status"))
 	}
+	// The indent is compared byte for byte, not only claimed: the same
+	// leading whitespace at the same line of both files, and that
+	// whitespace is one space. Key order is where the corpus disagrees
+	// with itself; indentation is where it does not.
+	freshIndent, corpusIndent := firstLineIndent(freshRaw), firstLineIndent(corpusRaw)
+	if !bytes.Equal(freshIndent, corpusIndent) {
+		t.Fatalf("the fresh file indents its first line %q, the committed one %q", freshIndent, corpusIndent)
+	}
+	if !bytes.Equal(freshIndent, []byte(" ")) {
+		t.Fatalf("the indent is %q, want one space", freshIndent)
+	}
 	drop := func(raw json.RawMessage) json.RawMessage {
 		var fields map[string]json.RawMessage
 		if err := json.Unmarshal(raw, &fields); err != nil {
@@ -1417,4 +1446,16 @@ func assertSameEnvelopeShape(t *testing.T, committed, fresh string) {
 		t.Fatalf("the stored reply is not the committed one but for its timing:\nfresh  %s\ncorpus %s",
 			freshResponse, corpusResponse)
 	}
+}
+
+// firstLineIndent returns the leading whitespace of the first line after
+// the opening brace, where an indent shows. A file with no second line
+// has none, which fails the comparison it is used in.
+func firstLineIndent(raw []byte) []byte {
+	lines := bytes.Split(raw, []byte("\n"))
+	if len(lines) < 2 {
+		return nil
+	}
+	line := lines[1]
+	return line[:len(line)-len(bytes.TrimLeft(line, " \t"))]
 }
