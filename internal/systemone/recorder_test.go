@@ -400,6 +400,95 @@ func TestARefusedCallMakesNoCallAtAll(t *testing.T) {
 	}
 }
 
+// TestAnImageThatAppearsBetweenPlanningAndPublishingIsVerified: the write
+// step's own rule, run in the window a concurrent call creates. The plan
+// said the digest file was absent; by the time the recording publishes,
+// something is standing in its name. The recorder checks the bytes
+// instead of trusting the name, because replay.Open fails an entire
+// directory on one empty image and a reference to other bytes records a
+// request nobody sent.
+func TestAnImageThatAppearsBetweenPlanningAndPublishingIsVerified(t *testing.T) {
+	t.Parallel()
+	data := []byte{0xff, 0xd8, 0x31, 0x32, 0x33}
+	req := Request{
+		Model:     ModelClef,
+		Images:    []Image{{ContentType: "image/jpeg", Bytes: data}},
+		State:     jsonRaw(t, map[string]string{"occasion": "date"}),
+		Questions: sampleQuestions(t),
+	}
+	dir := filepath.Join(t.TempDir(), "clef")
+	recorder := newRecorder(t, RecorderConfig{Inner: newFakeInner(), Dir: dir})
+
+	// The plan is the one this request settles: the image is not there,
+	// so the recorder intends to write it.
+	plan, err := recorder.settleImages(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(plan.pending) != 1 || len(plan.refs) != 1 {
+		t.Fatalf("plan %v", plan)
+	}
+	path := filepath.Join(dir, filepath.FromSlash(plan.pending[0].rel))
+
+	for _, name := range []string{"empty", "other bytes"} {
+		var standing []byte
+		if name == "empty" {
+			standing = nil
+		} else {
+			standing = []byte{0x00, 0x01, 0x02}
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, standing, 0o644); err != nil {
+			t.Fatal(err)
+		}
+		err := recorder.writeImages(plan.pending)
+		if err == nil {
+			t.Fatalf("%s: a file nobody wrote was published as the recording's image", name)
+		}
+		if !strings.Contains(err.Error(), plan.pending[0].rel) {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if got := readFile(t, path); !bytes.Equal(got, standing) {
+			t.Fatalf("%s: the refusal rewrote the file that was already there", name)
+		}
+		if err := os.Remove(path); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// The innocent case: another call wrote the same bytes under the same
+	// digest name while this one was in flight. Nothing has to be written
+	// again and the recording is not refused.
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := recorder.writeImages(plan.pending); err != nil {
+		t.Fatalf("a matching image already on disk was refused: %v", err)
+	}
+	if got := readFile(t, path); !bytes.Equal(got, data) {
+		t.Fatal("the matching file was rewritten")
+	}
+
+	// And a fresh write leaves no half file: the only name in images/ is
+	// the digest, and a temp file is gone with the call that made it.
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := recorder.writeImages(plan.pending); err != nil {
+		t.Fatal(err)
+	}
+	if got := readFile(t, path); !bytes.Equal(got, data) {
+		t.Fatal("the published bytes are not the ones planned")
+	}
+	for _, entry := range fileNames(t, filepath.Dir(path)) {
+		if !strings.HasSuffix(entry, ".jpg") {
+			t.Fatalf("an image publish left %s behind", entry)
+		}
+	}
+}
+
 // TestTheRecorderRefusesToOverwrite: the default is refusal, before the
 // call, and the explicit allow does what it says.
 func TestTheRecorderRefusesToOverwrite(t *testing.T) {
@@ -903,6 +992,78 @@ func TestTwoCallsNamingOneExchangeDoNotShareTheFile(t *testing.T) {
 	}
 	if _, err := openDir(t, dir).Ask(ctx, req); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestTwoCallsSharingAnUnseenImagePublishOneWholeImage: the window a paid
+// run can fall into, made deterministic. Two calls, two names, one photo
+// neither has seen. Both settle the image as "the file I will write"
+// while both sit inside the inner client, which cannot release them until
+// the test says so, so both plans are made before either publish. Then
+// both come back and one of them loses the link, and the loser verifies
+// the bytes that arrived rather than trusting the name. The corpus is one
+// whole image and two exchanges that open.
+func TestTwoCallsSharingAnUnseenImagePublishOneWholeImage(t *testing.T) {
+	t.Parallel()
+	dir := filepath.Join(t.TempDir(), "clef")
+	data := []byte{0xff, 0xd8, 0x41, 0x42, 0x43}
+	first := Request{
+		Model:     ModelClef,
+		Images:    []Image{{ContentType: "image/jpeg", Bytes: data}},
+		State:     jsonRaw(t, map[string]string{"occasion": "date"}),
+		Questions: sampleQuestions(t),
+	}
+	second := first
+	second.State = jsonRaw(t, map[string]string{"occasion": "interview"})
+
+	fake := newFakeInner()
+	fake.set(noulResponse(0.5))
+	fake.entered = make(chan struct{}, 2)
+	fake.release = make(chan struct{})
+	recorder := newRecorder(t, RecorderConfig{Inner: fake, Dir: dir})
+	ctx := context.Background()
+
+	done := make(chan error, 2)
+	for _, plan := range []struct {
+		exchange string
+		req      Request
+	}{{"judge-one", first}, {"judge-two", second}} {
+		go func(exchange string, req Request) {
+			_, err := recorder.Record(ctx, exchange, req)
+			done <- err
+		}(plan.exchange, plan.req)
+	}
+	<-fake.entered
+	<-fake.entered
+	close(fake.release)
+	for i := 0; i < 2; i++ {
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	}
+	if fake.count() != 2 {
+		t.Fatalf("inner calls %d, want 2", fake.count())
+	}
+
+	images := filepath.Join(dir, "images")
+	entries := fileNames(t, images)
+	if len(entries) != 1 {
+		t.Fatalf("one photo shared by two calls, %d files: %v", len(entries), entries)
+	}
+	if want := digestName(data) + ".jpg"; entries[0] != want {
+		t.Fatalf("the image is %s, want %s", entries[0], want)
+	}
+	if got := readFile(t, filepath.Join(images, entries[0])); !bytes.Equal(got, data) {
+		t.Fatal("the shared image is not the whole photo: the replay would refuse it")
+	}
+	if names := fileNames(t, dir); !reflect.DeepEqual(names, []string{"images", "judge-one.json", "judge-two.json"}) {
+		t.Fatalf("%v", names)
+	}
+	replay := openDir(t, dir)
+	for _, req := range []Request{first, second} {
+		if _, err := replay.Ask(ctx, req); err != nil {
+			t.Fatalf("the corpus one image serves: %v", err)
+		}
 	}
 }
 

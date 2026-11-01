@@ -35,6 +35,12 @@ const imageDir = "images"
 // crash leaves behind.
 const tempPattern = ".exchange-*.tmp"
 
+// imageTempPattern names a half-written image file. It is not a .json,
+// and it cannot be a digest name, which is a bare hex string with a
+// picture suffix, so the temporary file is never the file a reference
+// reads.
+const imageTempPattern = ".image-*.tmp"
+
 // AlreadyRecorded is a recording the Recorder refused to replace. The
 // default is refusal because a re-record is a paid run: a call that
 // spends to overwrite what the last call paid for is a loss twice, and
@@ -97,8 +103,12 @@ type RecorderConfig struct {
 // refused on the reader's own bytes.
 //
 // Safe for concurrent use. Two calls naming one exchange are refused,
-// and a file is published by link, so one recording is never read as a
-// half-written one.
+// and a recording and its images are each published by an exclusive
+// link, so neither is ever read as a half-written one. An image another
+// call wrote first is verified, not trusted: a file holding other bytes,
+// or no bytes at all, is a refusal rather than a success. The sequential
+// path is unaffected: one call at a time writes each digest once and
+// reuses it thereafter.
 type Recorder struct {
 	inner     SystemOne
 	dir       string
@@ -335,7 +345,7 @@ func (r *Recorder) writeImages(pending []pendingImage) error {
 		if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil {
 			return fmt.Errorf("systemone: %s: %w", image.rel, err)
 		}
-		if err := writeFileExclusive(abs, image.data); err != nil {
+		if err := publishImage(abs, image.data); err != nil {
 			return fmt.Errorf("systemone: %s: %w", image.rel, err)
 		}
 	}
@@ -599,25 +609,66 @@ func imageExtension(contentType string) (string, error) {
 	}
 }
 
-// writeFileExclusive creates a file only when it is not there. An
-// existing one is the same bytes under the same digest name, so it is
-// left alone.
-func writeFileExclusive(path string, data []byte) error {
-	opened, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+// publishImage puts one picture on disk the way an exchange gets there:
+// the bytes go to a temporary file, are fsynced, and reach their name by
+// an exclusive link, so a reader sees a whole image or nothing.
+//
+// A name already taken is verified, never trusted. Two calls that share
+// an image neither of them has seen both plan to write it, and one of
+// them loses the link; the loser checks the bytes that arrived. An empty
+// file or a different picture is a refusal, because replay.Open fails an
+// entire directory on one empty image and a reference to other bytes
+// records a request that was never sent.
+func publishImage(path string, data []byte) error {
+	if err := verifyImage(path, data); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), imageTempPattern)
 	if err != nil {
+		return err
+	}
+	name := tmp.Name()
+	defer os.Remove(name)
+	if _, err := tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(name, 0o644); err != nil {
+		return err
+	}
+	if err := os.Link(name, path); err != nil {
 		if errors.Is(err, fs.ErrExist) {
-			return nil
+			return verifyImage(path, data)
 		}
 		return err
 	}
-	defer opened.Close()
-	if _, err := opened.Write(data); err != nil {
+	return nil
+}
+
+// verifyImage reads an image already sitting at path and insists it holds
+// exactly the bytes this recording would have written. An empty one is
+// refused on its own terms: the reader fails the whole directory on it.
+func verifyImage(path string, want []byte) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
 		return err
 	}
-	if err := opened.Sync(); err != nil {
-		return err
+	if len(data) == 0 {
+		return errors.New("the file there is empty, and the replay refuses an empty image")
 	}
-	return opened.Chmod(0o644)
+	if !bytes.Equal(data, want) {
+		return errors.New("the file there holds other bytes")
+	}
+	return nil
 }
 
 func marshalIndent(v any) ([]byte, error) {
