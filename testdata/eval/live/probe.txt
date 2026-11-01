@@ -1,0 +1,17 @@
+=== RUN   TestLiveProbe
+    live_test.go:708: consistency: the shipped [judge] and [check] numbers equal the offline evaluation's chosen settings: true
+    live_test.go:708: shipped lines read from dresscode.toml.example: judge met 0.62800 over 4 overrides; check change_made 0.50085 same_person 0.48355 criterion_met 0.50315 model "clef"
+    live_test.go:736: probe: two calls, one judge and one check, sequential calls, no t.Parallel, fail fast on the first call error
+    live_test.go:737: PROBE COST (response usage -> documented rate -> ledger booking)
+    live_test.go:738:   call                             model         tokens    neurons         booked
+    live_test.go:740:   judge-V04-family-function        clef            1963      42.83   $0.000471117
+    live_test.go:740:   check-clef-V04-to-V05            clef            4092      89.28   $0.000982072
+    live_test.go:742: probe judge judge-V04-family-function read 7 criteria and named the biggest issue "family-earring-festive"
+    live_test.go:744: probe check check-clef-V04-to-V05 gates 0.9820 / 0.9246 / 0.9744; shown at the shipped lines: true
+    live_test.go:760:   projected sweep: 37 judge x 42.83 + 2 clef check x 89.28 + 2 flash check x 14.14 = 1791 neurons = $0.019706471
+    live_test.go:762:   sweep ceiling $0.08; the projection fits under it: true
+    live_test.go:764:   free plan allows 10000 neurons a day; the projection fits under it: true
+    live_test.go:770:   probe booked 2 charges, total $0.001453189; budget spent $0.001453189, remaining $0.008546811
+--- PASS: TestLiveProbe (6.09s)
+PASS
+ok  	github.com/nrynss/dresscode/internal/eval	6.099s
