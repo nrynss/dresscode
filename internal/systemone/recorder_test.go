@@ -659,23 +659,32 @@ func TestAnUnmatchedImageIsWrittenOnce(t *testing.T) {
 
 // TestAResolverNamingTheWrongPhotoIsRefused: a reference to bytes other
 // than the ones sent would record a request that was never made, and the
-// replay would key it as if it had been.
+// replay would key it as if it had been. Every form of that refusal is
+// reached before the inner client runs, so a resolver pointed at the
+// wrong tree costs nothing: no call spent, no file written.
 func TestAResolverNamingTheWrongPhotoIsRefused(t *testing.T) {
 	t.Parallel()
-	dir := filepath.Join(t.TempDir(), "clef")
-	wrong := func(_, contentType string, _ []byte) (string, bool) {
-		return "../photos/other.jpg", true
-	}
 	fake := newFakeInner()
 	fake.set(noulResponse(0.5))
-	recorder := newRecorder(t, RecorderConfig{Inner: fake, Dir: dir, Images: wrong})
 	req := sampleRequest(t, []byte{0xff, 0xd8, 0x09})
-	_, err := recorder.Record(context.Background(), "judge-date", req)
-	if err == nil || !strings.Contains(err.Error(), "../photos/other.jpg") {
+	ctx := context.Background()
+
+	// A reference naming a file that is not there.
+	dir := filepath.Join(t.TempDir(), "clef")
+	unreadable := func(_, _ string, _ []byte) (string, bool) {
+		return "../photos/other.jpg", true
+	}
+	if _, err := newRecorder(t, RecorderConfig{Inner: fake, Dir: dir, Images: unreadable}).
+		Record(ctx, "judge-date", req); err == nil ||
+		!strings.Contains(err.Error(), "../photos/other.jpg") {
 		t.Fatalf("a reference that cannot be read was accepted: %v", err)
+	}
+	if fake.count() != 0 {
+		t.Fatalf("a reference naming no file spent %d inner calls", fake.count())
 	}
 	assertNothingWritten(t, dir)
 
+	// A reference naming a file that holds other bytes.
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, "photos"), 0o755); err != nil {
 		t.Fatal(err)
@@ -683,12 +692,15 @@ func TestAResolverNamingTheWrongPhotoIsRefused(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(root, "photos", "other.jpg"), []byte{0x01, 0x02}, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	recorder = newRecorder(t, RecorderConfig{Inner: fake, Dir: filepath.Join(root, "clef"), Images: func(_, _ string, _ []byte) (string, bool) {
+	recorder := newRecorder(t, RecorderConfig{Inner: fake, Dir: filepath.Join(root, "clef"), Images: func(_, _ string, _ []byte) (string, bool) {
 		return "../photos/other.jpg", true
 	}})
-	if _, err := recorder.Record(context.Background(), "judge-date", req); err == nil ||
+	if _, err := recorder.Record(ctx, "judge-date", req); err == nil ||
 		!strings.Contains(err.Error(), "other than the call") {
 		t.Fatalf("other bytes than the call's were accepted: %v", err)
+	}
+	if fake.count() != 0 {
+		t.Fatalf("a reference to other bytes spent %d inner calls", fake.count())
 	}
 	assertNothingWritten(t, filepath.Join(root, "clef"))
 
@@ -696,9 +708,74 @@ func TestAResolverNamingTheWrongPhotoIsRefused(t *testing.T) {
 	recorder = newRecorder(t, RecorderConfig{Inner: fake, Dir: filepath.Join(root, "clef2"), Images: func(_, _ string, _ []byte) (string, bool) {
 		return filepath.Join(root, "photos", "other.jpg"), true
 	}})
-	if _, err := recorder.Record(context.Background(), "judge-date", req); err == nil ||
+	if _, err := recorder.Record(ctx, "judge-date", req); err == nil ||
 		!strings.Contains(err.Error(), "relative") {
 		t.Fatalf("an absolute reference was accepted: %v", err)
+	}
+	if fake.count() != 0 {
+		t.Fatalf("an absolute reference spent %d inner calls in all", fake.count())
+	}
+	assertNothingWritten(t, filepath.Join(root, "clef2"))
+}
+
+// TestAnImageFileThatCannotBeHonouredIsRefusedBeforeTheCall: the other
+// three ways an image path can fail, each of them settled before the
+// inner client runs. A digest file that holds other bytes, one that holds
+// no bytes at all, and one that cannot be read are refusals that cost
+// nothing, not calls that end with nothing stored.
+func TestAnImageFileThatCannotBeHonouredIsRefusedBeforeTheCall(t *testing.T) {
+	t.Parallel()
+	data := []byte{0xff, 0xd8, 0x21, 0x22}
+	req := Request{
+		Model:     ModelClef,
+		Images:    []Image{{ContentType: "image/jpeg", Bytes: data}},
+		State:     jsonRaw(t, map[string]string{"occasion": "date"}),
+		Questions: sampleQuestions(t),
+	}
+	ctx := context.Background()
+
+	for _, name := range []string{"other bytes", "empty file", "unreadable name"} {
+		fake := newFakeInner()
+		fake.set(noulResponse(0.5))
+		dir := filepath.Join(t.TempDir(), "clef")
+		recorder := newRecorder(t, RecorderConfig{Inner: fake, Dir: dir})
+		path := filepath.Join(dir, "images", digestName(data)+".jpg")
+		switch name {
+		case "other bytes":
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, []byte{0x00, 0x01}, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		case "empty file":
+			// The shape replay.Open fails a whole directory on.
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(path, nil, 0o644); err != nil {
+				t.Fatal(err)
+			}
+		case "unreadable name":
+			if err := os.MkdirAll(path, 0o755); err != nil {
+				t.Fatal(err)
+			}
+		}
+		_, err := recorder.Record(ctx, "judge-date", req)
+		if err == nil || !strings.Contains(err.Error(), "images/") {
+			t.Fatalf("%s: the digest path was accepted: %v", name, err)
+		}
+		if fake.count() != 0 {
+			t.Fatalf("%s: the refusal spent %d inner calls", name, fake.count())
+		}
+		if _, err := os.Stat(filepath.Join(dir, "judge-date.json")); !errors.Is(err, os.ErrNotExist) {
+			t.Fatalf("%s: a refused call left an exchange behind", name)
+		}
+		if name == "other bytes" {
+			if got := readFile(t, path); !bytes.Equal(got, []byte{0x00, 0x01}) {
+				t.Fatalf("%s: the refusal rewrote someone else's file", name)
+			}
+		}
 	}
 }
 

@@ -55,9 +55,10 @@ func (e *AlreadyRecorded) Error() string {
 // write the bytes under <dir>/images/ itself.
 //
 // The Recorder reads the file a resolver names and compares its bytes
-// with the ones the call sent before it stores the reference. A
-// reference to other bytes would be a recording of a request that was
-// never sent, and the replay would key it as one that was.
+// with the ones the call carries before the inner client runs and before
+// it stores the reference. A reference to other bytes would be a
+// recording of a request that was never sent, and the replay would key it
+// as one that was.
 type ImageResolver func(dir, contentType string, data []byte) (ref string, ok bool)
 
 // RecorderConfig is what a Recorder wraps and where it writes.
@@ -86,8 +87,14 @@ type RecorderConfig struct {
 //
 // It refuses before the inner client runs, so a wasted call is never
 // paid for: a name that cannot be a file, a request the model would
-// refuse, and a recording already on disk are each answered with no
-// call made at all.
+// refuse, a name another call is holding, a recording already on disk,
+// and every image decision. The image decisions are the reference a
+// resolver names, which must exist and must hold the bytes that went
+// out, and the digest file a written image would land in, which must be
+// either absent or exactly those bytes. What only a reply can decide is
+// refused after the call and before any byte of it reaches disk: an
+// inner error stores nothing, and a reply the replay could not serve is
+// refused on the reader's own bytes.
 //
 // Safe for concurrent use. Two calls naming one exchange are refused,
 // and a file is published by link, so one recording is never read as a
@@ -177,6 +184,15 @@ func (r *Recorder) record(ctx context.Context, exchange string, req Request) (Re
 	}
 	defer release()
 
+	// Every image decision is made here, before the call: which reference
+	// names which bytes, which digest file has to exist, and which file
+	// will be written. A resolver that cannot be honoured is a refusal
+	// that costs nothing, because the money has not moved yet.
+	images, err := r.settleImages(req)
+	if err != nil {
+		return Response{}, err
+	}
+
 	start := time.Now()
 	resp, err := r.inner.Ask(ctx, req)
 	if err != nil {
@@ -186,32 +202,31 @@ func (r *Recorder) record(ctx context.Context, exchange string, req Request) (Re
 		// answered.
 		return Response{}, err
 	}
-	stored, err := r.envelope(exchange, req, resp, time.Since(start))
+	payload, err := r.envelope(exchange, req, resp, time.Since(start), images.refs)
 	if err != nil {
 		return Response{}, err
 	}
-	if err := r.writeImages(stored.pending); err != nil {
+	if err := r.writeImages(images.pending); err != nil {
 		return Response{}, err
 	}
-	if err := r.publish(exchange, stored.payload); err != nil {
+	if err := r.publish(exchange, payload); err != nil {
 		return Response{}, err
 	}
 	return resp, nil
 }
 
-type exchangePlan struct {
-	payload []byte
+// imagePlan is the recording's whole image decision, settled before the
+// inner client runs: the references the stored request carries, and the
+// files that have to be written with it.
+type imagePlan struct {
+	refs    []recordedImage
 	pending []pendingImage
 }
 
-// envelope builds the file's bytes and the image files that have to be
-// written with it. Nothing is written here: a request the recorder
-// cannot encode leaves the directory as it was.
-func (r *Recorder) envelope(exchange string, req Request, resp Response, elapsed time.Duration) (exchangePlan, error) {
-	refs, pending, err := r.planImages(req.Images)
-	if err != nil {
-		return exchangePlan{}, err
-	}
+// envelope builds the file's bytes around the references settleImages
+// chose. Nothing is written here: a request the recorder cannot encode
+// leaves the directory as it was.
+func (r *Recorder) envelope(exchange string, req Request, resp Response, elapsed time.Duration, refs []recordedImage) ([]byte, error) {
 	requestBody, err := json.Marshal(recordedBody{
 		Model:     req.Model,
 		Images:    refs,
@@ -219,11 +234,11 @@ func (r *Recorder) envelope(exchange string, req Request, resp Response, elapsed
 		Questions: req.Questions,
 	})
 	if err != nil {
-		return exchangePlan{}, fmt.Errorf("systemone: %s: request: %w", exchange, err)
+		return nil, fmt.Errorf("systemone: %s: request: %w", exchange, err)
 	}
 	responseBody, err := clefEnvelope(resp)
 	if err != nil {
-		return exchangePlan{}, fmt.Errorf("systemone: %s: response: %w", exchange, err)
+		return nil, fmt.Errorf("systemone: %s: response: %w", exchange, err)
 	}
 	response := storedResponse{
 		Status:    recordedStatus,
@@ -235,10 +250,10 @@ func (r *Recorder) envelope(exchange string, req Request, resp Response, elapsed
 	// them reach the disk.
 	probe, err := json.Marshal(response)
 	if err != nil {
-		return exchangePlan{}, fmt.Errorf("systemone: %s: response: %w", exchange, err)
+		return nil, fmt.Errorf("systemone: %s: response: %w", exchange, err)
 	}
 	if _, ok := decodeResponse(probe); !ok {
-		return exchangePlan{}, fmt.Errorf("systemone: %s: the reply is not one the replay can serve", exchange)
+		return nil, fmt.Errorf("systemone: %s: the reply is not one the replay can serve", exchange)
 	}
 	payload, err := marshalIndent(envelopeFile{
 		Exchange: exchange,
@@ -246,32 +261,34 @@ func (r *Recorder) envelope(exchange string, req Request, resp Response, elapsed
 		Response: response,
 	})
 	if err != nil {
-		return exchangePlan{}, fmt.Errorf("systemone: %s: %w", exchange, err)
+		return nil, fmt.Errorf("systemone: %s: %w", exchange, err)
 	}
-	return exchangePlan{payload: payload, pending: pending}, nil
+	return payload, nil
 }
 
-// planImages turns every image into a reference. A resolver's answer is
-// checked against the bytes that were sent; anything else goes into the
-// recording directory under its own digest, which is why the same photo
-// in a second exchange never appears there twice.
-func (r *Recorder) planImages(images []Image) ([]recordedImage, []pendingImage, error) {
-	if len(images) == 0 {
-		return nil, nil, nil
+// settleImages turns every image into a reference and works out what
+// still has to be written. It reads the request only, never a reply, so
+// the recorder runs it before the inner client and spends nothing on a
+// picture it cannot store. A resolver's answer is checked against the
+// bytes that were sent; anything else goes into the recording directory
+// under its own digest, which is why the same photo in a second exchange
+// never appears there twice.
+func (r *Recorder) settleImages(req Request) (imagePlan, error) {
+	if len(req.Images) == 0 {
+		return imagePlan{}, nil
 	}
-	refs := make([]recordedImage, 0, len(images))
-	var pending []pendingImage
-	for i, image := range images {
+	var plan imagePlan
+	for i, image := range req.Images {
 		ext, err := imageExtension(image.ContentType)
 		if err != nil {
-			return nil, nil, fmt.Errorf("systemone: image %d: %w", i, err)
+			return imagePlan{}, fmt.Errorf("systemone: image %d: %w", i, err)
 		}
 		if r.images != nil {
 			if ref, ok := r.images(r.dir, image.ContentType, image.Bytes); ok {
 				if err := r.checkRef(ref, image.Bytes); err != nil {
-					return nil, nil, fmt.Errorf("systemone: image %d: %w", i, err)
+					return imagePlan{}, fmt.Errorf("systemone: image %d: %w", i, err)
 				}
-				refs = append(refs, recordedImage{ContentType: image.ContentType, File: ref})
+				plan.refs = append(plan.refs, recordedImage{ContentType: image.ContentType, File: ref})
 				continue
 			}
 		}
@@ -281,16 +298,16 @@ func (r *Recorder) planImages(images []Image) ([]recordedImage, []pendingImage, 
 		switch {
 		case err == nil:
 			if !bytes.Equal(data, image.Bytes) {
-				return nil, nil, fmt.Errorf("systemone: image %d: %s holds other bytes", i, rel)
+				return imagePlan{}, fmt.Errorf("systemone: image %d: %s holds other bytes", i, rel)
 			}
 		case errors.Is(err, os.ErrNotExist):
-			pending = append(pending, pendingImage{rel: rel, data: image.Bytes})
+			plan.pending = append(plan.pending, pendingImage{rel: rel, data: image.Bytes})
 		default:
-			return nil, nil, fmt.Errorf("systemone: image %d: %s: %w", i, rel, err)
+			return imagePlan{}, fmt.Errorf("systemone: image %d: %s: %w", i, rel, err)
 		}
-		refs = append(refs, recordedImage{ContentType: image.ContentType, File: rel})
+		plan.refs = append(plan.refs, recordedImage{ContentType: image.ContentType, File: rel})
 	}
-	return refs, pending, nil
+	return plan, nil
 }
 
 // checkRef reads the file a resolver named, relative to the recording
