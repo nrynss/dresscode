@@ -99,8 +99,9 @@ type RecorderConfig struct {
 // out, and the digest file a written image would land in, which must be
 // either absent or exactly those bytes. What only a reply can decide is
 // refused after the call and before any byte of it reaches disk: an
-// inner error stores nothing, and a reply the replay could not serve is
-// refused on the reader's own bytes.
+// inner error stores nothing, and a reply the replay could not serve, or
+// that answers a question the request never asked, is refused on the
+// reader's own bytes before any of it reaches disk.
 //
 // Safe for concurrent use. Two calls naming one exchange are refused,
 // and a recording and its images are each published by an exclusive
@@ -210,6 +211,11 @@ func (r *Recorder) record(ctx context.Context, exchange string, req Request) (Re
 		// corpus is worse than a missing one: the next Open either fails
 		// on it or serves a broken reply to a request that was never
 		// answered.
+		return Response{}, err
+	}
+	// A reply that answers a question this request never asked is corpus
+	// poison of a quiet kind, and it is refused before a byte of it lands.
+	if err := checkAnswers(exchange, req, resp); err != nil {
 		return Response{}, err
 	}
 	payload, err := r.envelope(exchange, req, resp, time.Since(start), images.refs)
@@ -337,6 +343,53 @@ func (r *Recorder) checkRef(ref string, sent []byte) error {
 		return fmt.Errorf("resolver named %s, which holds bytes other than the call's", ref)
 	}
 	return nil
+}
+
+// checkAnswers refuses a reply the request did not ask for. Two things
+// are refused: an answer keyed to an id the request never sent, and an
+// answer that picks a choice outside the options that id carried. The
+// decode probe does not catch either, because both replay cleanly — a
+// corpus full of answers nobody asked scores silently wrong downstream,
+// which is the quieter poison.
+//
+// The committed corpus passes it, and the test that pins that runs the
+// check over every recording: 41 top-level, 10 in stability/ and 4 in
+// cost/, every answer id asked and every choice one of its own question's
+// criteria. A reply's declared answer types are not judged here beyond
+// the choice; decodeResponse reads those, on the reader's own bytes.
+func checkAnswers(exchange string, req Request, resp Response) error {
+	for id := range resp.Answers {
+		if _, asked := req.Questions[id]; !asked {
+			return fmt.Errorf("systemone: %s: the reply answers %q, which the request did not ask", exchange, id)
+		}
+	}
+	for id, answer := range resp.Answers {
+		if answer.Type != TypeChoice && answer.Choice == "" {
+			continue
+		}
+		question := req.Questions[id]
+		if question.Type != TypeChoice {
+			return fmt.Errorf("systemone: %s: %q answers %q, but the request did not ask it as a choice",
+				exchange, id, answer.Choice)
+		}
+		if !criteriaOption(question.Criteria, answer.Choice) {
+			return fmt.Errorf("systemone: %s: %q answers %q, which is not one of the options the request sent",
+				exchange, id, answer.Choice)
+		}
+	}
+	return nil
+}
+
+// criteriaOption reports whether option names one of a choice question's
+// criteria. A criteria that is not an object, which is a score question's
+// array or a noul's absence, names none.
+func criteriaOption(criteria json.RawMessage, option string) bool {
+	var options map[string]json.RawMessage
+	if err := json.Unmarshal(criteria, &options); err != nil {
+		return false
+	}
+	_, ok := options[option]
+	return ok
 }
 
 func (r *Recorder) writeImages(pending []pendingImage) error {

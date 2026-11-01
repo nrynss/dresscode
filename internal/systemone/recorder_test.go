@@ -895,6 +895,143 @@ func TestAnAnswerTheReplayCannotServeStoresNothing(t *testing.T) {
 	}
 }
 
+// TestAnAnswerTheRequestDidNotAskStoresNothing: an answer keyed to a
+// question that was never sent replays cleanly, which is exactly why it is
+// poison — a paid corpus of answers nobody asked, scoring silently wrong
+// downstream. The refusal needs the reply, so it runs after the call, and
+// it still writes nothing.
+func TestAnAnswerTheRequestDidNotAskStoresNothing(t *testing.T) {
+	t.Parallel()
+	dir := filepath.Join(t.TempDir(), "clef")
+	fake := newFakeInner()
+	unasked := noulResponse(0.5)
+	unasked.Answers["never-asked"] = unasked.Answers["met"]
+	fake.set(unasked)
+	recorder := newRecorder(t, RecorderConfig{Inner: fake, Dir: dir})
+	req := sampleRequest(t, nil)
+
+	_, err := recorder.Record(context.Background(), "judge-date", req)
+	if err == nil || !strings.Contains(err.Error(), "never-asked") {
+		t.Fatalf("an answer nobody asked for was stored: %v", err)
+	}
+	if !strings.Contains(err.Error(), "did not ask") {
+		t.Fatalf("the wrong refusal: %v", err)
+	}
+	if fake.count() != 1 {
+		t.Fatalf("inner calls %d, want the one call that had to happen", fake.count())
+	}
+	assertNothingWritten(t, dir)
+
+	// The same reply with the extra answer removed is storable: the
+	// refusal is the stray id and not the exchange.
+	delete(unasked.Answers, "never-asked")
+	fake.set(unasked)
+	if _, err := recorder.Record(context.Background(), "judge-date", req); err != nil {
+		t.Fatalf("the clean reply was refused too: %v", err)
+	}
+	if _, err := openDir(t, dir).Ask(context.Background(), req); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestAChoiceOutsideTheAskedOptionsStoresNothing: the second half of the
+// same rule. A choice the request did not offer, and a choice answer to a
+// question that was not asked as a choice, are both refusals.
+func TestAChoiceOutsideTheAskedOptionsStoresNothing(t *testing.T) {
+	t.Parallel()
+	req := sampleRequest(t, nil)
+	// sampleQuestions asks "issue" as a choice with two options, and
+	// "met" as a noul.
+	if got := req.Questions["issue"].Type; got != TypeChoice {
+		t.Fatalf("this proof needs a choice question, got %q", got)
+	}
+
+	for _, check := range []struct {
+		which  string
+		answer string
+		detail string
+		reply  func(map[string]Answer)
+	}{
+		{
+			which:  "outside the options",
+			answer: "issue",
+			detail: "options the request sent",
+			reply: func(answers map[string]Answer) {
+				answers["issue"] = Answer{
+					Type:          TypeChoice,
+					Choice:        "shoes",
+					Probabilities: map[string]float64{"shoes": 0.6, "collar": 0.4},
+					Confidence:    ptr(0.3),
+				}
+			},
+		},
+		{
+			which:  "not asked as a choice",
+			answer: "met",
+			detail: "did not ask it as a choice",
+			reply: func(answers map[string]Answer) {
+				answers["met"] = Answer{
+					Type:          TypeChoice,
+					Choice:        "collar",
+					Probabilities: map[string]float64{"collar": 0.9, "none": 0.1},
+					Confidence:    ptr(0.4),
+				}
+			},
+		},
+	} {
+		dir := filepath.Join(t.TempDir(), "clef")
+		fake := newFakeInner()
+		wrong := noulResponse(0.5)
+		check.reply(wrong.Answers)
+		fake.set(wrong)
+		recorder := newRecorder(t, RecorderConfig{Inner: fake, Dir: dir})
+		_, err := recorder.Record(context.Background(), "judge-date", req)
+		if err == nil ||
+			!strings.Contains(err.Error(), check.answer) ||
+			!strings.Contains(err.Error(), check.detail) {
+			t.Fatalf("%s: a choice outside what was asked was stored or wrongly refused: %v", check.which, err)
+		}
+		if fake.count() != 1 {
+			t.Fatalf("%s: inner calls %d, want 1", check.which, fake.count())
+		}
+		assertNothingWritten(t, dir)
+	}
+}
+
+// TestTheAnswerCheckPassesTheCommittedCorpus is the proof F3 needed before
+// it was allowed to refuse anything: every recording already committed, in
+// all three directories the evaluation opens, answers only questions the
+// request asked and picks only options the request offered. A check that
+// failed here would refuse a legitimate recording, so the counts are
+// logged and every file is walked. testdata is read and never written.
+func TestTheAnswerCheckPassesTheCommittedCorpus(t *testing.T) {
+	t.Parallel()
+	root := clefDir(t)
+	for _, folder := range []string{"", "stability", "cost"} {
+		dir := filepath.Join(root, folder)
+		replay := openDir(t, dir)
+		var answerCount int
+		for _, exchange := range recordedExchanges(t, dir) {
+			stored := recorded(t, replay, exchange)
+			req := recordedRequest(t, stored)
+			resp, ok := decodeResponse(stored.Response)
+			if !ok {
+				t.Fatalf("%s: the committed reply is not one the replay can serve", exchange)
+			}
+			if err := checkAnswers(exchange, req, resp); err != nil {
+				t.Fatalf("%s: a committed recording is refused by the new check: %v", exchange, err)
+			}
+			answerCount += len(resp.Answers)
+		}
+		name := folder
+		if name == "" {
+			name = "."
+		}
+		t.Logf("%s: %d recordings, %d answers, all asked and all inside their criteria",
+			name, len(recordedExchanges(t, dir)), answerCount)
+	}
+}
+
 // TestAskNamesTheExchangeByRequestKey: Ask has one argument the corpus
 // cannot invent a name from, so it stores under the request's own key
 // and refuses the second copy of it.
