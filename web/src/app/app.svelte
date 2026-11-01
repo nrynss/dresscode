@@ -24,17 +24,18 @@
    * only the media ids the sample-media map really serves (the mock's
    * `virtual:dresscode-sample-media` and the dev middleware, from
    * `web/vite.config.ts`), so no thumbnail names a path that answers nothing.
-   * Only two sample photographs are served — the woman sample person's
-   * recorded family-function selfie and the sibling variant beside it — so
-   * the strip alternates the two. The thumbnail is decoration beside the
-   * button's own name: it carries `alt=""` and `aria-hidden`, and it names no
-   * person. */
+   * Each sample names its own recorded person — the selfie its story carries
+   * (the `selfie` member of `testdata/samples/cached/sample-<id>.json`, one
+   * media id per sample in the map beside it), so the interview and funeral
+   * chips show their recorded men and the other three their woman. The
+   * thumbnail is decoration beside the button's own name: it carries `alt=""`
+   * and `aria-hidden`, and it names no person. */
   const sampleAvatars: Record<string, string> = {
-    "sample-date": "/media/2e4de200000000000000000000000001",
+    "sample-date": "/media/5e1f1e00000000000000000000000002",
     "sample-family": "/media/5e1f1e00000000000000000000000001",
-    "sample-interview": "/media/2e4de200000000000000000000000001",
-    "sample-festival": "/media/5e1f1e00000000000000000000000001",
-    "sample-funeral": "/media/2e4de200000000000000000000000001",
+    "sample-interview": "/media/5e1f1e00000000000000000000000003",
+    "sample-festival": "/media/5e1f1e00000000000000000000000004",
+    "sample-funeral": "/media/5e1f1e00000000000000000000000005",
   };
 
   function sampleAvatar(id: string): string {

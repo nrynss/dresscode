@@ -161,11 +161,17 @@
        * exist. -->
       <p role="status">{cleanSentence}</p>
     {:else}
-      <div class="hero">
-        <h3 class="hero-label">A fix</h3>
-        <p class="hero-fix">{verdict.fix}</p>
+      <!-- One card for the outcome: the fix and its way forward, in the same
+       * language the render screen's Result Card speaks. This screen holds no
+       * shop row and no verdict bar to add, so its card carries the fix and
+       * the render link alone. -->
+      <div class="result-card">
+        <div class="hero">
+          <h3 class="hero-label">A fix</h3>
+          <p class="hero-fix">{verdict.fix}</p>
+        </div>
+        <a class="primary-link" href={renderHash}>See the render</a>
       </div>
-      <a class="primary-link" href={renderHash}>See the render</a>
     {/if}
   {/if}
 </section>
@@ -358,14 +364,22 @@
     overflow-wrap: break-word;
   }
 
-  /* The fix is the screen's one hero: its own card, edged in the accent. */
-  .hero {
-    margin-top: 0.75rem;
-    padding: 1rem;
-    background: var(--raised);
-    border: 1px solid var(--line-soft);
-    border-left: 3px solid var(--accent);
+  /* One card for the outcome, the same language the render screen's Result
+   * Card speaks: the fix and its way forward inside one box edged all the way
+   * round in the accent, on the card surface, at the card's own rhythm. The
+   * hero keeps no chrome of its own — the card is the card. */
+  .result-card {
+    background: var(--surface);
+    border: 2px solid var(--accent);
     border-radius: var(--radius-control);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    min-inline-size: 0;
+  }
+
+  .hero {
     min-inline-size: 0;
   }
 

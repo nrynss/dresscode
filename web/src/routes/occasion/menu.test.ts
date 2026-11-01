@@ -250,13 +250,15 @@ test("the front door carries the short copy, the icon tiles and the clean select
   expect(screen).toMatch(/a\.bring\s*\{[^}]*display:\s*flex;\s*width:\s*100%;\s*justify-content:\s*center;/);
 
   // The sample buttons' face thumbnails name only media ids the mock really
-  // serves, so no thumbnail points at a path that answers nothing.
-  const served = [
-    "/media/5e1f1e00000000000000000000000001",
-    "/media/2e4de200000000000000000000000001",
-  ];
+  // serves, so no thumbnail points at a path that answers nothing. The
+  // served set is read from `web/vite.config.ts`'s sample-media map — the
+  // one table the dev middleware and the mock both read — so the pin cannot
+  // drift from what actually answers.
+  const viteConfig = readFileSync(fileURLToPath(new URL("../../../vite.config.ts", import.meta.url)), "utf8");
+  const served = [...viteConfig.matchAll(/"(\/media\/[0-9a-f]+)":\s*"[^"]+"/g)].map((match) => match[1]);
   const named = [...app.matchAll(/\/media\/[0-9a-f]+/g)].map((match) => match[0]);
   expect(named.length, "the avatar table names served media paths").toBeGreaterThan(0);
+  expect(served.length, "the sample-media map is read").toBeGreaterThan(0);
   for (const path of named) {
     expect(served, `${path} is served`).toContain(path);
   }

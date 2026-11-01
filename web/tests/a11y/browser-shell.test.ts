@@ -22,6 +22,39 @@ import { afterAll, beforeAll, expect, test } from "vitest";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(here, "../..");
 
+/** The chip faces the front door must draw, derived from the sources the
+ * browser build itself reads: the recorded sample list names each sample,
+ * the app's chip table maps it to a media path, and the sample-media map in
+ * `web/vite.config.ts` is the set of paths that answer with bytes. The rig
+ * reads the tables rather than restating them, so a mapping edited at
+ * either source changes the expectation with it. */
+const recordedSampleNames = new Map<string, string>(
+  (
+    JSON.parse(readFileSync(path.resolve(webRoot, "../testdata/api/samples.json"), "utf8")) as {
+      body: { samples: { id: string; name: string }[] };
+    }
+  ).body.samples.map((sample) => [sample.id, sample.name]),
+);
+const chipTable = new Map<string, string>();
+for (const match of readFileSync(path.join(webRoot, "src/app/app.svelte"), "utf8").matchAll(
+  /"(sample-[a-z-]+)":\s*"(\/media\/[0-9a-f]+)"/g,
+)) {
+  chipTable.set(match[1]!, match[2]!);
+}
+const servedMedia = new Set<string>();
+for (const match of readFileSync(path.join(webRoot, "vite.config.ts"), "utf8").matchAll(
+  /"(\/media\/[0-9a-f]+)":\s*"[^"]+"/g,
+)) {
+  servedMedia.add(match[1]!);
+}
+/** Sample name on a drawn button -> the media path that button's face. */
+const faceOfLabel = new Map<string, string>(
+  [...recordedSampleNames].flatMap(([id, name]) => {
+    const face = chipTable.get(id);
+    return face ? [[name, face] as const] : [];
+  }),
+);
+
 const CHROME_CANDIDATES = ["google-chrome-stable", "google-chrome", "chromium", "chromium-browser"] as const;
 
 /** The measured states: the account screen in both themes at the phone width
@@ -411,7 +444,7 @@ interface FrontDoor {
   };
   accent: string;
   accentSoft: string;
-  avatars: { width: number; height: number; radius: string; src: string }[];
+  avatars: { label: string; width: number; height: number; radius: string; src: string }[];
 }
 
 async function waitInDocument(predicate: string, label: string): Promise<void> {
@@ -476,10 +509,13 @@ async function measureFrontDoor(theme: string): Promise<FrontDoor> {
   })()`);
   await waitInDocument(`document.querySelector("a.bring") !== null`, "the continue link");
 
-  const avatars = await evaluate<FrontDoor["avatars"]>(`[...document.querySelectorAll(".sample-row button .sample-avatar")].map((img) => {
+  const avatars = await evaluate<FrontDoor["avatars"]>(`[...document.querySelectorAll(".sample-row button")].map((button) => {
+    const img = button.querySelector(".sample-avatar");
+    if (!img) throw new Error("a sample button with no avatar");
     const box = img.getBoundingClientRect();
     const cs = getComputedStyle(img);
     return {
+      label: (button.textContent ?? "").trim(),
       width: Math.round(box.width * 10) / 10,
       height: Math.round(box.height * 10) / 10,
       radius: cs.borderRadius,
@@ -550,17 +586,27 @@ for (const theme of ["light", "dark"] as const) {
       expect(door.tile.colour, "the selected tile's border is the accent").toBe(door.accent);
       expect(door.tile.background, "the selected tile sits on the soft accent").toBe(door.accentSoft);
 
-      // The sample people: a circular avatar chip on every button. The bytes
-      // are never asserted — the rig's server answers /media with the app
-      // shell, so only the box, the circle and the served path are honest.
+      // The sample people: a circular avatar chip on every button, each chip
+      // naming its own recorded person's face. The bytes are never asserted —
+      // the rig's server answers /media with the app shell, so only the box,
+      // the circle and the served path are honest; that the path's bytes are
+      // the right photograph is the sample-faces guard's ground truth, and
+      // this is where a chip caught wearing another sample's face turns red.
       expect(door.avatars, "every sample button carries an avatar").toHaveLength(5);
+      const drawnFaces = new Set<string>();
       for (const avatar of door.avatars) {
         expect(avatar.radius, "an avatar is drawn as a circle").toBe("999px");
         expect(avatar.width, "an avatar is a 2.25rem chip").toBeGreaterThan(30);
         expect(avatar.width, "an avatar is a 2.25rem chip").toBeLessThan(42);
         expect(Math.abs(avatar.width - avatar.height), "an avatar is round, not oval").toBeLessThanOrEqual(1);
         expect(avatar.src, "an avatar names a served media path").toMatch(/^\/media\/[0-9a-f]+$/);
+        expect(servedMedia.has(avatar.src), `${avatar.src} is one the sample-media map serves`).toBe(true);
+        const expected = faceOfLabel.get(avatar.label);
+        expect(expected, `${avatar.label} is one of the recorded samples`).toBeDefined();
+        expect(avatar.src, `${avatar.label}'s chip shows its own recorded person's face`).toBe(expected);
+        drawnFaces.add(avatar.src);
       }
+      expect(drawnFaces.size, "the five chips show five distinct faces").toBe(5);
     },
   );
 }
@@ -1127,6 +1173,17 @@ interface MirrorReading {
     images: number;
   };
   sitsAbove: boolean;
+  card: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+    borders: { top: number; right: number; bottom: number; left: number; style: string; colour: string };
+    accent: string;
+    children: { name: string; left: number; right: number; top: number; bottom: number }[];
+    column: number;
+    linkWidth: number;
+  } | null;
 }
 
 /** The recorded no-fix body, served from the page itself: the mock is
@@ -1196,6 +1253,56 @@ async function measureVerdictMirror(theme: string, noFix: boolean): Promise<Mirr
       (top, el) => Math.min(top, el.getBoundingClientRect().top),
       Number.POSITIVE_INFINITY,
     );
+    // The fix's card, when the look carries a fix: the same Result Card
+    // recipe the render screen speaks, with the fix as its hero and the
+    // render link as its way forward.
+    const card = document.querySelector(".result-card");
+    let cardReading = null;
+    if (card) {
+      const cb = card.getBoundingClientRect();
+      const ccs = getComputedStyle(card);
+      const probe = document.createElement("span");
+      probe.style.display = "none";
+      document.body.append(probe);
+      probe.style.color = "var(--accent)";
+      const accent = getComputedStyle(probe).color;
+      probe.remove();
+      const link = card.querySelector("a.primary-link");
+      if (!link) throw new Error("no render link in the verdict card");
+      cardReading = {
+        left: round(cb.left),
+        top: round(cb.top),
+        right: round(cb.right),
+        bottom: round(cb.bottom),
+        borders: {
+          top: parseFloat(ccs.borderTopWidth),
+          right: parseFloat(ccs.borderRightWidth),
+          bottom: parseFloat(ccs.borderBottomWidth),
+          left: parseFloat(ccs.borderLeftWidth),
+          style: ccs.borderTopStyle,
+          colour: ccs.borderTopColor,
+        },
+        accent,
+        children: [...card.querySelectorAll(":scope > *")].map((el) => {
+          const b = el.getBoundingClientRect();
+          return {
+            name: el.classList.contains("hero") ? "hero" : el.tagName.toLowerCase(),
+            left: round(b.left),
+            right: round(b.right),
+            top: round(b.top),
+            bottom: round(b.bottom),
+          };
+        }),
+        column: round(
+          cb.width -
+            parseFloat(ccs.paddingLeft) -
+            parseFloat(ccs.paddingRight) -
+            parseFloat(ccs.borderLeftWidth) -
+            parseFloat(ccs.borderRightWidth),
+        ),
+        linkWidth: round(link.getBoundingClientRect().width),
+      };
+    }
     return JSON.stringify({
       theme: doc.dataset.theme,
       clientWidth: doc.clientWidth,
@@ -1212,6 +1319,7 @@ async function measureVerdictMirror(theme: string, noFix: boolean): Promise<Mirr
         images,
       },
       sitsAbove: mb.bottom <= next + 1,
+      card: cardReading,
     });
   })()`),
   ) as MirrorReading;
@@ -1230,6 +1338,36 @@ function expectMirror(reading: MirrorReading, width: number, theme: string, noFi
   expect(reading.sitsAbove, "the mirror leads the screen, above the words").toBe(true);
 }
 
+/** The verdict screen's fix card, when the look carries a fix: the same
+ * Result Card language the render screen speaks — one box on the shared
+ * recipe, edged all the way round in the accent, holding the fix as its hero
+ * and the render link as its way forward, both children inside its box, the
+ * link spanning the card's column. This screen holds no shop row and no
+ * verdict bar to add, so two children is the whole honest card. */
+function expectVerdictCard(reading: MirrorReading): void {
+  const card = reading.card;
+  expect(card, "the verdict screen's fix lives in a Result Card").not.toBeNull();
+  if (!card) return;
+  expect(card.right - card.left, "the verdict card spans the column").toBeGreaterThanOrEqual(300);
+  for (const side of ["top", "right", "bottom", "left"] as const) {
+    expect(card.borders[side], `the verdict card's ${side} border is the full 2 px`).toBeGreaterThan(1.5);
+    expect(card.borders[side], `the verdict card's ${side} border is the full 2 px`).toBeLessThan(2.5);
+  }
+  expect(card.borders.style, "the verdict card's border is solid").toBe("solid");
+  expect(card.borders.colour, "the verdict card is edged in the accent, all the way round").toBe(card.accent);
+  expect(card.children.map((child) => child.name), "the card holds the fix and the render link").toEqual([
+    "hero",
+    "a",
+  ]);
+  for (const child of card.children) {
+    expect(child.left, `${child.name} starts inside the card`).toBeGreaterThanOrEqual(card.left - 1);
+    expect(child.right, `${child.name} ends inside the card`).toBeLessThanOrEqual(card.right + 1);
+    expect(child.top, `${child.name} starts inside the card`).toBeGreaterThanOrEqual(card.top - 1);
+    expect(child.bottom, `${child.name} ends inside the card`).toBeLessThanOrEqual(card.bottom + 1);
+  }
+  expect(card.linkWidth, "the render link spans the card's column").toBeGreaterThanOrEqual(card.column - 1);
+}
+
 for (const theme of ["light", "dark"] as const) {
   test(
     `in a real browser, the verdict screen opens on the arched mirror photo, ${theme}`,
@@ -1238,6 +1376,7 @@ for (const theme of ["light", "dark"] as const) {
       const reading = await measureVerdictMirror(theme, false);
       expectMirror(reading, 375, theme, false);
       expect(reading.mirror.images, "the comparator holds both pictures").toBe(2);
+      expectVerdictCard(reading);
     },
   );
 
@@ -1248,6 +1387,7 @@ for (const theme of ["light", "dark"] as const) {
       const reading = await measureVerdictMirror(theme, true);
       expectMirror(reading, 375, theme, true);
       expect(reading.mirror.images, "the selfie stands without the comparator").toBe(1);
+      expect(reading.card, "the clean look keeps its sentence, no fix card").toBeNull();
     },
   );
 }

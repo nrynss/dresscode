@@ -28,9 +28,22 @@ interface DevServer {
 }
 
 /** The recorded media ids the story screens show, and the committed sample
- * photograph each one serves in mock mode. */
+ * photograph each one serves in mock mode.
+ *
+ * The `5e1f1e` ids are sample people's faces, one per sample chip on the
+ * front door: each names the selfie the sample's own recorded story carries
+ * (the `selfie` member of `testdata/samples/cached/sample-<id>.json`), so a
+ * chip shows the person its story is about — interview and funeral are men,
+ * the other three the woman. The family id doubles as the recorded look
+ * body's selfie (`testdata/api/look.json` names it). `2e4de2` is that look's
+ * shown render and the two `c0a1` ids the recorded product photo; the
+ * recorded bodies name those, and the chips do not. */
 const mediaSamples: Record<string, string> = {
   "/media/5e1f1e00000000000000000000000001": "../testdata/samples/woman/V04-family-function.jpg",
+  "/media/5e1f1e00000000000000000000000002": "../testdata/samples/woman/V03-date.jpg",
+  "/media/5e1f1e00000000000000000000000003": "../testdata/samples/man/V09-interview.jpg",
+  "/media/5e1f1e00000000000000000000000004": "../testdata/samples/woman/V14-festival.jpg",
+  "/media/5e1f1e00000000000000000000000005": "../testdata/samples/man/V18-funeral.jpg",
   "/media/2e4de200000000000000000000000001": "../testdata/samples/woman/V05-family-function.jpg",
   "/media/c0a10600000000000000000000000001": "../testdata/samples/products/gold-jhumkas.jpg",
   "/media/c0a10cf0000000000000000000000001": "../testdata/samples/products/gold-jhumkas.jpg",
