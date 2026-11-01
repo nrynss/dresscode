@@ -841,3 +841,17 @@ Notes:
 - Browser pass at 375 px, light and dark, on mock (own dev server on scratch port 5324): the no-fix body was preferred through the mock's own module inside the page, so no dev-tree patch was taken or reverted. The render screen shows sentence, original and verdict bar (Keep carrying the primary fill); the verdict screen shows the folded stepper and the sentence; scrollWidth 375 = clientWidth on the clean render screen; Keep stored and said "This look is kept.". Shots in `/tmp/t524-shots/` (render and verdict, both themes, plus the kept state).
 - One gate flake, not this task's: internal/youcam's `TestACreateRefusalSpendsNothingAndKeepsTheClaim` hit its loopback deadline once (the same one T5.15 noted); the package passes alone and the full gate passed on rerun.
 - One question left open for the orchestrator: the verdict bar (Keep / Dismiss / Bought it) still stands on the clean screen — the task named only the hero, the shop section and the sentence, so the bar stayed. "Bought it" on a look with no products reads oddly; hiding the bar on `fix === undefined` is a one-line change if wanted.
+
+---
+
+### T5.25: Sample chips show their own faces; one card language on the look screens ★
+```yaml
+requires:   T5.23
+fixture-ok: yes
+size:       S · mid
+owns:       web/vite.config.ts, web/src/routes/look/verdict/, web/tests/a11y/
+status:     claimed:glm-5.3-flash
+```
+The user's decision (2026-11-02): both polish follow-ons, fix. (a) Per-sample face thumbnails: only two faces are served, so the interview and funeral chips show a woman's face while their recorded people are men — add per-sample entries to `web/vite.config.ts`'s `mediaSamples` mapping every sample id to its own recorded person's face (inventory `testdata/samples/` first; if a recorded person's face fixture does not exist, report rather than invent one). (b) The verdict screen's hero still wears the crescent `border-left: 3px solid var(--accent)` while `#/look/render` uses T5.23's unified Result Card — give the verdict screen the same card language.
+
+**Done when:** every sample chip shows its own person's face (or the report says which could not); the verdict screen's fix card matches the Result Card recipe; `./tools/check.sh` passes with the guards mutation-proven.

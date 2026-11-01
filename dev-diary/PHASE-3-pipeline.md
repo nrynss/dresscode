@@ -374,9 +374,23 @@ status:     not-started
 ```
 The shipped lines come off the T0.6 recordings and read 254 of 273 live against the 269 they were chosen for (T3.9b); the live curves still top out at 269 with the same 32 of 36 perfect separations, so the gap is service drift under the lines, not the criteria wording. Re-record the corpus against the service of today and re-choose every line from the fresh curves, with T3.9d's recorder and T3.9c's pinned arithmetic in place. The wording is deliberately unchanged here — drift and a rewording must not land in one diff.
 
-- Re-record on the same sample photos and the same request shape: the 37 judge calls, the 4 check calls, the ten stability repeats and the size sweep (the resized photos under `testdata/clef/cost/images/` stay as they are; the recordings only reference them). **Budget: one pass ≈ 78 calls ≈ 3,300 neurons, two passes ≈ 156 calls ≈ 6,600 neurons, inside the 10,000-neuron free daily allowance — and T3.9b already spent ≈3,778 neurons against today's counter, so read the counter before the second pass.** Run one case first, read what it cost, and stop and report if the pass would cross it. Workers AI only; no YouCam client and no YouCam key.
+- Re-record on the same sample photos and the same request shape: the 37 judge calls, the 4 check calls, the ten stability repeats and the size sweep (the resized photos under `testdata/clef/cost/images/` stay as they are; the recordings only reference them). **Budget: one pass — ≈78 calls ≈ 3,300 neurons, and no more.** The orchestrator's ruling, delegated by the user: a single pass, because T3.9b already proved that two passes of the same request come back byte-identical, so a second buys reproducibility and not information, and the day's 10,000-neuron free allowance is shared with whatever else the day spends (T3.9b took ≈3,778 of it). Run one case first, read what it cost, and **stop and report rather than cross the allowance**; a second pass is a fresh decision for the orchestrator, taken only if the first pass contradicts the drift T3.9b measured. Workers AI only; no YouCam client and no YouCam key.
 - Replace `testdata/clef/` with the fresh recordings, then re-run the offline evaluation and the sweep rule: the `[judge]` default and its overrides, the `[check]` gates and the model. Every line must sit beside its own fresh curve.
 - Re-quote what pins a number: `dresscode.toml.example`, the tests that assert the shipped lines, `docs/evaluation.md`, `docs/clef.md`. The README and the video numbers go through the orchestrator, in the orchestrator's own commit.
 - The ground truth does not move with the service. A cell where the fresh read contradicts the transcription is reported by name, not re-transcribed.
 
 **Done when:** every shipped line sits beside the curve that chose it; `eval.Run` returns an identical report on the new corpus twice; the live re-run on the new corpus agrees with the recorded numbers within the drift T3.9b measures, with both numbers stated; the recordings and transcripts hold no key value.
+
+---
+
+### T3.10: The phrase table — display wording as data ★
+```yaml
+requires:   T3.9b
+fixture-ok: no
+size:       M · mid
+owns:       internal/domain/, internal/pipeline/, testdata/occasions/, testdata/api/, docs/occasions.md
+status:     claimed:glm-5.3-flash
+```
+The user's decision (2026-11-02): **a phrase table becomes occasions data** for the look-in-words line, **a display-name field** for the simulation entry, and the remembered sentences **share the table**. Three display strings are currently hand-written English in fixtures the mechanical pipeline cannot derive: the look line (`"gold jhumkas, red lip, open collar"` vs the data-order join `"jhumkas, gold, red, …"`), the shop simulation name (`"Closed-mouth smile"` vs the fix's `changes` sentence), and the memory sentences (`"Family function kept the gold jhumkas."` — already byte-matching via the fix id's name).
+
+**Done when:** the look-in-words line, the simulation entry's name, and the remembered sentences all compose from data tables in the occasions data (T0.3's pattern), with every currently byte-matched recorded string still byte-matching; the gate is green; the proposed wordings are in the report for the user's writing review.
