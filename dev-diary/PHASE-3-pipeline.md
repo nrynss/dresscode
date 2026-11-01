@@ -336,7 +336,7 @@ requires:   T3.9b
 fixture-ok: yes
 size:       S · light
 owns:       internal/eval/live_report_test.go, internal/eval/live_test.go
-status:     not-started
+status:     claimed:qoder-t39c
 ```
 T3.9b's review found that the arithmetic the live sweep prints — `liveReportJudge`, `liveReportCheck`, `liveVocabularyCells`, the projected call and neuron totals — is run by nothing that does not cost money: it lives only in the `live`-tagged file, so the gate never executes it and a break shows up only after a paid run. Lift it into a non-tagged test file in the same package and pin it against the committed transcripts (`testdata/eval/live/probe.txt`, `sweep-1.txt`); the tagged file calls the pinned helpers instead of carrying its own copy.
 
