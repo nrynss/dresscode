@@ -936,7 +936,7 @@ func (sm *sampleRuntime) publish(jobID string, frames []job.Progress) {
 // none of them again; the family story's shown render is 289,905 bytes and
 // a repeat open of that one story pays it again, every time. Nothing on
 // this path bounds either - no gate token, no lease seat, no budget
-// reservation - so the per-user cap the composition hand sets (T4.9) is
+// reservation - so the per-user cap the composition hand sets (T4.10) is
 // what actually bounds a repeat. A picture the search does not settle mints,
 // which is what an open did before the reuse and is never wrong, only less
 // frugal.
