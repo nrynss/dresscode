@@ -490,7 +490,7 @@ func reopenRunner(t *testing.T, db *sqlite.DB, kinds map[string]job.Kind) *job.R
 	return openRunner(t, db, kinds)
 }
 
-func newEngine(t *testing.T, db *sqlite.DB, blobs *fakeBlobs, mem *fakeMemory) *privacy.Engine {
+func newEngine(t *testing.T, db *sqlite.DB, blobs privacy.Blobs, mem privacy.Memory) *privacy.Engine {
 	t.Helper()
 	eng, err := privacy.New(privacy.Config{
 		DB:     db,

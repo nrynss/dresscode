@@ -127,6 +127,13 @@ func (t *filesTarget) Name() string { return TargetFiles }
 
 // Delete removes every blob this user owns. A second call finds nothing
 // and reports the target gone, which an erasure counts as confirmed.
+//
+// The account's files target counts nothing, and that is the rule rather than
+// an oversight: a person's own bytes go when they ask, even if a row of some
+// other account names them, because a row that does is a route bug and the
+// answer to it is not to keep this person's photo alive. The count belongs to
+// the scoped deletions - one look, one photo - where a surviving namer is
+// another of the same person's live looks. See references.go.
 func (t *filesTarget) Delete(ctx context.Context) error {
 	owned, err := t.eng.ownedBlobs(ctx, t.user)
 	if err != nil {
@@ -157,16 +164,26 @@ func (t *rowsTarget) Name() string { return TargetRows }
 // are not included. The caller may change the slice.
 func (t *rowsTarget) Tables() []string { return RowTables() }
 
-// Delete removes the user's rows from every user-data table, then the
-// sign-in codes, sessions, identities, and the user row. The order inside
-// the identity tables matches Keel, because a code names a session and a
-// session names the user. A second call deletes nothing and succeeds.
+// Delete removes the user's job rows, then the user's rows from every
+// user-data table, then the sign-in codes, sessions, identities, and the
+// user row. The order inside the identity tables matches Keel, because a
+// code names a session and a session names the user. A second call deletes
+// nothing and succeeds.
+//
+// Keel's job table comes first because it has no owner column and the sweep
+// reads the account's look ids to find its chains: the job store keeps its own
+// table on this same file, and a look's outcome and a deletion's ledger both
+// live in it. See jobrows.go for what that reaches and what it cannot.
 func (t *rowsTarget) Delete(ctx context.Context) error {
 	tx, err := t.eng.db.BeginWrite(ctx)
 	if err != nil {
 		return err
 	}
 	defer func() { _ = tx.Rollback() }()
+	// The job chains go before the rows that name their roots.
+	if _, err := t.eng.eraseAccountJobs(ctx, tx, t.user); err != nil {
+		return err
+	}
 	for _, table := range store.UserTables() {
 		query, err := deleteUserQuery(table)
 		if err != nil {
@@ -237,7 +254,18 @@ func (e *Engine) ownedBlobs(ctx context.Context, user string) ([]string, error) 
 	return owned, nil
 }
 
-func (e *Engine) deleteBlobIDs(ctx context.Context, user string, ids []string) error {
+// deleteBlobIDs erases the listed ids, and only the ones this user owns.
+//
+// The count is the rule: an id goes only when no row that survives this
+// erasure still names it, so a picture two looks share stays readable for the
+// look that keeps its row. scope is the list of look ids the same erasure
+// removes - their renders rows and their snapshots go with them, so they are
+// not surviving references. See references.go for the enumeration, and for the
+// photo deletion's target order, which is why the scope has to arrive at all.
+//
+// An id nothing but the deleted looks named is erased. An id another account
+// owns is left: deletion must not remove someone else's bytes.
+func (e *Engine) deleteBlobIDs(ctx context.Context, user string, ids, scope []string) error {
 	owners, err := e.blobOwners(ctx)
 	if err != nil {
 		return err
@@ -250,6 +278,15 @@ func (e *Engine) deleteBlobIDs(ctx context.Context, user string, ids []string) e
 		if !ok || owner != user {
 			// Absent is already gone. A blob this user does not own
 			// stays: deletion must not remove someone else's bytes.
+			continue
+		}
+		named, err := e.namedElsewhere(ctx, id, scope)
+		if err != nil {
+			return err
+		}
+		if named {
+			// A row this erasure leaves behind still shows this
+			// picture, so the picture stays with it.
 			continue
 		}
 		if err := e.blobs.Delete(ctx, id); err != nil && !errors.Is(err, mediastore.ErrNotFound) {
@@ -318,6 +355,21 @@ func (e *Engine) deleteLooks(ctx context.Context, user string, ids, hashes []str
 	}
 	defer func() { _ = tx.Rollback() }()
 	for _, id := range ids {
+		// The sweep is scoped by ownership, because a look id this
+		// user does not hold deletes nothing of theirs, and an id read
+		// out of a ledger is not proof of an owner.
+		var owned int
+		err := tx.QueryRowContext(ctx,
+			`SELECT EXISTS (SELECT 1 FROM looks WHERE id = ? AND user_id = ?)`, id, user).Scan(&owned)
+		if err != nil {
+			return err
+		}
+		if owned == 0 {
+			continue
+		}
+		if err := sweepLookRows(ctx, tx, user, id); err != nil {
+			return err
+		}
 		if _, err := tx.ExecContext(ctx, `DELETE FROM looks WHERE id = ? AND user_id = ?`, id, user); err != nil {
 			return err
 		}
@@ -342,6 +394,63 @@ func (e *Engine) deleteLooks(ctx context.Context, user string, ids, hashes []str
 	}
 	return tx.Commit()
 }
+
+// sweepLookRows removes one look's own rows before its looks row goes, and
+// then its job chain.
+//
+// The schema's foreign keys cascade, and measured against the landed code a
+// bare DELETE FROM looks does clear every table below - Keel's sqlite opens
+// every connection with _foreign_keys=on, and store.go leans on it. The sweep
+// is explicit anyway, because the invariant is this package's: a row naming a
+// media id that is gone is exactly what the reference count in references.go
+// has to be right about, and an erasure should not inherit its correctness
+// from a connection pragma. The order is children first - the check's
+// vocabulary, the check, the render - so the sweep stands on its own.
+//
+// The look's job chain goes with it for the same reason. Its result is the
+// finished look: the render's media id, the look in words, the shop list. That
+// is the look's own rows in the plainest reading of the contract's "look"
+// target, and leaving it behind would keep a deleted look's outcome readable
+// from the job table and name bytes that are erased with it. A chain still
+// working is left whole: erasure never destroys live work.
+func sweepLookRows(ctx context.Context, tx *sql.Tx, user, lookID string) error {
+	// user, then the look: the attribute sweep takes the user twice.
+	steps := []struct {
+		name  string
+		query string
+		args  func(user, lookID string) []any
+	}{
+		{
+			"render check attributes",
+			`DELETE FROM render_check_attributes WHERE user_id = ?
+				AND render_id IN (SELECT id FROM renders WHERE user_id = ? AND look_id = ?)`,
+			func(user, lookID string) []any { return []any{user, user, lookID} },
+		},
+		{"render checks", `DELETE FROM render_checks WHERE user_id = ? AND look_id = ?`, lookArgs},
+		{"renders", `DELETE FROM renders WHERE user_id = ? AND look_id = ?`, lookArgs},
+		{"look flags", `DELETE FROM look_flags WHERE user_id = ? AND look_id = ?`, lookArgs},
+		{"look products", `DELETE FROM look_products WHERE user_id = ? AND look_id = ?`, lookArgs},
+		{"look snapshots", `DELETE FROM look_snapshots WHERE user_id = ? AND root_id = ?`, lookArgs},
+	}
+	for _, step := range steps {
+		if _, err := tx.ExecContext(ctx, step.query, step.args(user, lookID)...); err != nil {
+			return fmt.Errorf("privacy: delete the %s of %s: %w", step.name, lookID, err)
+		}
+	}
+	var jobs int
+	err := tx.QueryRowContext(ctx,
+		`SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'jobs')`).Scan(&jobs)
+	if err != nil {
+		return fmt.Errorf("privacy: the job table: %w", err)
+	}
+	if jobs == 0 {
+		return nil
+	}
+	_, err = sweepJobChain(ctx, tx, lookID)
+	return err
+}
+
+func lookArgs(user, lookID string) []any { return []any{user, lookID} }
 
 func (e *Engine) deleteHistory(ctx context.Context, user string) error {
 	session, err := memory.Session(user)

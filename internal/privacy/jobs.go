@@ -192,7 +192,12 @@ func (e *Engine) deleteNamed(ctx context.Context, led ledger, name string) error
 	case opPhoto, opLook:
 		switch name {
 		case TargetFiles:
-			return e.deleteBlobIDs(ctx, led.User, led.Blobs)
+			// led.Looks is the scope: the rows those looks own,
+			// renders and snapshots included, go with them, so a
+			// picture they name alone has no surviving reference
+			// even though this target runs before their rows are
+			// deleted.
+			return e.deleteBlobIDs(ctx, led.User, led.Blobs, led.Looks)
 		case TargetLooks, TargetLook:
 			return e.deleteLooks(ctx, led.User, led.Looks, led.Hashes)
 		default:
