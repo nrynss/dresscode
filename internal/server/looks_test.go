@@ -2228,3 +2228,100 @@ func (w *shortWriter) WriteHeader(int)     {}
 func (w *shortWriter) Write(p []byte) (int, error) {
 	return len(p) - 1, nil
 }
+
+// TestTheLookListAnswersABoundedPage is the page pin on GET /api/looks,
+// the T4.10 amendment to the P1-frozen list: the answer is a page, newest
+// first, bounded by the optional limit - default 20, maximum 100 - so a
+// phone with a long history never reads it whole. The looks are seeded
+// straight into the store the list reads, oldest first, no job rows: a
+// look with no job answers the list as not ready, which is all a page pin
+// needs (the item shape is the contract's and is compared member for
+// member in the recorded-route tests). Every bound is asserted: the
+// default answers exactly the newest 20; an explicit limit takes exactly
+// that many, newest first; the maximum answers 100; a value above it
+// clamps to 100 rather than answering what was asked; zero is a whole
+// number of at least zero and answers the empty page; and a non-numeric
+// or negative value is invalid_request naming the field, because a
+// silently corrected page is a page the caller cannot reason about.
+func TestTheLookListAnswersABoundedPage(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	user, cookie := bootUser(t, env.handler)
+
+	const seeded = 110
+	ids := make([]string, 0, seeded)
+	for i := 0; i < seeded; i++ {
+		lookID := mustID(t)
+		ids = append(ids, lookID)
+		if _, err := env.srv.db.Writer().ExecContext(t.Context(),
+			`INSERT INTO looks (id, user_id, selfie_id, photo_hash, occasion, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
+			lookID, user, "selfie-seed", "hash-seed", "family-function", int64(1_700_000_000+i)); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	list := func(query string) []map[string]any {
+		t.Helper()
+		rec := env.get(t, cookie, "/api/looks?occasion=family-function"+query)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("the list answered %d: %s", rec.Code, rec.Body.String())
+		}
+		raw, _ := bodyOf(t, rec)["looks"].([]any)
+		items := make([]map[string]any, 0, len(raw))
+		for _, one := range raw {
+			items = append(items, one.(map[string]any))
+		}
+		return items
+	}
+	newestFirst := func(items []map[string]any, from int) {
+		t.Helper()
+		for i, item := range items {
+			if item["id"] != ids[from-i] {
+				t.Fatalf("item %d is %v, want %s: the page reads newest first", i, item["id"], ids[from-i])
+			}
+		}
+	}
+
+	items := list("")
+	if len(items) != lookListDefaultLimit {
+		t.Fatalf("the default answered %d looks, want %d", len(items), lookListDefaultLimit)
+	}
+	newestFirst(items, seeded-1)
+
+	items = list("&limit=3")
+	if len(items) != 3 {
+		t.Fatalf("limit=3 answered %d looks, want 3", len(items))
+	}
+	newestFirst(items, seeded-1)
+
+	if items := list("&limit=100"); len(items) != lookListMaxLimit {
+		t.Fatalf("limit=100 answered %d looks, want %d", len(items), lookListMaxLimit)
+	}
+	// The clamp: the seeded account holds more than the maximum, and a
+	// request above it still answers at most the maximum - the page a
+	// client cannot reason about is the one that grows with its own ask.
+	if items := list("&limit=250"); len(items) != lookListMaxLimit {
+		t.Fatalf("limit=250 answered %d looks, want the clamp at %d", len(items), lookListMaxLimit)
+	}
+	if items := list("&limit=0"); len(items) != 0 {
+		t.Fatalf("limit=0 answered %d looks, want the empty page", len(items))
+	}
+
+	for _, bad := range []string{"abc", "-3"} {
+		rec := env.get(t, cookie, "/api/looks?occasion=family-function&limit="+bad)
+		assertErr(t, rec, http.StatusBadRequest, codeInvalid, msgInvalid)
+		var body struct {
+			Error struct {
+				Detail struct {
+					Field string `json:"field"`
+				} `json:"detail"`
+			} `json:"error"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+			t.Fatal(err)
+		}
+		if body.Error.Detail.Field != "limit" {
+			t.Fatalf("limit=%s refused with detail.field %q, want limit", bad, body.Error.Detail.Field)
+		}
+	}
+}

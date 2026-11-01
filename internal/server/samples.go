@@ -1,14 +1,26 @@
 // Samples is this file: the five sample looks a judge opens for free.
 // GET /api/samples lists them; POST /api/samples/{id}/looks opens one.
 // An open spends nothing: the sample's selfie is registered into the
-// judge's own mediastore - a repeat open reuses the selfie that judge
-// already holds rather than writing the same bytes again, while the render
-// its story showed is minted fresh for every look, because a render is the
-// one picture a look deletion erases - and the look is the story its
-// stages recorded - the flags, the pick, the measure answer, the render the
-// check kept, the shop list - so the judge's stream, verdict, renders and
-// shop answer exactly as the recorded fixtures do, with no model ask, no
+// judge's own mediastore, the render its story showed is minted fresh
+// for the look that carries it - because a render is the one picture a
+// look deletion erases - and the look is the story its stages recorded -
+// the flags, the pick, the measure answer, the render the check kept,
+// the shop list - so the judge's stream, verdict, renders and shop
+// answer exactly as the recorded fixtures do, with no model ask, no
 // YouCam call and no unit settled. Nothing here dials.
+//
+// The route is idempotent per account and sample, and that idempotency
+// is the bound on the free route: opening a sample the account already
+// holds a live look for answers that same look - the same 202 body, the
+// same id - without minting a second row, a second job, a second render
+// or any other byte, so one account holds at most one live look per
+// sample no matter how many times the door is opened. Deleting the look
+// makes the next open start afresh. The rule is the user's decision
+// (T4.10, recorded 2026-11-01 in dev-diary/PHASE-4-server.md): a
+// structural bound instead of a cap with a refusal, because the samples
+// are born finished and deterministic - a second run would replay the
+// identical story - and the per-open render blob was the only real cost
+// the repeat paid.
 //
 // The route is deliberately not a spending route: it takes no gate
 // token, no judge-lease seat and no budget reservation, so a judge who
@@ -746,6 +758,55 @@ func (sm *sampleRuntime) serveList(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// liveSampleLookWhere names a live look THIS ROUTE minted for one sample,
+// and it is the whole of the idempotency rule, so it is written once and
+// read by both the pre-mint lookup and the claim below. Three columns of
+// the looks row carry the sample's identity: user_id scopes it to the
+// account, and photo_hash plus occasion are the sample's own bytes and
+// place - the selfie is fixed recorded data, so its hash identifies the
+// sample, and the five samples are five people on five occasions, so no
+// two of them share the pair.
+//
+// The fourth clause is what makes the match EXCLUDE every paid look, and
+// it is the reason the route may dedupe at all. A paid look that happens
+// to share the photo hash - a judge who uploads a sample person's picture
+// as their own selfie, or who points a fresh look at a sample's registered
+// selfie id, both of which the landed readSelfie accepts - names the same
+// user_id, photo_hash and occasion this predicate reads, so no pair of
+// those columns separates the two kinds of row. What separates them is
+// where the row came from: snapshots.Keep (looks.go) is the only writer
+// of paid looks rows, and it lands the looks row and its look_snapshots
+// row in one transaction (pipeline.Start keeps the snapshot as soon as the
+// runner mints the id, before any stage runs; a keep that fails leaves
+// neither row). A sample open writes the looks row alone and never writes
+// a snapshot - TestASamplePlaybackNeverResumesIntoThePaidPipeline pins the
+// resume refusing an opened sample for exactly that reason. So a live
+// looks row with no look_snapshots row is a look this route minted, and a
+// row with one is a paid look, whatever its columns say.
+//
+// "Live" is the looks row itself: every deletion sweep that removes a look
+// removes that row (account deletion, photo deletion, and a single look
+// deletion, whose sweep takes the row, its render rows and its job chain),
+// so a deleted sample look can never match again and the next open starts
+// afresh.
+const liveSampleLookWhere = `user_id = ? AND photo_hash = ? AND occasion = ?
+	AND NOT EXISTS (SELECT 1 FROM look_snapshots WHERE look_snapshots.root_id = looks.id)`
+
+// liveSampleLook is the id of the live look this route already minted for
+// this account and sample, or "" when there is none. A read, and nothing
+// else: a hit answers without minting a row, a job, a render blob or any
+// other byte, which is the bound the route exists to keep.
+func (sm *sampleRuntime) liveSampleLook(ctx context.Context, user, hash, occasion string) string {
+	var lookID string
+	err := sm.rt.srv.db.Reader().QueryRowContext(ctx,
+		`SELECT id FROM looks WHERE `+liveSampleLookWhere+` ORDER BY created_at DESC, id DESC LIMIT 1`,
+		user, hash, occasion).Scan(&lookID)
+	if err != nil {
+		return ""
+	}
+	return lookID
+}
+
 // serveStart opens one sample: the recorded state derived under this
 // judge's user id, the story landed as a job that is finished as it is
 // written, 202 with the one id the look and its job share. The route takes
@@ -753,6 +814,11 @@ func (sm *sampleRuntime) serveList(w http.ResponseWriter, r *http.Request) {
 // nothing, and the judge's allowances are waiting for their own selfie.
 // Nor does it take the look kind's slot or queue behind a paid look: the
 // job is written, not run.
+//
+// The route is idempotent per account and sample: the live-look lookup
+// above the mint answers a repeat with the look the account already
+// holds, and the claim on the looks row below makes one row true even for
+// two opens that race.
 func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 	user, ok := caller(w, r)
 	if !ok {
@@ -764,6 +830,22 @@ func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
+	digest := sha256.Sum256(st.selfie.Bytes)
+	hash := hex.EncodeToString(digest[:])
+
+	// The idempotent door, before anything is written: a live look for
+	// this account and sample is answered as it stands - the same 202
+	// body, the same id - and the handler stops here. Nothing is kept,
+	// minted, landed or re-published: the story already stands behind
+	// that id, and a second copy of it is the growth this route must not
+	// do. Deleting the look removes its row, so the lookup misses and the
+	// next open starts afresh.
+	if existing := sm.liveSampleLook(ctx, user.ID, hash, st.Occasion); existing != "" {
+		if err := writeJSON(w, http.StatusAccepted, lookStartedBody{LookID: existing, JobID: existing}); err != nil {
+			sm.log.Warn("server: samples: start", "err", err.Error())
+		}
+		return
+	}
 
 	// The sample's selfie, registered under this judge: the bytes the
 	// story recorded, the owner the reads require. Only the picture a
@@ -775,8 +857,6 @@ func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
 		return
 	}
-	digest := sha256.Sum256(st.selfie.Bytes)
-	hash := hex.EncodeToString(digest[:])
 
 	// The render the story showed, into the group one user's renders of one
 	// photo join - the unit the render eviction and the deletions read. A
@@ -836,11 +916,48 @@ func (sm *sampleRuntime) serveStart(w http.ResponseWriter, r *http.Request) {
 	// looks table and the job dispatcher answers only what it can see, so
 	// the orphan row is unreadable, nothing was spent, and the answer hands
 	// back nothing.
-	if _, err := sm.rt.srv.db.Writer().ExecContext(ctx,
-		`INSERT OR IGNORE INTO looks (id, user_id, selfie_id, photo_hash, occasion, created_at) VALUES (?, ?, ?, ?, ?, ?)`,
-		jobID, user.ID, selfieID, hash, st.Occasion, sm.now().Unix()); err != nil {
+	//
+	// The insert is also the claim that keeps the idempotency true when two
+	// opens race. The lookup above answers every SEQUENTIAL repeat before
+	// anything is minted, but two opens that run at once can both miss it
+	// and both arrive here; one statement is atomic on the single SQLite
+	// writer, so the INSERT carries its own NOT EXISTS - the same predicate
+	// the lookup reads - and whichever open's insert lands second inserts
+	// nothing. One row, under any schedule. The loser reads the winner's id
+	// back and answers that, so both 202 bodies name one look. What the
+	// loser has already minted by then - its render blob, its analysis
+	// rows, its born-finished job row - is the same unreadable-orphan shape
+	// a looks-row failure has always left here: bounded to one race, scoped
+	// to the owner, and swept by the erasure the account deletion runs
+	// (internal/privacy, the job chain that names an owned media id while
+	// rooted at no looks row). The claim is held as one statement rather
+	// than a transaction wrapped around the mint, because the mint writes
+	// through the mediastore and the job store on their own handles, and a
+	// write transaction held across them deadlocks the file's single
+	// writer.
+	claim, err := sm.rt.srv.db.Writer().ExecContext(ctx,
+		`INSERT INTO looks (id, user_id, selfie_id, photo_hash, occasion, created_at)
+		 SELECT ?, ?, ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM looks WHERE `+liveSampleLookWhere+`)`,
+		jobID, user.ID, selfieID, hash, st.Occasion, sm.now().Unix(),
+		user.ID, hash, st.Occasion)
+	if err != nil {
 		sm.log.Error("server: samples: keep the look", "job_id", jobID, "err", err.Error())
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
+		return
+	}
+	if n, _ := claim.RowsAffected(); n == 0 {
+		// Another open of the same sample won the race. Its look is the
+		// account's look for this sample; answer it, not the id this open
+		// minted and did not land.
+		winner := sm.liveSampleLook(ctx, user.ID, hash, st.Occasion)
+		if winner == "" {
+			sm.log.Error("server: samples: the claim lost to no row", "job_id", jobID)
+			writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
+			return
+		}
+		if err := writeJSON(w, http.StatusAccepted, lookStartedBody{LookID: winner, JobID: winner}); err != nil {
+			sm.log.Warn("server: samples: start", "err", err.Error())
+		}
 		return
 	}
 	if err := writeJSON(w, http.StatusAccepted, lookStartedBody{LookID: jobID, JobID: jobID}); err != nil {
@@ -921,26 +1038,25 @@ func (sm *sampleRuntime) publish(jobID string, frames []job.Progress) {
 // keep writes one recorded image into the judge's own mediastore, the same
 // store the intake and the runner write, private to its owner.
 //
-// A repeat open reuses the picture the owner already holds IN A GROUP THE
-// RULE BELOW CALLS SHAREABLE, and mints a fresh id everywhere else. The
-// reuse is there because a story's bytes are fixed data: a second open of
-// the same sample asks for the same pictures, and a copy of a picture this
-// owner already has is a second blob, a second row and a second write of
-// the same bytes for one story. What the reuse may NOT do is hand one blob
-// to two live looks. The erasure side counts references now
-// (internal/privacy/references.go - a blob goes only when nothing names
-// it), and the rule below is the simpler invariant kept on top of that
-// count: a render id is named by exactly one look.
+// An open that mints reuses the picture the owner already holds IN A GROUP
+// THE RULE BELOW CALLS SHAREABLE, and mints a fresh id everywhere else.
+// Since T4.10's idempotency the open that reaches keep is a first open, or
+// the fresh open that follows a deletion - a repeat open answers upstream,
+// before keep runs - so the reuse serves two shapes: the account already
+// held the story's bytes as the judge's own upload, or the judge's earlier
+// look of this sample was deleted and its selfie blob survives it. Either
+// way a copy of a picture this owner already has is a second blob, a
+// second row and a second write of the same bytes for one story. What the
+// reuse may NOT do is hand one blob to two live looks. The erasure side
+// counts references now (internal/privacy/references.go - a blob goes only
+// when nothing names it), and the rule below is the simpler invariant kept
+// on top of that count: a render id is named by exactly one look.
 //
-// So the frugality is the selfie and the rows, not the render. The five
-// sample selfies are 1,359,634 bytes between them and a repeat open writes
-// none of them again; the family story's shown render is 289,905 bytes and
-// a repeat open of that one story pays it again, every time. Nothing on
-// this path bounds either - no gate token, no lease seat, no budget
-// reservation - so the per-user cap the composition hand sets (T4.10) is
-// what actually bounds a repeat. A picture the search does not settle mints,
-// which is what an open did before the reuse and is never wrong, only less
-// frugal.
+// The bound on this route is the idempotency above serveStart, not
+// frugality here: a repeat open mints nothing at all, and the one live
+// look per sample holds its selfie - reused, never rewritten - and its own
+// render. A picture the search does not settle mints, which is what an
+// open did before the reuse and is never wrong, only less frugal.
 func (sm *sampleRuntime) keep(ctx context.Context, owner, group string, img systemone.Image) (string, error) {
 	if shareableGroup(group) {
 		want := sha256.Sum256(img.Bytes)

@@ -42,6 +42,7 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1577,6 +1578,36 @@ type lookListBody struct {
 // serveLookList answers the past looks of one occasion, newest first.
 // The list is the user's looks, not style memory, and it is returned
 // whether or not history is on.
+// The list's page bounds: the default answers the accounts that never
+// send the parameter, the maximum keeps one request from reading a whole
+// history, and a value outside the contract is refused, not guessed.
+const (
+	lookListDefaultLimit = 20
+	lookListMaxLimit     = 100
+)
+
+// lookListLimit reads the list's optional limit. An absent parameter is
+// the default. A value above the maximum clamps to it, so one request can
+// never answer more than the contract's page whatever it asks for. A
+// non-numeric or negative value is invalid_request naming the field,
+// because a silently corrected page is a page the caller cannot reason
+// about.
+func lookListLimit(w http.ResponseWriter, r *http.Request) (int, bool) {
+	raw := r.URL.Query().Get("limit")
+	if raw == "" {
+		return lookListDefaultLimit, true
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 {
+		writeAPI(w, http.StatusBadRequest, codeInvalid, msgInvalid, fieldDetail{Field: "limit", Reason: "must be a whole number of at least zero"})
+		return 0, false
+	}
+	if n > lookListMaxLimit {
+		return lookListMaxLimit, true
+	}
+	return n, true
+}
+
 func (rt *lookRuntime) serveLookList(w http.ResponseWriter, r *http.Request) {
 	user, ok := caller(w, r)
 	if !ok {
@@ -1587,10 +1618,14 @@ func (rt *lookRuntime) serveLookList(w http.ResponseWriter, r *http.Request) {
 		writeAPI(w, http.StatusBadRequest, codeInvalid, msgInvalid, fieldDetail{Field: "occasion", Reason: "unknown occasion"})
 		return
 	}
+	limit, ok := lookListLimit(w, r)
+	if !ok {
+		return
+	}
 	ctx := r.Context()
 	rows, err := rt.srv.db.Reader().QueryContext(ctx,
-		`SELECT id, occasion, verdict, fix FROM looks WHERE user_id = ? AND occasion = ? ORDER BY created_at DESC, id DESC`,
-		user.ID, occasion)
+		`SELECT id, occasion, verdict, fix FROM looks WHERE user_id = ? AND occasion = ? ORDER BY created_at DESC, id DESC LIMIT ?`,
+		user.ID, occasion, limit)
 	if err != nil {
 		rt.log.Error("server: looks: the list", "err", err.Error())
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
