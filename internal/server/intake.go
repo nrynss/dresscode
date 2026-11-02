@@ -340,6 +340,16 @@ func (s *Server) serveProduct(w http.ResponseWriter, r *http.Request) {
 	user, _ := identity.UserFromContext(r.Context())
 	raw, err := s.rawUpload(r.Context(), user.ID, uploadID, groupProduct)
 	if err != nil {
+		// Chaaya's open body has no group field - its beginBody sends owner,
+		// content_type, visibility and chunk_size only - so an app upload cannot
+		// open as a product, and every client upload lands in the selfie group.
+		// The owner match above still gates this path, and the bytes are
+		// immutable and unread-only here, so the second open costs nothing. The
+		// issue text for Chaaya is in the diary; when the uploader grows a group
+		// field, this fallback goes.
+		raw, err = s.rawUpload(r.Context(), user.ID, uploadID, groupSelfie)
+	}
+	if err != nil {
 		s.writeRawError(w, err, "is not a product upload")
 		return
 	}
