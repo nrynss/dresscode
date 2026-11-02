@@ -1,6 +1,8 @@
 # Clef
 
-What Workers AI's Clef takes, what it returns, and what it costs, measured on the sample set (T0.6). The recordings are in [`testdata/clef/`](../testdata/clef/). Every number here is a raw probability as Clef returned it. None of them is a threshold, and none is ever shown to a user: T3.9 sets the thresholds from these and later recordings.
+What Workers AI's Clef takes, what it returns, and what it costs, measured on the sample set. The recordings are in [`testdata/clef/`](../testdata/clef/), and they are the T3.9e re-record: the same 55 exchanges T0.6 recorded, recorded again against the service of today on the same sample photos and the same request shape. Every number here is a raw probability as Clef returned it on that fresh pass. None of them is a threshold, and none is ever shown to a user; the thresholds are the lines chosen in [`docs/evaluation.md`](evaluation.md).
+
+**Two rounds live in this file.** Every measurement below is the fresh corpus, except [`## Spend`](#spend) and [`## The replay format`](#the-replay-format). Those two also carry the history of the T0.6 round that built the corpus and of how its files were converted, and the fresh pass is stated beside that history rather than over it.
 
 ## The call
 
@@ -28,7 +30,7 @@ The three question types:
 The REST API wraps the model's output in Cloudflare's envelope:
 
 ```json
-{"result": {"model": "clef", "answers": {"<id>": {...}}, "usage": {"input_tokens": 1959, "output_tokens": 0}},
+{"result": {"model": "clef", "answers": {"<id>": {...}}, "usage": {"input_tokens": 1963, "output_tokens": 0}},
  "success": true, "errors": [], "messages": []}
 ```
 
@@ -36,7 +38,7 @@ Every probability came back with at most four decimals. `output_tokens` was 0 on
 
 ## The requests recorded
 
-The wording is the data's, verbatim: each criterion's `clef` text (with `family-hair-finished` as reworded in this task, below), the occasion's `biggest_issue.question` and option labels, and the vocabulary's questions and options from `testdata/occasions/`. No YouCam analysis was sent in any request (none exists yet).
+The wording is the data's, verbatim: each criterion's `clef` text (with `family-hair-finished` as reworded in the T0.6 round, below), the occasion's `biggest_issue.question` and option labels, and the vocabulary's questions and options from `testdata/occasions/`. The re-record sent the same wording — the fresh recordings' `instructions` are these strings, read back out of the committed requests — and the same shape. No YouCam analysis is sent in any request: each carries only the sample photo, or the two photos of a check pair, and its state carries nothing but the occasion's id and name (plus, on a check, the change and the criterion it is checking).
 
 **Judge** (`model: clef`, one image, the sample JPEG as committed, 896 × 1200):
 
@@ -78,19 +80,19 @@ One `look.<attribute>` choice per attribute in `vocabulary.json` (eleven). The t
 | `testdata/clef/check-<model>-V04-to-woman-white.json` | Check proxy (b), the same-person negative, on both |
 | `testdata/clef/stability/stability-V04-family-function-NN.json` | Ten repeats of the V04 judge request |
 | `testdata/clef/cost/cost-V04-family-function-<size>.json` | The V04 judge at 1024, 768 and 512 px on the long side, and with no image |
-| `testdata/clef/cost/images/V04-family-function-<size>.jpg` | The three resized photos those cost requests sent |
+| `testdata/clef/cost/images/<sha256>.jpg` | The three resized photos those cost requests sent (765 × 1024, 573 × 768 and 382 × 512), published by the recorder under the digest of their bytes |
 
 Each file is the envelope `internal/systemone/replay.go` loads:
 
 ```json
 {"exchange": "<file name without .json>",
  "request": {"method": "POST", "path": "/ai/run/@cf/cloudflare/clef", "body": <the request body, images by file>},
- "response": {"status": 200, "elapsed_ms": 1416, "body": <Cloudflare's envelope>}}
+ "response": {"status": 200, "elapsed_ms": 3641, "body": <Cloudflare's envelope>}}
 ```
 
-The path leaves out `/client/v4/accounts/<id>`, so no account id is stored, and no request header is stored at all. `systemone.Open("testdata/clef")` loads the 41 top-level recordings and `Ask` serves each one. `Open` does not descend into folders: `stability/` and `cost/` are opened on their own. The ten stability repeats are one request, so `Ask` on that folder answers `Ambiguous` by design and `Reply(<exchange>)` serves each; they sit in their own folder because they are also byte-identical to `judge-V04-family-function`, and `Ask` on the top level must not turn ambiguous. `cost-*` differ in image bytes, so each is served.
+The path leaves out `/client/v4/accounts/<id>`, so no account id is stored, and no request header is stored at all. `systemone.Open("testdata/clef")` loads the 41 top-level recordings and `Ask` serves each one. `Open` does not descend into folders: `stability/` and `cost/` are opened on their own. The ten stability repeats are one request, so `Ask` on that folder answers `Ambiguous` by design and `Reply(<exchange>)` serves each; they sit in their own folder because they are the same request as `judge-V04-family-function`, and `Ask` on the top level must not turn ambiguous. `cost-*` differ in image bytes, so each is served.
 
-A recorded image names a file instead of carrying its bytes: `{"content_type": "image/jpeg", "file": "../samples/woman/V04-family-function.jpg"}`, the path relative to the recording's own folder. `Open` reads the file and puts its bytes inline before indexing, so the request key (which hashes the image bytes) and the content key are the same as for an inline recording, and a live request carrying the bytes still matches. A referenced file that is missing or unreadable fails `Open` with the recording's name and the path. Inline images (the object form or a data URL) still load. The bytes sent to Clef were the committed files exactly; the recorder sent them inline and wrote the reference. `testdata/clef` is about 0.6 MB.
+A recorded image names a file instead of carrying its bytes: `{"content_type": "image/jpeg", "file": "../samples/woman/V04-family-function.jpg"}`, the path relative to the recording's own folder. `Open` reads the file and puts its bytes inline before indexing, so the request key (which hashes the image bytes) and the content key are the same as for an inline recording, and a live request carrying the bytes still matches. A referenced file that is missing or unreadable fails `Open` with the recording's name and the path. Inline images (the object form or a data URL) still load. The bytes sent to Clef were the committed files exactly; the recorder sent them inline and wrote the reference. The reference string is the one piece of a stored request that depends on where the recording sits: the ten stability repeats name `../../samples/woman/V04-family-function.jpg` because their folder is one level deeper, and their bytes, questions, state and model are equal to `judge-V04-family-function`'s, so the key they index under is the same. `testdata/clef` is about 0.6 MB (599,676 bytes over 58 files: 41 recordings, 10 stability repeats, 4 cost recordings and 3 cost photos).
 
 ## Cost
 
