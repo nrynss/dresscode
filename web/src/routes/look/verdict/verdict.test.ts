@@ -13,12 +13,13 @@ import {
   readingSentence,
   stageOrder,
   stageWord,
+  suggestionOnlySentence,
   verdictFromLook,
   verdictLines,
 } from "./copy";
 import { cleanSentence as renderCleanSentence } from "../render/copy";
 import { followLook, loadVerdict, storyJobId, storyLookId, type LookFollow } from "./follow";
-import { verdictHash } from "./route";
+import { occasionHash, verdictHash } from "./route";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -277,6 +278,7 @@ test("the look that flags nothing is read as the good outcome", async () => {
   expect(verdict.fix).toBeUndefined();
   expect(verdict.why).toBeUndefined();
   expect(verdict.reasons).toEqual([]);
+  expect(verdict.suggestionOnly).toBe(false);
   // The clean look has no lines to fold into the notes: the sentence is the
   // whole verdict on the page.
   expect(verdictLines(verdict)).toEqual([]);
@@ -293,31 +295,118 @@ test("the look that flags nothing is read as the good outcome", async () => {
   expect(recorded.body.flags).toEqual([]);
   expect(recorded.body.shown_render).toBeNull();
   expect(recorded.body.products).toEqual([]);
+  // The wire's suggestion_only is true here too — it means no render stood,
+  // on every path that ends without one — so the flag cannot tell the clean
+  // look from the suggestion-only one. The shape does: the verdict above was
+  // read from this very body and is not suggestion-only.
+  expect(recorded.body.suggestion_only).toBe(true);
 
-  // The fix key may also ride absent altogether; a look that flags something
-  // must name a fix, and a fix that answers as an empty object is not a name.
+  // The fix key may also ride absent altogether, and reads as the clean
+  // look when nothing is flagged. Flags that ride without a fix are the
+  // suggestion-only outcome, and a verdict too: the judge flagged the look,
+  // no fix was open to try. A fix that answers as an empty object is still
+  // not a name.
   const absent: Record<string, unknown> = { ...recorded.body };
   absent.fix = undefined;
-  expect(() => verdictFromLook(absent)).not.toThrow();
+  const absentRead = verdictFromLook(absent);
+  expect(absentRead.suggestionOnly).toBe(false);
   const flagged = {
     ...recorded.body,
     flags: [{ id: "family-lip-colour", kind: "grooming", suggestion: "Try a red lip." }],
   };
-  expect(() => verdictFromLook(flagged)).toThrow();
+  const flaggedRead = verdictFromLook(flagged);
+  expect(flaggedRead.suggestionOnly).toBe(true);
+  expect(flaggedRead.fix).toBeUndefined();
+  expect(flaggedRead.why).toBeUndefined();
+  expect(flaggedRead.reasons).toEqual(["Try a red lip."]);
   expect(() => verdictFromLook({ ...recorded.body, fix: {} })).toThrow();
 
-  // The clean verdict is its own branch: the sentence stands where the fix
-  // hero was, and no render link points at a render that does not exist.
+  // The clean verdict is its own branch, the quiet side of the no-fix fork
+  // the suggestion-only card shares with it: the sentence stands where the
+  // fix hero was, and no link points at a render that does not exist.
   const screen = readFileSync(path.join(here, "verdict.svelte"), "utf8");
   expect(screen).toContain("{#if verdict.fix === undefined}");
+  const fork = screen.indexOf("{#if verdict.suggestionOnly}");
+  expect(fork).toBeGreaterThan(screen.indexOf("{#if verdict.fix === undefined}"));
   const cleanBranch = screen.slice(
-    screen.indexOf("{#if verdict.fix === undefined}"),
-    screen.indexOf("{:else}", screen.indexOf("{#if verdict.fix === undefined}")),
+    screen.indexOf("{:else}", fork),
+    screen.indexOf("{/if}", screen.indexOf("{:else}", fork)),
   );
   expect(cleanBranch).toContain("{cleanSentence}");
   expect(cleanBranch).not.toContain("hero");
   expect(cleanBranch).not.toContain("renderHash");
   expect(cleanBranch).not.toContain("result-card");
+  expect(cleanBranch).not.toContain("occasionHash");
+});
+
+test("the suggestion-only look names the cause and hands over the path", async () => {
+  installMock();
+  // The shape the first real user's look ended in: the judge flagged the
+  // look, the occasion's fix menu had nothing ticked open, so no fix was
+  // picked — the wire carries the flags, a null fix, and suggestion_only
+  // true. Before this task the reader refused the shape whole, and the
+  // screen answered "The verdict could not be read.": the dead end.
+  pinAnswer("GET", `/api/looks/${storyLookId}`, {
+    file: "look-suggestion-only",
+    method: "GET",
+    path: `/api/looks/${storyLookId}`,
+    status: 200,
+    body: {
+      id: storyLookId,
+      job_id: storyJobId,
+      occasion: "family-function",
+      selfie_id: "5e1f1e00000000000000000000000001",
+      selfie_url: "/media/5e1f1e00000000000000000000000001",
+      ready: true,
+      flags: [
+        { id: "family-earring-festive", kind: "grooming", suggestion: "The ear reads plain; try gold jhumkas." },
+        { id: "family-lip-colour", kind: "grooming", suggestion: "The lip reads bare; try a red lip." },
+      ],
+      fix: null,
+      runner_up: "",
+      shown_render: null,
+      suggestion_only: true,
+      products: [],
+      verdict: "",
+      words: "",
+    },
+  });
+  const verdict = await loadVerdict(storyLookId);
+  expect(verdict.suggestionOnly).toBe(true);
+  expect(verdict.fix).toBeUndefined();
+  expect(verdict.why).toBeUndefined();
+  expect(verdict.reasons).toEqual([
+    "The ear reads plain; try gold jhumkas.",
+    "The lip reads bare; try a red lip.",
+  ]);
+  // The suggestions still show, as reasons worded as suggestions, and the
+  // sentence naming the cause rides with them. No digit anywhere.
+  const text = verdictLines(verdict).join("\n");
+  expect(text).toContain(suggestionOnlySentence);
+  expect(text).not.toMatch(/\d/);
+
+  // The rendered affordance: one card in the fix card's own recipe. The
+  // sentence names the cause in the product's voice — a suggestion, never
+  // a score, never a blame — and the link is the one-tap path to the
+  // occasion's fix menu, where the ticks live. No render link: no render
+  // exists to see.
+  const screen = readFileSync(path.join(here, "verdict.svelte"), "utf8");
+  const fork = screen.indexOf("{#if verdict.suggestionOnly}");
+  const branch = screen.slice(fork, screen.indexOf("{:else}", fork));
+  expect(branch).toContain('<div class="result-card">');
+  expect(branch).toContain('<h3 class="hero-label">No fix yet</h3>');
+  expect(branch).toContain('<p class="hero-fix">{suggestionOnlySentence}</p>');
+  expect(branch).toContain('<a class="primary-link" href={occasionHash}>Choose the fixes to try</a>');
+  expect(branch).not.toContain("renderHash");
+  expect(suggestionOnlySentence).toBe("No fix is open to try yet; the look stands on its suggestions.");
+  expect(suggestionOnlySentence).not.toMatch(/\d/);
+
+  // The path binds the constant, and the shell routes that hash to the
+  // occasion screen — the pins on both sides, so a swap on either fails a
+  // test instead of a user.
+  expect(occasionHash).toBe("#/occasion");
+  const shell = readFileSync(path.join(here, "../../../app/app.svelte"), "utf8");
+  expect(shell).toContain('hash === "/occasion"');
 });
 
 test("the screen and the shell link show no digit", () => {
@@ -388,7 +477,10 @@ test("the screen and the shell link show no digit", () => {
   expect(screen).toContain('<a class="primary-link" href={renderHash}>See the render</a>');
   expect(staticText).toContain("See the render");
   expect(markup).toContain("renderHash");
-  const card = screen.slice(screen.indexOf('<div class="result-card">'), screen.indexOf("</section>"));
+  // Two cards wear the result-card recipe now — the suggestion-only card
+  // and the fix card — so the fix card's slice starts at its own markup,
+  // the second one on the screen.
+  const card = screen.slice(screen.lastIndexOf('<div class="result-card">'), screen.indexOf("</section>"));
   expect(card).toContain('<a class="primary-link" href={renderHash}>See the render</a>');
   expect(card.indexOf("hero-fix")).toBeLessThan(card.indexOf('class="primary-link"'));
   const heroStyles = screen.slice(screen.indexOf("<style>"));

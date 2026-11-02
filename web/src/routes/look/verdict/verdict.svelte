@@ -13,9 +13,11 @@
     readingSentence,
     stageOrder,
     stageWord,
+    suggestionOnlySentence,
     type VerdictCopy,
   } from "./copy";
   import { followLook, loadVerdict, shownFailure, storyJobId, storyLookId } from "./follow";
+  import { occasionHash } from "./route";
 
   let stream = $state<JobStream | undefined>(undefined);
   let verdict = $state<VerdictCopy | null>(null);
@@ -156,10 +158,27 @@
       </details>
     {/if}
     {#if verdict.fix === undefined}
-      <!-- The judge flagged nothing: the good outcome. The sentence stands
-       * where the fix card was, and no link points at a render that does not
-       * exist. -->
-      <p role="status">{cleanSentence}</p>
+      {#if verdict.suggestionOnly}
+        <!-- Suggestion-only: the judge flagged the look, but no fix was open
+         * to try — nothing ticked on the occasion's fix menu — so no fix was
+         * picked. One card, the same recipe the fix card wears: the sentence
+         * names the cause in the product's voice, a suggestion and never a
+         * score or a blame, and the link is the one-tap path to the
+         * occasion's fix menu, where the ticks live. No render link: no
+         * render exists to see. -->
+        <div class="result-card">
+          <div class="hero">
+            <h3 class="hero-label">No fix yet</h3>
+            <p class="hero-fix">{suggestionOnlySentence}</p>
+          </div>
+          <a class="primary-link" href={occasionHash}>Choose the fixes to try</a>
+        </div>
+      {:else}
+        <!-- The judge flagged nothing: the good outcome. The sentence stands
+         * where the fix card was, and no link points at a render that does
+         * not exist. -->
+        <p role="status">{cleanSentence}</p>
+      {/if}
     {:else}
       <!-- One card for the outcome: the fix and its way forward, in the same
        * language the render screen's Result Card speaks. This screen holds no
