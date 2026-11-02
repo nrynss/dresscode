@@ -664,7 +664,7 @@ id:         T3.14
 title:      Re-quote the five stale mentions of festival's retired gold chain
 owns:       internal/server/samples.go, testdata/samples/cached/sample-date.json, testdata/samples/cached/sample-funeral.json
 requires:   T3.12
-status:     in-review
+status:     done
 ```
 T3.12's runner-up re-quote retired `festival-gold-chain` from the festival story, and its review's tree-wide grep confirmed exactly five prose sites that still speak of it as part of the story: three code comments and two authored `source` sentences. None is behaviour — all five are documentation of the data, which is why the orchestrator charters them rather than sending a remediator. The two cache sentences were frozen by T3.12's own byte-stability clause on purpose: they move only now, in their own hand, with the generator landed to prove they are the only bytes that move.
 
