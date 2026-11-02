@@ -28,8 +28,8 @@ export const cleanSentence = "Nothing needs changing; the outfit already meets t
 /** The suggestion-only outcome: the judge flagged the look, but no fix was
  * open to try — the occasion's fix menu had nothing ticked — so no fix was
  * picked and no render exists. The screen names that cause in the product's
- * own voice, a suggestion and never a score or a blame, and the card beside
- * it hands over the one-tap path to the occasion's fix menu. */
+ * own voice, a suggestion that never grades and never blames, and the card
+ * beside it hands over the one-tap path to the occasion's fix menu. */
 export const suggestionOnlySentence = "No fix is open to try yet; the look stands on its suggestions.";
 
 export function stageWord(stage: string | undefined): string {

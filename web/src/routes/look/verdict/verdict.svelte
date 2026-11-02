@@ -162,8 +162,8 @@
         <!-- Suggestion-only: the judge flagged the look, but no fix was open
          * to try — nothing ticked on the occasion's fix menu — so no fix was
          * picked. One card, the same recipe the fix card wears: the sentence
-         * names the cause in the product's voice, a suggestion and never a
-         * score or a blame, and the link is the one-tap path to the
+         * names the cause in the product's voice, a suggestion that never
+         * grades and never blames, and the link is the one-tap path to the
          * occasion's fix menu, where the ticks live. No render link: no
          * render exists to see. -->
         <div class="result-card">
