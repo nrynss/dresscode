@@ -63,7 +63,9 @@ var liveNeuronsPerMillion = map[string]int64{
 // The run-shape constants, lifted so the pinned tests project and price
 // against the same numbers the tagged sweep runs on. None of them is a
 // threshold: the lines the sweep measures with are read from the committed
-// settings file.
+// settings file, and the pinned tests take them from the transcript that
+// records what that sweep was measured with - never from the settings file
+// of today, which is what a re-record moves.
 
 // liveProbeCeiling covers the probe's two calls. liveSweepCeiling is
 // 8 cents, about four times the sweep's expected settle (~1,950 neurons,
@@ -1067,6 +1069,13 @@ type liveReadRowText struct {
 	change   string
 	same     string
 	met      string
+	// The recorded triple, kept apart from the line: the pin re-emits the
+	// whole row, tail included, and the recorded column of the report is
+	// rebuilt from these three, so neither side of this row is read out of
+	// the corpus the transcript measured against.
+	recChange string
+	recSame   string
+	recMet    string
 }
 
 type liveDecisionRow struct {
@@ -1166,15 +1175,17 @@ func parseLiveTranscript(t *testing.T, name string) liveTranscriptData {
 				agrees:   liveBool(t, tr.name, strings.TrimPrefix(f[6], "live-agrees=")),
 			})
 			continue
-		case len(f) >= 10 && f[7] == "/" && f[9] == "/" && (f[2] == "true" || f[2] == "false"):
+		case len(f) == 11 && f[7] == "/" && f[9] == "/" && (f[2] == "true" || f[2] == "false"):
 			// The check's read table: the recorded triple trails the
-			// live values with two slash separators. It is not kept apart
-			// from the line: the pin re-emits the whole row, tail included,
-			// from the recorded read's own three values.
+			// live values with two slash separators. It is kept apart
+			// from the line as well: the pin re-emits the whole row, tail
+			// included, and recordedCheckFromTranscript rebuilds the
+			// recorded report's reads from these three fields.
 			d.readRows = append(d.readRows, liveReadRowText{
 				raw: ln, exchange: f[0], model: f[1],
 				bad:    liveBool(t, tr.name, f[2]),
 				change: f[3], same: f[4], met: f[5],
+				recChange: f[6], recSame: f[8], recMet: f[10],
 			})
 			continue
 		case (len(f) == 10 || len(f) == 14) && liveHasName(gateNames, f[0]):
@@ -1534,6 +1545,250 @@ func liveVocabulary(t *testing.T) *domain.Vocabulary {
 	return &loaded.Vocabulary
 }
 
+// ---- The recorded column, lifted out of the transcript ----
+//
+// The sweep printed two columns: the live read, and the recorded read it was
+// measured beside. Both come out of the transcript now. Reading the recorded
+// column out of testdata/clef made these pins compare T3.9b's frozen evidence
+// against whatever corpus the repository ships today, so a re-record reddened
+// history's pins with nothing wrong, and would have asked for a fresh paid
+// sweep after every re-record to put them back (the ruling under T3.9e in
+// dev-diary/PHASE-3-pipeline.md). The claim "the shipped settings equal the
+// evaluated ones" is a claim about today's corpus; it lives in
+// TestTheChosenSettings and internal/config, and is not restated here.
+//
+// The recorded column is rebuilt, not copied. The transcript prints every
+// recorded probability, answer, gate read and shipped line, and the recorded
+// aggregates below come out of the package's own sweep, agreement, offAt and
+// gateCurve over those printings - so they stay arithmetic the gate exercises
+// on every commit, compared line for line with what the paid sweep printed
+// from the corpus it ran on. Where the transcript carries a recorded fact
+// only as a printed aggregate and never per row - the biggest-issue count -
+// it is read as printed, named in the helper that reads it.
+
+// liveHeadlineFraction reads the recorded pair out of a headline the sweep
+// printed as "label, recorded pair, live pair": the line's last two fields
+// are the two fractions and the recorded pair is the earlier one. The
+// transcript prints this one fact as an aggregate and never per row, so it is
+// read as printed rather than recomputed. A line with fewer than two fields
+// reads 0/0, which the headline's own re-emission pin fails loudly: this
+// helper holds no expectation of its own.
+func liveHeadlineFraction(t *testing.T, d liveTranscriptData, key string) (num, den int) {
+	t.Helper()
+	f := strings.Fields(d.headline(t, key))
+	if len(f) < 2 {
+		return 0, 0
+	}
+	return liveFraction(t, d.name, f[len(f)-2])
+}
+
+// recordedJudgeFromTranscript rebuilds the recorded judging report and the
+// lines the paid sweep measured against, both out of the transcript's own
+// recorded column: the EVERY CELL rows' recorded= probabilities, grouped by
+// criterion and swept by the package's own sweep; the default line and the
+// overrides from chooseJudgeSettings' rule run on those swept curves, which
+// must then reproduce the per-criterion table's line column; and the
+// biggest-issue headline for the issue count, which is the one recorded
+// number the transcript prints as an aggregate and never per sample.
+//
+// Left out because no pin here reads them: DefaultMet, DefaultTotal, Applied,
+// Issues.Missed and the recorded curves' plateaus and occasions - the live
+// report prints the live set's plateaus, and the recorded set's best total
+// and apart flags are pinned as the table's own printed columns.
+func recordedJudgeFromTranscript(t *testing.T, d liveTranscriptData) (JudgeReport, JudgeSettings) {
+	t.Helper()
+	var ids []string
+	byCriterion := map[string][]Cell{}
+	for _, r := range d.cellRows {
+		if _, seen := byCriterion[r.criterion]; !seen {
+			ids = append(ids, r.criterion)
+		}
+		byCriterion[r.criterion] = append(byCriterion[r.criterion], Cell{
+			Sample: r.sample, Value: liveFloat(t, d.name, r.recorded), Expected: r.expected,
+		})
+	}
+	sort.Strings(ids)
+	curves := make([]Curve, 0, len(ids))
+	for _, id := range ids {
+		c := sweep(byCriterion[id])
+		c.ID = id
+		curves = append(curves, c)
+	}
+
+	// The line each criterion read under, from the table's own line column.
+	lineOf := make(map[string]float64, len(d.criterion))
+	for _, r := range d.criterion {
+		lineOf[r.id] = liveFloat(t, d.name, r.line)
+	}
+	// The default is the line the most criteria print. It is a starting
+	// guess and every criterion then holds the run to it: the criteria that
+	// read their curve's best at it take no override, so each of theirs
+	// prints that same number in its line=%.5f column, and the cell rows
+	// beside them do too.
+	counts := make(map[float64]int, len(lineOf))
+	for _, v := range lineOf {
+		counts[v]++
+	}
+	met := math.NaN()
+	for v := range counts {
+		if math.IsNaN(met) || counts[v] > counts[met] ||
+			(counts[v] == counts[met] && math.Abs(v-readingAt) < math.Abs(met-readingAt)) ||
+			(counts[v] == counts[met] && math.Abs(v-readingAt) == math.Abs(met-readingAt) && v < met) {
+			met = v
+		}
+	}
+	// The overrides are chosen from the rebuilt recorded curves by
+	// chooseJudgeSettings' own rule and its own plateau midpoint, so the
+	// default plus these numbers must reproduce every line the transcript
+	// printed - the table row and all 273 cell rows beside it. That is the
+	// sweep rule, run on the transcript's recorded column: a recorded
+	// probability read wrong moves a plateau and reddens the line it prints.
+	settings := JudgeSettings{Met: met, PerCriterion: map[string]float64{}}
+	for _, c := range curves {
+		if agreement(c.Cells, met) < c.MaxAgreement {
+			settings.PerCriterion[c.ID] = c.Chosen
+		}
+	}
+
+	report := JudgeReport{Samples: len(d.judgeRows), Curves: curves}
+	for _, c := range curves {
+		line := settings.lineFor(c)
+		report.Cells += len(c.Cells)
+		report.AgreeAtHalf += agreement(c.Cells, readingAt)
+		report.ChosenTotal += agreement(c.Cells, line)
+		for _, cell := range c.Cells {
+			if (cell.Value >= readingAt) != cell.Expected {
+				report.OffAtHalf = append(report.OffAtHalf, OffCell{
+					Sample: cell.Sample, Criterion: c.ID, Value: cell.Value, Expected: cell.Expected,
+				})
+			}
+			// The cells the chosen lines still misread are the cells off the
+			// chosen line: pipeline.Judge flags a criterion whose probability
+			// falls under its line, so evaluateJudge's applied list and this
+			// rule name the same cells. The pin that walks this list against
+			// the transcript's own recorded list is what holds the two rules
+			// together, on every commit, over all 36 criteria.
+			if (cell.Value >= line) != cell.Expected {
+				report.Wrong = append(report.Wrong, OffCell{
+					Sample: cell.Sample, Criterion: c.ID, Value: cell.Value, Expected: cell.Expected,
+				})
+			}
+		}
+	}
+	sortOffCells(report.OffAtHalf)
+	sortOffCells(report.Wrong)
+	report.Issues.Named, report.Issues.Of = liveHeadlineFraction(t, d, "issues")
+	return report, settings
+}
+
+// recordedCheckFromTranscript rebuilds the recorded render-check report, and
+// the shipped check lines the sweep measured with, out of the transcript's own
+// recorded column: the read table's trailing triple, the gate table's line
+// column, the decision rows' recorded shown flag and the vocabulary rows'
+// recorded answer. The gate curves and the two decision counts are recomputed
+// - by the package's own gateCurve and by the same liveDecisionCounts the live
+// side runs through - so the recorded margin beside each live one stays
+// arithmetic.
+//
+// The live vocabulary cells ride in as an argument because the recorded set is
+// read cell by cell beside them. Left out because no pin here reads them:
+// Models, JointPlateaus, ChosenModel and the report's own Lines - the live
+// report prints these for the live set, and the model choice beside the
+// recorded curve is TestTheModelChoice's, not this transcript's.
+func recordedCheckFromTranscript(t *testing.T, d liveTranscriptData,
+	liveCells []VocabularyCell) (CheckReport, pipeline.Lines) {
+	t.Helper()
+	var report CheckReport
+	for _, r := range d.readRows {
+		report.Reads = append(report.Reads, CheckRead{
+			Exchange: r.exchange, Model: r.model, Bad: r.bad,
+			Change: liveFloat(t, d.name, r.recChange),
+			Same:   liveFloat(t, d.name, r.recSame),
+			Met:    liveFloat(t, d.name, r.recMet),
+		})
+	}
+
+	// The lines the sweep measured the gates against: the table's own line
+	// column, one per gate, both models printing the same number.
+	lines := pipeline.Lines{}
+	for _, r := range d.gateRows {
+		line := liveFloat(t, d.name, r.line)
+		switch r.gate {
+		case "change_made":
+			lines.ChangeMade = line
+		case "same_person":
+			lines.SamePerson = line
+		case "criterion_met":
+			lines.CriterionMet = line
+		}
+	}
+
+	// The recorded gate curves, gate by gate over each model the recorded
+	// reads ran on. A gate with no recorded read keeps 0 for both its reads,
+	// and the gate row's margin, separation and marks below fail the run.
+	for _, name := range gateNames {
+		for _, model := range liveReadModels(report.Reads) {
+			var good, bad float64
+			for _, r := range report.Reads {
+				if r.Model != model {
+					continue
+				}
+				v, err := checkGateValue(r, name)
+				if err != nil {
+					// gateNames and checkGateValue's switch are this package's
+					// own pair, and the live report fatals on a disagreement
+					// between them; this is the same disagreement.
+					t.Fatal(err)
+				}
+				if r.Bad {
+					bad = v
+				} else {
+					good = v
+				}
+			}
+			report.Gates = append(report.Gates, gateCurve(name, model, good, bad))
+		}
+	}
+	sort.Slice(report.Gates, func(i, j int) bool {
+		if report.Gates[i].Model != report.Gates[j].Model {
+			return report.Gates[i].Model < report.Gates[j].Model
+		}
+		return report.Gates[i].Gate < report.Gates[j].Gate
+	})
+
+	// The recorded decisions: the shown flag each row prints beside the live
+	// one, counted by the same rule the live decisions are counted with.
+	var outcomes []CheckOutcome
+	var decisions []liveCheckDecision
+	for _, r := range d.decisionRows {
+		outcomes = append(outcomes, CheckOutcome{Exchange: r.exchange, Bad: r.bad, Shown: r.shownRec})
+		decisions = append(decisions, liveCheckDecision{Exchange: r.exchange, Model: r.model,
+			Bad: r.bad, Shown: r.shownRec, Words: r.words})
+	}
+	report.Outcomes = outcomes
+	report.BadShown, report.GoodDiscarded = liveDecisionCounts(decisions)
+
+	// The recorded vocabulary, cell by cell beside the live one: the recorded
+	// answer read off the row, the truth and the correct flag recomputed from
+	// the transcription, which is how readChecks scores it. The index pairing
+	// is safe because liveVocabularyFromTranscript has already fatalled unless
+	// the transcript's rows come in the transcription's order, one per read
+	// and attribute.
+	recCells := make([]VocabularyCell, 0, len(liveCells))
+	for i, c := range liveCells {
+		answer := d.vocabRows[i].recorded
+		cell := VocabularyCell{Exchange: c.Exchange, Attribute: c.Attribute,
+			Answer: answer, Truth: c.Truth, Correct: answer == c.Truth, Note: c.Note}
+		recCells = append(recCells, cell)
+		report.Vocabulary.Of++
+		if cell.Correct {
+			report.Vocabulary.Correct++
+		}
+	}
+	report.Vocabulary.Cells = recCells
+	return report, lines
+}
+
 // ---- Comparing a re-emitted line with the transcript's own ----
 
 func livePinLine(t *testing.T, d liveTranscriptData, label, want, got string) {
@@ -1710,14 +1965,15 @@ func livePinCellsList(t *testing.T, d liveTranscriptData, label string, cells []
 // TestLiveTranscriptJudging replays T3.9b's live judging report: the
 // committed sweep transcript in, the lifted helpers over it, every number
 // docs/evaluation.md's live re-run quotes back out, and every printed line
-// re-emitted verbatim from the computed values. No tag, no key, no call,
-// no spend.
+// re-emitted verbatim from the computed values. Both columns come out of the
+// transcript: the live one read off its live column, the recorded one rebuilt
+// by recordedJudgeFromTranscript from its recorded column. Nothing here reads
+// testdata/clef, so a re-record of the corpus cannot move a pin about a paid
+// pass that already happened. No tag, no key, no call, no spend.
 func TestLiveTranscriptJudging(t *testing.T) {
 	d := parseLiveTranscript(t, "sweep-1.txt")
 	gt, byID := loadLiveGroundTruth(t)
-	rep := runOnce(t)
-	recorded := rep.Judge
-	settings := JudgeSettings{Met: rep.Settings.JudgeMet, PerCriterion: rep.Settings.JudgePerCriterion}
+	recorded, settings := recordedJudgeFromTranscript(t, d)
 
 	liveCurves := liveCurvesFromTranscript(t, d, byID)
 	nums, recValues, err := computeLiveJudgeNumbers(liveCurves, recorded, settings)
@@ -1949,19 +2205,17 @@ func TestLiveTranscriptJudging(t *testing.T) {
 // way: the committed transcript's four live reads in, the lifted helpers over
 // them, and every number docs/evaluation.md's live re-run quotes back out -
 // the twelve gate values, the six separations, the shipped lines' decisions,
-// the vocabulary tallies and the one cell that moved. No tag, no key, no
-// call, no spend.
+// the vocabulary tallies and the one cell that moved. Both columns come out of
+// the transcript: the recorded report and the lines it measured with are
+// rebuilt by recordedCheckFromTranscript from the transcript's own recorded
+// column, so nothing here reads testdata/clef and no re-record of the corpus
+// can move a pin about this paid pass. No tag, no key, no call, no spend.
 func TestLiveTranscriptCheck(t *testing.T) {
 	d := parseLiveTranscript(t, "sweep-1.txt")
 	gt, _ := loadLiveGroundTruth(t)
 	vocab := liveVocabulary(t)
-	rep := runOnce(t)
-	recorded := rep.Check
-	lines := pipeline.Lines{
-		ChangeMade:   rep.Settings.CheckChangeMade,
-		SamePerson:   rep.Settings.CheckSamePerson,
-		CriterionMet: rep.Settings.CheckCriterionMet,
-	}
+	liveCells := liveVocabularyFromTranscript(t, d, gt, vocab)
+	recorded, lines := recordedCheckFromTranscript(t, d, liveCells)
 
 	reads := liveCheckReadsFromTranscript(t, d, gt)
 	if len(reads) != liveCheckCalls {
@@ -2131,8 +2385,8 @@ func TestLiveTranscriptCheck(t *testing.T) {
 	}
 
 	// The look vocabulary: the header, both tallies, every cell, both miss
-	// lists and the line that compares them.
-	liveCells := liveVocabularyFromTranscript(t, d, gt, vocab)
+	// lists and the line that compares them. The live cells were rebuilt at
+	// the top of this test, because the recorded column is read beside them.
 	modelOf := liveModelByExchange(gt.Checks)
 	tallies, err := tallyLiveVocabulary(liveTruthModels(gt.Checks), liveCells, recorded.Vocabulary.Cells, modelOf)
 	if err != nil {
