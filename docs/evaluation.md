@@ -116,10 +116,11 @@ All four sit on the two male groups, and two of them are beard readings. None of
 ```toml
 [check]
 # Lines from the chosen model's gate curves; the model that reads the
-# look most truthfully. Measured by T3.9 (docs/evaluation.md).
-change_made = 0.50085
-same_person = 0.48355
-criterion_met = 0.50315
+# look most truthfully. Measured on the re-recorded corpus by T3.9e
+# (docs/evaluation.md).
+change_made = 0.4978
+same_person = 0.4799
+criterion_met = 0.4986
 model = "clef"
 ```
 
@@ -127,25 +128,25 @@ The recorded reads — the honest pair (a) and the different-person proxy (b), p
 
 | Read | Model | `change_made` | `same_person` | `criterion_met` | Decision at the shipped lines |
 |---|---|---|---|---|---|
-| (a) V04 → V05 (honest) | clef | 0.9866 | 0.9066 | 0.9806 | shown |
-| (a) V04 → V05 (honest) | clef-flash | 0.9385 | 0.9345 | 0.9737 | shown |
-| (b) V04 → woman-white (bad) | clef | 0.0151 | 0.0605 | 0.0257 | discarded |
-| (b) V04 → woman-white (bad) | clef-flash | 0.0338 | 0.0546 | 0.0215 | discarded |
+| (a) V04 → V05 (honest) | clef | 0.9820 | 0.9246 | 0.9744 | shown |
+| (a) V04 → V05 (honest) | clef-flash | 0.9437 | 0.9434 | 0.9748 | shown |
+| (b) V04 → woman-white (bad) | clef | 0.0136 | 0.0352 | 0.0228 | discarded |
+| (b) V04 → woman-white (bad) | clef-flash | 0.0350 | 0.0269 | 0.0188 | discarded |
 
-**Every known bad render rejected; good renders wrongly discarded: zero.** Each gate's separating interval is wide, and all three hold 0.5 inside them, so the shipped lines are also safe for the model that is not chosen:
+**Every known bad render rejected; good renders wrongly discarded: zero** — the shipped lines decide 4 of 4 recorded reads, and the evaluation counts the outcomes through the real `pipeline.Check`, not by eye. Each gate's separating interval is wide, and all three hold 0.5 inside them, so the shipped lines are also safe for the model that is not chosen:
 
 | Gate | Model | Separating interval | Shipped line | Margin |
 |---|---|---|---|---|
-| `change_made` | clef | (0.0151, 0.9866) | 0.50085 | 0.4858 |
-| `change_made` | clef-flash | (0.0338, 0.9385) | — | — |
-| `same_person` | clef | (0.0605, 0.9066) | 0.48355 | 0.4230 |
-| `same_person` | clef-flash | (0.0546, 0.9345) | — | — |
-| `criterion_met` | clef | (0.0257, 0.9806) | 0.50315 | 0.4774 |
-| `criterion_met` | clef-flash | (0.0215, 0.9737) | — | — |
+| `change_made` | clef | (0.0136, 0.9820) | 0.4978 | 0.4842 |
+| `change_made` | clef-flash | (0.0350, 0.9437) | — | — |
+| `same_person` | clef | (0.0352, 0.9246) | 0.4799 | 0.4447 |
+| `same_person` | clef-flash | (0.0269, 0.9434) | — | — |
+| `criterion_met` | clef | (0.0228, 0.9744) | 0.4986 | 0.4758 |
+| `criterion_met` | clef-flash | (0.0188, 0.9748) | — | — |
 
-Joint intervals (safe for both models at once): `change_made` (0.0338, 0.9385), `same_person` (0.0605, 0.9066), `criterion_met` (0.0257, 0.9737).
+Joint intervals (safe for both models at once): `change_made` (0.0350, 0.9437), `same_person` (0.0352, 0.9246), `criterion_met` (0.0228, 0.9744). The thinnest of clef's three shipped margins is `same_person` at 0.4447, so every line holds its gate by at least 0.44; clef-flash's own plateau midpoints would leave it 0.4543, 0.4582 and 0.4780.
 
-**The model: `clef`.** Both recorded models gate perfectly on the proxies, so the vocabulary decided: clef reads 19 of 22 attribute answers true, clef-flash 17 of 22. The trade-off is cost — a check on clef costs about 132 neurons a look against about 57 with a clef-flash check (docs/clef.md) — and the free plan covers roughly 75 all-clef looks a day. If cost ever dominates, `[check].model` flips to `"clef-flash"` with no code change; the gates held on both models at the shipped lines.
+**The model: `clef`.** Both recorded models gate perfectly on the proxies, so the vocabulary decided: clef reads 19 of 22 attribute answers true, clef-flash 18 of 22. The trade-off is cost — a check on clef costs about 132 neurons a look against about 57 with a clef-flash check (docs/clef.md) — and the free plan covers roughly 75 all-clef looks a day. If cost ever dominates, `[check].model` flips to `"clef-flash"` with no code change; the gates held on both models at the shipped lines.
 
 ## Look vocabulary
 
