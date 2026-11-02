@@ -229,7 +229,6 @@
    * land leaves its problem on the screen and stops here. */
   async function proceed(): Promise<void> {
     const held = heldProduct;
-    const before = savedProducts.length;
     if (held !== undefined) {
       if (!productFieldsReady(productName, productKind)) return;
       heldProduct = undefined;
@@ -237,11 +236,10 @@
       else await bring(held.photo, "product");
     } else if (link.trim() !== "") {
       await addLink();
-    } else {
+    } else if (savedProducts.length === 0) {
       problem = { code: "capture", message: "Choose a product photo or paste a link first." };
       return;
     }
-    if (savedProducts.length === before) return;
     if (selfie === undefined) {
       problem = { code: "capture", message: "Take a selfie first, then check the look." };
       return;
