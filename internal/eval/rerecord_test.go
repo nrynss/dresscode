@@ -2024,8 +2024,30 @@ func rerecordParseCell(text string) (rerecordCell, error) {
 	if value < 0 || value > 1 {
 		return rerecordCell{}, fmt.Errorf("%q: probability %v is not between 0 and 1", text, value)
 	}
+	// The cell carries no more digits than the doc's own precision, or the value
+	// comparison would be rounding away the difference it exists to name.
+	if dot := strings.Index(fields[1], "."); dot >= 0 {
+		if digits := len(fields[1]) - dot - 1; digits > rerecordDocDecimals {
+			return rerecordCell{}, fmt.Errorf("%q: probability carries %d decimals, these tables carry at most %d",
+				text, digits, rerecordDocDecimals)
+		}
+	}
 	cell.Value = value
 	return cell, nil
+}
+
+// rerecordDocDecimals is the precision docs/clef.md's probabilities carry: the
+// service returned at most four decimals on every call (its Response section
+// says so), and every cell in the sample tables is written that way.
+const rerecordDocDecimals = 4
+
+// rerecordDocValue renders a probability as docs/clef.md carries it, so the two
+// sides of the value comparison are compared at the doc's own precision rather
+// than at the last bit of a float64. A doc cell written 0.368 and a recording
+// reading 0.36800000000000005 are the same number here; 0.368 and 0.3681 are
+// not.
+func rerecordDocValue(v float64) string {
+	return fmt.Sprintf("%.*f", rerecordDocDecimals, v)
 }
 
 // rerecordReportTranscription names every cell of one corpus's reading that
@@ -2063,7 +2085,7 @@ func rerecordReportTranscription(t *testing.T, tr rerecordTranscribed, curves []
 	t.Logf("%s transcribes %d cells over %d samples and %d criteria, %d of them marked %s at %.2f",
 		tr.path, len(tr.cells), len(samples), len(criteria), marked, rerecordNotEqual, readingAt)
 
-	side, letter, absent := 0, 0, 0
+	side, value, letter, absent := 0, 0, 0, 0
 	var lines []string
 	read := map[string]bool{}
 	for _, c := range curves {
@@ -2088,6 +2110,17 @@ func rerecordReportTranscription(t *testing.T, tr rerecordTranscribed, curves []
 					readingAt, key, rerecordLetter(doc.Expected), doc.Value, rerecordMark(doc.Marked),
 					rerecordLetter(cell.Expected), cell.Value,
 					rerecordMark((cell.Value >= readingAt) != cell.Expected)))
+			case rerecordDocValue(doc.Value) != rerecordDocValue(cell.Value):
+				// The digits alone are wrong: same letter, same side of 0.5, so
+				// the two counts above and the doc's own mark rule all agree and
+				// only the printed probability disagrees with the recording. This
+				// is the case that used to pass.
+				value++
+				lines = append(lines, fmt.Sprintf("  value %s: doc %s %.4f%s, read %s %.4f%s: same expected answer, same side of %.2f, so the printed digits are what disagree at the doc's %d-dp precision",
+					key, rerecordLetter(doc.Expected), doc.Value, rerecordMark(doc.Marked),
+					rerecordLetter(cell.Expected), cell.Value,
+					rerecordMark((cell.Value >= readingAt) != cell.Expected), readingAt,
+					rerecordDocDecimals))
 			}
 		}
 	}
@@ -2117,9 +2150,14 @@ func rerecordReportTranscription(t *testing.T, tr rerecordTranscribed, curves []
 		t.Errorf("rerecord: %d of the %d cells %s transcribes sit on the other side of %.2f in %s than in the corpus it transcribes, so the doc is stale where it claims to be a measurement",
 			side, len(tr.cells), tr.path, readingAt, corpus)
 	}
+	if value > 0 && transcribes {
+		t.Errorf("rerecord: %d of the %d cells %s transcribes print a probability %s does not read, at the doc's own %d decimals, on a letter and a side of %.2f both corpora agree about: a mis-transcribed digit, not a drift",
+			value, len(tr.cells), tr.path, corpus, rerecordDocDecimals, readingAt)
+	}
 	t.Logf("transcription of %s against %s: %d cells contradict it on which side of %.2f they sit, "+
-		"%d on the expected answer, %d transcribed and not read, %d read and not transcribed (asserted: %t)",
-		corpus, tr.path, side, readingAt, letter, len(unread), absent, transcribes)
+		"%d on the printed value at %d decimals, %d on the expected answer, %d transcribed and not read, "+
+		"%d read and not transcribed (asserted: %t)",
+		corpus, tr.path, side, readingAt, value, rerecordDocDecimals, letter, len(unread), absent, transcribes)
 }
 
 // rerecordShippedLines reads the shipped lines out of the committed
