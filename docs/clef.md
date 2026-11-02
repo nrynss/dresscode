@@ -288,37 +288,42 @@ The README flags the light misses on V08 and P10 as moderate shadows, the weakes
 
 ## The check: proxies only
 
-There is no YouCam render yet (T0.5 comes later). These are proxies, not renders, and the real check recordings are redone after T0.5.
+YouCam renders exist in the tree (T0.5, `testdata/youcam/results/`), but none of them is in this corpus: both "renders" here are committed sample photos, so these four check calls are proxies, not renders.
 
 - **(a)** original `woman/V04-family-function.jpg`, "render" `woman/V05-family-function.jpg`: the same look with gold jhumkas and a red lip added by the edit model. Requested change "Adds gold jhumkas and paints the lip red.", criterion `family-earring-festive`.
 - **(b)** original V04, "render" `anchors/woman-white.jpg`: a different person. It must read as not the same person.
 
 | Answer | (a) clef | (a) clef-flash | (b) clef | (b) clef-flash |
 |---|---|---|---|---|
-| `change_made` | 0.9866 | 0.9385 | 0.0151 | 0.0338 |
-| `same_person` | 0.9066 | 0.9345 | 0.0605 | 0.0546 |
-| `criterion_met` | 0.9806 | 0.9737 | 0.0257 | 0.0215 |
-| `jewellery` | jhumkas 0.9636 | jhumkas 0.9573 | none 0.8882 | none 0.8815 |
-| `jewellery_colour` | gold 0.9661 | gold 0.9494 | none 0.736 | **gold 0.7073** |
-| `necklace` | none 0.9594 | none 0.7841 | none 0.9438 | none 0.789 |
-| `necklace_colour` | none 0.9655 | none 0.9508 | none 0.9545 | none 0.949 |
-| `lip_colour` | red 0.915 | red 0.8893 | nude 0.3603 | nude 0.3645 |
-| `collar` | mandarin 0.7121 | mandarin 0.7525 | open 0.7177 | buttoned 0.3391 |
-| `hair` | tied-back 0.8167 | tied-back 0.8347 | loose 0.6741 | loose 0.7547 |
-| `hair_colour` | black 0.9438 | black 0.9471 | red 0.8889 | red 0.9566 |
-| `beard` | none 0.9815 | none 0.9206 | none 0.9825 | none 0.9532 |
-| `expression` | flat 0.7573 | flat 0.5912 | flat 0.7747 | flat 0.7052 |
-| `garment` | festive-top 0.8666 | festive-top 0.8028 | plain-shirt 0.6566 | plain-shirt 0.5565 |
+| `change_made` | 0.982 | 0.9437 | 0.0136 | 0.035 |
+| `same_person` | 0.9246 | 0.9434 | 0.0352 | 0.0269 |
+| `criterion_met` | 0.9744 | 0.9748 | 0.0228 | 0.0188 |
+| `jewellery` | jhumkas 0.9377 | jhumkas 0.9601 | none 0.8058 | none 0.6973 |
+| `jewellery_colour` | gold 0.9658 | gold 0.9535 | none 0.6357 | none 0.4428 |
+| `necklace` | none 0.9587 | none 0.8713 | none 0.9654 | none 0.8156 |
+| `necklace_colour` | none 0.9683 | none 0.9618 | none 0.9631 | none 0.9606 |
+| `lip_colour` | red 0.9191 | red 0.8952 | nude 0.3467 | nude 0.3235 |
+| `collar` | mandarin 0.6755 | mandarin 0.7049 | open 0.7445 | buttoned 0.3341 |
+| `hair` | tied-back 0.799 | tied-back 0.8001 | loose 0.6683 | loose 0.7098 |
+| `hair_colour` | black 0.9456 | black 0.9388 | red 0.9054 | red 0.9514 |
+| `beard` | none 0.9741 | none 0.9466 | none 0.9767 | none 0.9594 |
+| `expression` | flat 0.6555 | flat 0.6216 | flat 0.6704 | flat 0.597 |
+| `garment` | festive-top 0.8804 | festive-top 0.7895 | plain-shirt 0.5903 | plain-shirt 0.5964 |
 
-Each vocabulary cell is the chosen option and its probability; the full distributions are in the recordings. Both models separate (a) from (b) on all three `noul` checks by a wide margin. Clef-flash calls the anchor's bare ear "gold" for `jewellery_colour` while also saying the earring is `none`, and spreads its collar answer thinly. On this one pair, Clef-flash looks enough for the three gating checks and weaker on the vocabulary. One pair is not enough to decide; the decision belongs to the evaluation on the real renders.
+Each vocabulary cell is the chosen option and its probability; the full distributions are in the recordings. Both models separate (a) from (b) on all three `noul` checks by a wide margin: on `clef`, 0.9820 / 0.9246 / 0.9744 on the honest pair against 0.0136 / 0.0352 / 0.0228 on the different-person pair; on `clef-flash`, 0.9437 / 0.9434 / 0.9748 against 0.0350 / 0.0269 / 0.0188. Clef-flash no longer contradicts itself on the anchor: it answers `none` for `jewellery_colour` (0.4428) as well as for `jewellery` (0.6973), though `gold` is its runner-up at 0.3012 and its confidence on that cell is only 0.1960. It still spreads its collar answer thinly — `buttoned` 0.3341 where `clef` says `open` 0.7445. On this one pair, Clef-flash looks enough for the three gating checks and weaker on the vocabulary. One pair is not enough to settle a model, which is why the choice is made on every recorded read in [`docs/evaluation.md`](evaluation.md).
 
-`look.expression` read `flat` for V05, whose README expression is calm and present. The vocabulary has no "calm" option between `flat` and `closed-mouth-smile`.
+`look.expression` read `flat` for V05 (0.6555 on `clef`, 0.6216 on `clef-flash`), whose README expression is calm and present. The vocabulary has no "calm" option between `flat` and `closed-mouth-smile`.
 
 ## Spend
 
-78 calls. The first round was 55: 37 judge (the first was V04, run alone to read its cost), 10 stability, 4 cost and 2 check on `clef`, and 2 check on `clef-flash`. The rewording of `family-hair-finished` added 23 on `clef`: the 9 family-function judges, the 10 stability repeats and the 4 cost runs. 149,571 input tokens on `clef` (3,263 neurons at the per-token rate) and 8,157 on `clef-flash` (28 neurons): 3,292 neurons computed from the reported tokens, under the 8,000 cap and inside the free 10,000 a day. The dashboard figure was not read.
+**This file carries two spends.** The first block below is the T0.6 round that built the corpus this one replaced, kept as that round reported it. The second is the T3.9e re-record, and it is the spend of the recordings now in `testdata/clef/`.
+
+*The T0.6 round, the corpus this one replaces.* 78 calls. The first round was 55: 37 judge (the first was V04, run alone to read its cost), 10 stability, 4 cost and 2 check on `clef`, and 2 check on `clef-flash`. The rewording of `family-hair-finished` added 23 on `clef`: the 9 family-function judges, the 10 stability repeats and the 4 cost runs. 149,571 input tokens on `clef` (3,263 neurons at the per-token rate) and 8,157 on `clef-flash` (28 neurons): 3,292 neurons computed from the reported tokens, under the 8,000 cap and inside the free 10,000 a day. The dashboard figure was not read.
+
+*The T3.9e re-record, the corpus in the tree.* 55 calls over 45 distinct requests: the same 53 on `clef` (37 judge, 10 stability, 4 cost, 2 check) and the same 2 check calls on `clef-flash` as the first round's first pass, with no rewording pass behind them. The 45 is those 55 with the V04 judge request and its ten stability repeats collapsed onto the one key they share — 11 calls, 1 request. The pass booked **2,365 neurons, $0.026018869, with zero retry spend**: the plan's ceiling was 78 calls / 3,300 neurons / $0.0363, the 78-against-55 headroom is `workersai.go`'s retry budget, and no call reached it. The run was cut once and resumed, and the resume is the reason the headroom matters: 37 calls were paid before it stopped and 18 were made after, and the 37 cost nothing twice because a recording already on disk is refused by `AlreadyRecorded` before the inner `Ask` and books nothing. The corpus agrees with the booked figure read on its own terms: summing `usage.input_tokens` over the 55 shipped recordings gives 107,121 tokens on `clef` (2,337.2 neurons) and 8,157 on `clef-flash` (28.2), 2,365.3 neurons summed, `output_tokens` 0 on every one of the 55. So 3,292 against 2,365 is the 23 extra calls of the rewording round, not a price movement: the two corpora book identical `input_tokens` on every one of their 55 shared recordings, token for token, and the requests cost today exactly what they cost then. The calls answered in 717 to 4,187 ms (`elapsed_ms`, the fresh files' own range; the files this one replaced report 395 to 4,155).
 
 ## The replay format
 
 - **Images by file.** The first round stored every photo inline (about 20 MB, the same V04 photo 15 times). `replay.go` now lets a recorded image name a file relative to the recording, reads it on `Open`, and keys it exactly as if inline. Every recording here references the committed photos under `testdata/samples/` or the resized ones under `testdata/clef/cost/images/`. Converting the first round's 55 recordings to file references left every request key and content key unchanged (the before and after key lists were identical).
 - **One request recorded many times.** Identical requests share one key, so the stability repeats are `Ambiguous` to `Ask` and live in their own folder. That is the right refusal for a replay; it means a stability set can only be read back by exchange id.
+- **The fresh files were written by the recorder, not converted.** The T3.9e corpus came out of `internal/systemone/recorder.go` on the way in: it sent the bytes inline and stored the file reference itself, so nothing here is a rewrite of the first round's files. The image index it used pointed at the samples tree only, so the three resized photos the cost requests send — the only photos not in that index — took the fallback: the recorder published each one beside its recording under the digest of its bytes, and the three references now read `images/<sha256>.jpg` where the first round's read `images/V04-family-function-<size>.jpg`. The fourth cost request sends no image at all, in either round. Those are renames, not new bytes: the three jpgs hash identically to the files the first round committed (`e79a9b8a…` at 1024, `ae95368c…` at 768, `4faa1b79…` at 512), so the same resized photos came back out of the same request shapes a round later.
