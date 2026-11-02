@@ -33,6 +33,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -183,15 +184,16 @@ func loadRerecordWorld(t *testing.T) rerecordWorld {
 // tokens its reply reported, and the reply envelope itself, which is the
 // answer the offline proof hands back.
 type rerecordRecording struct {
-	Exchange string
-	Method   string
-	Path     string
-	Body     json.RawMessage
-	Images   []string
-	State    map[string]string
-	Model    string
-	Tokens   int
-	Reply    json.RawMessage
+	Exchange     string
+	Method       string
+	Path         string
+	Body         json.RawMessage
+	Images       []string
+	State        map[string]string
+	Model        string
+	Tokens       int
+	OutputTokens int
+	Reply        json.RawMessage
 }
 
 // rerecordRead reads one exchange file whole. readRecording will not do
@@ -242,7 +244,8 @@ func rerecordRead(path string) (rerecordRecording, error) {
 	var reply struct {
 		Result struct {
 			Usage struct {
-				InputTokens int `json:"input_tokens"`
+				InputTokens  int `json:"input_tokens"`
+				OutputTokens int `json:"output_tokens"`
 			} `json:"usage"`
 		} `json:"result"`
 	}
@@ -250,6 +253,7 @@ func rerecordRead(path string) (rerecordRecording, error) {
 		return rerecordRecording{}, fmt.Errorf("%s: reply envelope: %w", filepath.Base(path), err)
 	}
 	rec.Tokens = reply.Result.Usage.InputTokens
+	rec.OutputTokens = reply.Result.Usage.OutputTokens
 	if rec.Tokens <= 0 {
 		return rerecordRecording{}, fmt.Errorf("%s: the recorded reply reports no input tokens", filepath.Base(path))
 	}
@@ -560,6 +564,103 @@ func projectRerecord(calls []RerecordCall) (rerecordProjection, error) {
 	p.Neurons = neurons
 	p.Dollars = dollars
 	return p, nil
+}
+
+// ---- The spend the corpus booked ----
+
+// rerecordSpend is one corpus's own bill: the usage every recorded reply
+// carries, read back out of the tree and priced at the client's rate card. It
+// is the measured half of the pass; projectRerecord is the planned half, priced
+// from the request the driver would send. The two are asserted against each
+// other, and against the figures docs/clef.md states as fact, in
+// TestRerecordBookedSpendIsTheCorpus.
+type rerecordSpend struct {
+	Calls    int
+	ByFolder map[string]int
+	// Tokens and OutTokens are the reported usage by model; MicroNeurons is
+	// the same sum the float Neurons holds, kept exact: millionths of a neuron,
+	// so a pin never compares a float's last bit.
+	Tokens       map[string]int64
+	OutTokens    map[string]int64
+	MicroNeurons int64
+	Neurons      float64
+	Dollars      cost.Price
+}
+
+// rerecordCorpusSpend walks one corpus, folder by folder the way Open reads it,
+// and sums what its replies report. It reads only the recordings, so it costs
+// nothing and needs no image on disk: the paid pass's bill is in the tree
+// already, and the ceiling was all that had been asserted about it.
+func rerecordCorpusSpend(dir string) (rerecordSpend, error) {
+	spend := rerecordSpend{
+		ByFolder:  map[string]int{},
+		Tokens:    map[string]int64{},
+		OutTokens: map[string]int64{},
+	}
+	for _, sub := range []string{rerecordTop, rerecordStability, rerecordCost} {
+		names, err := listExchanges(filepath.Join(dir, sub))
+		if err != nil {
+			return rerecordSpend{}, err
+		}
+		spend.ByFolder[sub] = len(names)
+		for _, name := range names {
+			rec, err := rerecordRead(filepath.Join(dir, sub, name+".json"))
+			if err != nil {
+				return rerecordSpend{}, err
+			}
+			perMillion, ok := liveNeuronsPerMillion[rec.Model]
+			if !ok {
+				return rerecordSpend{}, fmt.Errorf("rerecord: %s: no documented neuron rate for model %q",
+					rec.Exchange, rec.Model)
+			}
+			spend.Calls++
+			spend.Tokens[rec.Model] += int64(rec.Tokens)
+			spend.OutTokens[rec.Model] += int64(rec.OutputTokens)
+			spend.MicroNeurons += int64(rec.Tokens) * perMillion
+			// One rounding per call, which is how the ledger books a settle.
+			spend.Dollars += liveImpliedPrice(rec.Tokens, perMillion)
+		}
+	}
+	spend.Neurons = float64(spend.MicroNeurons) / 1e6
+	return spend, nil
+}
+
+// rerecordGrouped renders a count with the thousands separators docs/clef.md
+// writes, so a claim about the doc is built from a computed number instead of a
+// retyped one.
+func rerecordGrouped(v int64) string {
+	if v < 1000 {
+		return strconv.FormatInt(v, 10)
+	}
+	return rerecordGrouped(v/1000) + "," + fmt.Sprintf("%03d", v%1000)
+}
+
+// rerecordGrouped1dp renders a neuron total the way the doc's summed figure is
+// written: grouped, with the one decimal it carries.
+func rerecordGrouped1dp(v float64) string {
+	tenths := int64(math.Round(v * 10))
+	return rerecordGrouped(tenths/10) + "." + strconv.FormatInt(tenths%10, 10)
+}
+
+// rerecordDocStates fails when one of a corpus's own figures is missing from the
+// document that states it as fact. The claims are rendered from the measured
+// numbers, so a doc that keeps an old figure, or a corpus whose usage moved
+// under it, names the difference rather than quietly disagreeing.
+func rerecordDocStates(t *testing.T, path string, spend rerecordSpend, claims []string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("rerecord: spend: %v", err)
+	}
+	for _, claim := range claims {
+		if !strings.Contains(string(data), claim) {
+			t.Errorf("rerecord: %s does not state %q, which is what the corpus books: %d calls, %s input tokens on %s and %s on %s, %s neurons (%s), %s with the ledger's one rounding per call - the doc and the recordings are made of the same pass and must read the same numbers",
+				filepath.Base(path), claim, spend.Calls,
+				rerecordGrouped(spend.Tokens[systemone.ModelClef]), systemone.ModelClef,
+				rerecordGrouped(spend.Tokens[systemone.ModelClefFlash]), systemone.ModelClefFlash,
+				rerecordGrouped1dp(spend.Neurons), spend.Dollars, spend.Dollars)
+		}
+	}
 }
 
 // rerecordLimits is the budget one pass is measured against: the call
@@ -1005,6 +1106,123 @@ func TestRerecordProjectionFitsTheCeiling(t *testing.T) {
 	if p.Neurons >= float64(liveFreeDailyNeurons) {
 		t.Errorf("%.0f neurons projected reaches the free plan's %d-neuron day", p.Neurons, liveFreeDailyNeurons)
 	}
+	// What this test logs is the pass's bill, so it is asserted rather than
+	// stated: TestRerecordBookedSpendIsTheCorpus reads the same 55 recordings'
+	// usage and ties this projection to the figures docs/clef.md books.
+}
+
+// TestRerecordBookedSpendIsTheCorpus asserts the paid pass's spend against the
+// recordings it left behind, instead of logging it. docs/clef.md's Spend section
+// states 2,365 neurons and $0.026018869 as fact; until now only the 3,300-neuron
+// ceiling was asserted, so a doc figure and a corpus could part company with
+// nothing in the repository noticing. Everything the assertion needs is committed:
+// each of the 55 replies carries response.body.result.usage, and
+// internal/systemone's rate card is read offline.
+//
+// The arithmetic, stated because the doc rounds and the reader has to be able to
+// re-derive the rounding from the test:
+//
+//   - the exact sum is 107,121 x 21,818 + 8,157 x 3,455 = 2,365,348,413
+//     millionths of a neuron, i.e. 2,365.348413 neurons, with output_tokens 0 on
+//     every one of the 55 calls (Clef bills input only);
+//   - the doc's whole-neuron figure, 2,365, is that sum rounded to the nearest
+//     neuron, and its 2,365.3 is the same sum at one decimal. The doc's number is
+//     a rounding of the true sum, not the true sum: the difference is 0.348413
+//     neurons, about 0.0000038 dollars;
+//   - the doc's $0.026018869 is the true ledger sum: the client rounds each call's
+//     nanodollars up (workersai.go's tokenPrice) and the meter adds those, so it
+//     is not 2,365.348413 x 11,000 = 26,018,832.543 nanodollars, which the
+//     per-call roundings lift by 36.457 to 26,018,869.
+func TestRerecordBookedSpendIsTheCorpus(t *testing.T) {
+	const (
+		// The usage the 55 shipped recordings report, summed by model.
+		rerecordBookedClefTokens  = 107_121
+		rerecordBookedFlashTokens = 8_157
+		// The same pass in millionths of a neuron, exact: the two totals above
+		// at 21,818 and 3,455 neurons per million tokens.
+		rerecordBookedMicroNeurons = 2_365_348_413
+		// And in nanodollars, one round up per call: $0.026018869.
+		rerecordBookedDollars = cost.Price(26_018_869)
+	)
+	w := loadRerecordWorld(t)
+	spend, err := rerecordCorpusSpend(w.oldDir)
+	if err != nil {
+		t.Fatalf("rerecord: spend: %v", err)
+	}
+	if spend.Calls != 55 || spend.ByFolder[rerecordTop] != 41 ||
+		spend.ByFolder[rerecordStability] != 10 || spend.ByFolder[rerecordCost] != 4 {
+		t.Errorf("the corpus books %d calls - %d at the top level, %d in %s, %d in %s - want 55: 41, 10 and 4",
+			spend.Calls, spend.ByFolder[rerecordTop], spend.ByFolder[rerecordStability], rerecordStability,
+			spend.ByFolder[rerecordCost], rerecordCost)
+	}
+	for _, model := range []string{systemone.ModelClef, systemone.ModelClefFlash} {
+		if spend.OutTokens[model] != 0 {
+			t.Errorf("%s: the corpus reports %d output tokens across its calls, and docs/clef.md states 0 on every one of the 55",
+				model, spend.OutTokens[model])
+		}
+	}
+	clef, flash := spend.Tokens[systemone.ModelClef], spend.Tokens[systemone.ModelClefFlash]
+	if clef != rerecordBookedClefTokens {
+		t.Errorf("%s: the recordings sum to %s input tokens, the %s the pass was billed and %s states",
+			systemone.ModelClef, rerecordGrouped(clef), rerecordGrouped(rerecordBookedClefTokens),
+			filepath.Join("docs", "clef.md"))
+	}
+	if flash != rerecordBookedFlashTokens {
+		t.Errorf("%s: the recordings sum to %s input tokens, the %s the pass was billed and %s states",
+			systemone.ModelClefFlash, rerecordGrouped(flash), rerecordGrouped(rerecordBookedFlashTokens),
+			filepath.Join("docs", "clef.md"))
+	}
+	if spend.MicroNeurons != rerecordBookedMicroNeurons {
+		t.Errorf("the 55 recordings sum to %s neurons (%d millionths), not the %s booked: the difference is %.6f neurons",
+			rerecordGrouped1dp(spend.Neurons), spend.MicroNeurons,
+			rerecordGrouped1dp(float64(rerecordBookedMicroNeurons)/1e6),
+			float64(spend.MicroNeurons-rerecordBookedMicroNeurons)/1e6)
+	}
+	if math.Abs(spend.Neurons-2365.348413) > 1e-9 {
+		t.Errorf("the summed neurons read %.9f, want 2,365.348413 exactly: the doc's 2,365 is this value rounded to the nearest whole neuron and its 2,365.3 rounded to one decimal",
+			spend.Neurons)
+	}
+	if spend.Dollars != rerecordBookedDollars {
+		t.Errorf("the pass's calls, each rounded up to the nanodollar as the ledger books them, sum to %s, not the %s booked and stated in %s",
+			spend.Dollars, rerecordBookedDollars, filepath.Join("docs", "clef.md"))
+	}
+
+	// The plan priced the same money from the requests it would send: projection
+	// and bill are two reads of one pass, and a recording the plan does not list
+	// or a call the plan enumerates that the tree never wrote shows up here.
+	plan, err := rerecordPlan(w)
+	if err != nil {
+		t.Fatalf("rerecord: plan: %v", err)
+	}
+	p, err := projectRerecord(plan)
+	if err != nil {
+		t.Fatalf("rerecord: project: %v", err)
+	}
+	if p.Calls != spend.Calls || p.Dollars != spend.Dollars || math.Abs(p.Neurons-spend.Neurons) > 1e-9 {
+		t.Errorf("the planned pass and the booked one differ: %d calls, %.9f neurons, %s planned against %d calls, %.9f neurons, %s booked",
+			p.Calls, p.Neurons, p.Dollars, spend.Calls, spend.Neurons, spend.Dollars)
+	}
+	for model, tokens := range spend.Tokens {
+		if p.Tokens[model] != tokens {
+			t.Errorf("%s: the plan prices %d input tokens, the recordings report %d", model, p.Tokens[model], tokens)
+		}
+	}
+
+	// The doc's claim and this assertion read the same numbers: every figure
+	// below is rendered out of the sums above, none is retyped.
+	rerecordDocStates(t, filepath.Join(w.root, "docs", "clef.md"), spend, []string{
+		// The booked pass, whole neurons and nanodollars.
+		fmt.Sprintf("%s neurons, %s", rerecordGrouped(int64(math.Round(spend.Neurons))), spend.Dollars),
+		// The per-model input tokens and the neuron sum beside each.
+		fmt.Sprintf("%s tokens on `%s`", rerecordGrouped(clef), systemone.ModelClef),
+		fmt.Sprintf("%s on `%s`", rerecordGrouped(flash), systemone.ModelClefFlash),
+		fmt.Sprintf("(%s neurons)", rerecordGrouped1dp(liveNeurons(int(clef), liveNeuronsPerMillion[systemone.ModelClef]))),
+		// The summed total at the one decimal the doc states it with.
+		fmt.Sprintf("%s neurons summed", rerecordGrouped1dp(spend.Neurons)),
+	})
+	t.Logf("booked pass: %d calls, %s + %s input tokens, %d millionths of a neuron = %.6f, %s; the doc books %s whole neurons and %s",
+		spend.Calls, rerecordGrouped(clef), rerecordGrouped(flash), spend.MicroNeurons, spend.Neurons,
+		spend.Dollars, rerecordGrouped(int64(math.Round(spend.Neurons))), spend.Dollars)
 }
 
 // TestRerecordRefusesAnOverBudgetRun shows the ceiling biting twice: once
