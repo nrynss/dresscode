@@ -20,7 +20,7 @@ requires:   T4.6, T5.6, T5.23
 fixture-ok: no
 size:       M · mid
 owns:       deploy/
-status:     in-review
+status:     done
 ```
 `dresscode` and the Dresscode Lambo server as systemd user units that restart on failure and start at boot; the built app served by `dresscode`; a public hostname through the existing Cloudflare Tunnel (HTTPS, which the camera and install need). Nightly backup of the SQLite file and media. A health check that fails the deploy if the public URL doesn't answer.
 
@@ -34,6 +34,8 @@ Notes (T6.1 implementer):
 - Port: 8090 was already held by an unrelated user process, so the service binds `127.0.0.1:8091` and the tunnel ingress points there. Health check hits both the public URL and the local port, page and samples list, and never dials a provider.
 - Proofs: `https://dresscode.nryn.dev` answers 200 with the SPA HTML, and `GET /api/samples` through it lists the five samples (recorded data only); SIGKILL of the main process saw the unit restart (NRestarts 0→1) and the health check pass again; reboot-bring-back is verified by config (enabled units + `default.target` + `Linger=yes`), not by an actual reboot; `deploy/backup` ran once by hand and `PRAGMA integrity_check` passed on the copy; no env file in any backup.
 - Surprises: the app build writes `web/build`, while `serve`'s default `-app` is `web/dist` — the unit passes `-app` explicitly, so the deploy is unaffected, but a bare `dresscode serve` from a checkout will not find the built app. Keel's mediastore keeps blobs as files under `data/media` (plus `upload-staging`), so the backup captures the store file and every sibling directory, not the DB alone.
+- The phone clause is met, by the user's own eyes: the user opened the public URL on their phone and captured a selfie through it (their report to the orchestrator; capture worked, and the two dead ends they then hit are product defects chartered as T6.1b, not deploy defects). Reboot bring-back stands verified by config — enabled units, `WantedBy=default.target`, `Linger=yes`; an actual reboot was deliberately not performed on a live machine.
+- Review round 1: two minor findings, both closed by the orchestrator under the docs exception at landing — the installed copy of the backup script carried a stale pre-correction comment (reinstalled from the commit, now byte-identical), and the phone clause was unrecorded (the line above). Everything else verified clean, including the reviewer's own gate run and its read-only zero-spend audit of the store.
 
 ---
 
