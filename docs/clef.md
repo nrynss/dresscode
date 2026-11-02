@@ -112,15 +112,15 @@ The V04 family-function judge request, the same text each time:
 
 The Clef-flash column is computed at its rate. Clef-flash counted the same tokens as Clef on both check requests (4,092 and 4,065), so the tokenizer is the same.
 
-The 896 × 1200 image is over 1 MP and is scaled down to 999 blocks + 3. The 1536 × 2048 anchor counted 972 + 3. Resized with ImageMagick `-resize`, JPEG quality 92, metadata stripped.
+The 896 × 1200 image is over 1 MP and is scaled down to 999 blocks + 3. The 1536 × 2048 anchor counted 972 + 3. Resized with ImageMagick `-resize`, JPEG quality 92, metadata stripped in the first round; the re-record sent those same committed bytes, and the three photos it published hash exactly as the files the first round left (`e79a9b8a…` for 1024, `ae95368c…` for 768, `4faa1b79…` for 512).
 
 The text is a large share. The judge's questions cost 942 to 1,079 input tokens depending on the occasion (date 1,944 total, family function 1,963, interview 1,973, festival 2,064, funeral 2,081 with the full-size image). The check, with two images and fourteen questions, counted 4,092 tokens (V05 render) and 4,065 (the anchor render): about 2,090 of that is text, mostly the eleven vocabulary choices.
 
-**Per look** (one judge plus one check, images as committed): 1,963 + 4,092 = 6,055 tokens. That is 132 neurons with the check on `clef`, or 57 with the check on `clef-flash` (42.8 + 14.1). At 768 px on the long side for both calls the estimate is about 1,396 + 2,958 tokens: 95 neurons on `clef`, 41 with the check on `clef-flash`. The free 10,000 neurons a day then cover about 75 looks all-Clef at full size, about 175 with a Clef-flash check, and more if the text is trimmed. A fix-pick call (text only, no image) is not in these figures.
+**Per look** (one judge plus one check, images as committed): 1,963 + 4,092 = 6,055 tokens. That is 132 neurons with the check on `clef`, or 57 with the check on `clef-flash` (42.8 + 14.1). The free 10,000 neurons a day then cover about 75 looks all-Clef at full size, about 175 with a Clef-flash check, and more if the text is trimmed. A fix-pick call (text only, no image) is not in these figures. The same arithmetic at 768 px is not in them either: this corpus records the judge at 768 (1,396 tokens) but never a two-image check at that scale, so a shrunken per-look figure cannot be read off it.
 
-**Do the flags change at smaller sizes?** Not at any 0.5 reading on V04. Every noul moves by less than 0.06, except `family-expression-present`: 0.5943 at full size, then 0.6219, 0.5312 and 0.5816 at 1024, 768 and 512. The biggest-issue pick stays `family-earring-festive`: 0.8456 at full size, then 0.8563, 0.839 and 0.7497. The calls nearest any line are the ones that move. One photo is not enough to settle the size; T3.9 should judge it on the whole set.
+**Do the flags change at smaller sizes?** Not at a 0.5 reading on V04: no `noul` crosses 0.5 at any of the three sizes. The moves themselves are larger than a bare reading of the table suggests. The two biggest are `family-lip-colour` at 0.1227 (0.3101 at full size, 0.2608 at 1024, 0.2569 at 768, 0.1874 at 512) and `family-expression-present` at 0.1089 (0.368 full, then 0.4769, 0.3099 and 0.3321); the other five `noul` stay within 0.06 of their full-size reading. At the line the product actually reads — `[judge].met = 0.35265` in `dresscode.toml.example` — the size does move one flag: `family-expression-present` reads met at full size and at 1024 (0.368, 0.4769) and flagged at 768 and 512 (0.3099, 0.3321). It is the cell sitting nearest that line. The biggest-issue pick does not hold across sizes either: `family-earring-festive` at full size (0.234) becomes `family-garment-festive` at 1024 (0.2095) and comes back at 768 and 512 (0.2411, 0.2557), each pick within 0.05 of the others. The calls nearest any line are the ones that move, and on this request the choice question is the least settled part of the answer. One photo is not enough to settle the size; the whole set would have to be judged at each size to do it.
 
-**Without an image**, the same questions answer yes at 0.67 to 0.86 on every criterion, and the biggest issue spreads (top pick `family-garment-festive` at 0.3323). A judge request that loses its image does not fail; it answers. The pipeline must refuse to judge without the image rather than trust such an answer.
+**Without an image**, the same questions still answer, and no longer as a block of yeses: the seven `noul` read 0.3220 to 0.6360 (`family-beard-even` 0.6360, `family-expression-present` 0.6281, `family-hair-finished` 0.6139 and `family-light-even` 0.5214 above a bare half; `family-earring-festive` 0.3825, `family-lip-colour` 0.3741 and `family-garment-festive` 0.3220 below it), and the biggest issue spreads with no clear pick (top `family-garment-festive` 0.2679, then `family-earring-festive` 0.1795 and `none` 0.1372). A judge request that loses its image does not fail; it answers. The pipeline must refuse to judge without the image rather than trust such an answer.
 
 ## Stability
 
@@ -128,25 +128,25 @@ Ten repeats of the V04 family-function judge request on `clef`, plus the origina
 
 | Probability | Min | Max | Mean | SD |
 |---|---|---|---|---|
-| `family-earring-festive` | 0.0351 | 0.0351 | 0.0351 | 0 |
-| `family-lip-colour` | 0.2094 | 0.2094 | 0.2094 | 0 |
-| `family-garment-festive` | 0.9308 | 0.9308 | 0.9308 | 0 |
-| `family-hair-finished` | 0.9253 | 0.9253 | 0.9253 | 0 |
-| `family-beard-even` | 0.9518 | 0.9518 | 0.9518 | 0 |
-| `family-expression-present` | 0.5943 | 0.5943 | 0.5943 | 0 |
-| `family-light-even` | 0.9061 | 0.9061 | 0.9061 | 0 |
-| `biggest_issue` → `family-earring-festive` | 0.8456 | 0.8456 | 0.8456 | 0 |
-| `biggest_issue` → `family-lip-colour` | 0.0386 | 0.0386 | 0.0386 | 0 |
-| `biggest_issue` → `family-garment-festive` | 0.0138 | 0.0138 | 0.0138 | 0 |
-| `biggest_issue` → `family-hair-finished` | 0.0124 | 0.0124 | 0.0124 | 0 |
-| `biggest_issue` → `family-beard-even` | 0.0052 | 0.0052 | 0.0052 | 0 |
-| `biggest_issue` → `family-expression-present` | 0.0273 | 0.0273 | 0.0273 | 0 |
-| `biggest_issue` → `family-light-even` | 0.0076 | 0.0076 | 0.0076 | 0 |
-| `biggest_issue` → `none` | 0.0341 | 0.0341 | 0.0341 | 0 |
-| `biggest_issue` → `cant-tell` | 0.0154 | 0.0154 | 0.0154 | 0 |
-| `biggest_issue` confidence | 0.6839 | 0.6839 | 0.6839 | 0 |
+| `family-earring-festive` | 0.0455 | 0.0455 | 0.0455 | 0 |
+| `family-lip-colour` | 0.3101 | 0.3101 | 0.3101 | 0 |
+| `family-garment-festive` | 0.8243 | 0.8243 | 0.8243 | 0 |
+| `family-hair-finished` | 0.8327 | 0.8327 | 0.8327 | 0 |
+| `family-beard-even` | 0.8927 | 0.8927 | 0.8927 | 0 |
+| `family-expression-present` | 0.368 | 0.368 | 0.368 | 0 |
+| `family-light-even` | 0.8258 | 0.8258 | 0.8258 | 0 |
+| `biggest_issue` → `family-earring-festive` | 0.234 | 0.234 | 0.234 | 0 |
+| `biggest_issue` → `family-lip-colour` | 0.1375 | 0.1375 | 0.1375 | 0 |
+| `biggest_issue` → `family-garment-festive` | 0.1535 | 0.1535 | 0.1535 | 0 |
+| `biggest_issue` → `family-hair-finished` | 0.1588 | 0.1588 | 0.1588 | 0 |
+| `biggest_issue` → `family-beard-even` | 0.0202 | 0.0202 | 0.0202 | 0 |
+| `biggest_issue` → `family-expression-present` | 0.119 | 0.119 | 0.119 | 0 |
+| `biggest_issue` → `family-light-even` | 0.0405 | 0.0405 | 0.0405 | 0 |
+| `biggest_issue` → `none` | 0.0923 | 0.0923 | 0.0923 | 0 |
+| `biggest_issue` → `cant-tell` | 0.0442 | 0.0442 | 0.0442 | 0 |
+| `biggest_issue` confidence | 0.0428 | 0.0428 | 0.0428 | 0 |
 
-The choice was `family-earring-festive` all ten times. Clef is deterministic for one request body; the variation that matters is between photos and between image sizes, not between calls. A repeat costs as much as the first call, so retrying for a second opinion buys nothing.
+The choice was `family-earring-festive` all eleven times, and its distribution is flat: no option above 0.234, and `biggest_issue` reports confidence 0.0428 on every one of the eleven answers while the seven `noul` span 0.0455 to 0.8927. Clef is deterministic for one request body; the variation that matters is between photos and between image sizes, not between calls. A repeat costs as much as the first call, so retrying for a second opinion buys nothing. What a repeat cannot promise is a decisive choice answer — determinism here means the same flat distribution every time, not a confident one.
 
 ## The judge on the sample set
 
