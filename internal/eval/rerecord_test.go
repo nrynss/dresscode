@@ -1227,10 +1227,15 @@ func TestRerecordBookedSpendIsTheCorpus(t *testing.T) {
 	rerecordDocCarries(t, filepath.Join(w.root, "docs", "clef.md"), rerecordSpendReason(spend), []string{
 		// The booked pass, whole neurons and nanodollars.
 		fmt.Sprintf("%s neurons, %s", rerecordGrouped(int64(math.Round(spend.Neurons))), spend.Dollars),
-		// The per-model input tokens and the neuron sum beside each.
+		// The per-model input tokens and the neuron sum beside each, in the order
+		// the doc's sentence gives them.
 		fmt.Sprintf("%s tokens on `%s`", rerecordGrouped(clef), systemone.ModelClef),
-		fmt.Sprintf("%s on `%s`", rerecordGrouped(flash), systemone.ModelClefFlash),
 		fmt.Sprintf("(%s neurons)", rerecordGrouped1dp(liveNeurons(int(clef), liveNeuronsPerMillion[systemone.ModelClef]))),
+		// The flash claim carries its parenthetical because the tokens alone do
+		// not identify it: the T0.6 round states the same 8,157 on `clef-flash`,
+		// so a bare token count matches either paragraph and pins neither.
+		fmt.Sprintf("%s on `%s` (%s neurons)", rerecordGrouped(flash), systemone.ModelClefFlash,
+			rerecordGrouped1dp(liveNeurons(int(flash), liveNeuronsPerMillion[systemone.ModelClefFlash]))),
 		// The summed total at the one decimal the doc states it with.
 		fmt.Sprintf("%s neurons summed", rerecordGrouped1dp(spend.Neurons)),
 	})
@@ -1756,7 +1761,10 @@ func TestRerecordGateRefusesWithoutTheFlag(t *testing.T) {
 // adjusts a recorded number to match a live reading.
 func TestRerecordReadsBothCorpora(t *testing.T) {
 	w := loadRerecordWorld(t)
-	shipped, err := Run(w.root)
+	// RunAt on w.oldDir, not Run, so the corpus this test reads and the directory
+	// it reports itself under come from one constant: Run names testdata/clef
+	// itself, and a label that disagrees with the tree it scored is worse than none.
+	shipped, err := RunAt(w.root, w.oldDir)
 	if err != nil {
 		t.Fatalf("rerecord: shipped corpus: %v", err)
 	}
