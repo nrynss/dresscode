@@ -134,6 +134,36 @@ export function registerProduct(uploadId: string, name: string, category: string
   });
 }
 
+/** True when the product's name and its kind are both typed, outside the
+ * whitespace a phone keyboard leaves behind. */
+export function productFieldsReady(name: string, kind: string): boolean {
+  return name.trim() !== "" && kind.trim() !== "";
+}
+
+/** A product photo that waits for its name: the photo itself — the bytes to
+ * send, or the id of an upload already on the server — and the sentence
+ * naming what is missing. */
+export interface ProductHold {
+  photo: Blob | string;
+  ask: string;
+}
+
+export type ProductGateAnswer = { pass: true } | { pass: false; hold: ProductHold };
+
+/** The gate around a product photo's name and kind, answered before the pick
+ * is consumed. The first real user picked a product photo with the fields
+ * still empty and lost it: the old gate read the FileList, reset the input,
+ * and only then refused — the refusal landed after the pick was already
+ * voided. This gate never voids a pick. With the fields typed the photo
+ * passes; without them it is held whole — the exact object continues, it is
+ * never re-read from the dead FileList — and the screen asks for the name at
+ * the fields. Once the fields are typed, the held photo completes the
+ * product without a second pick. */
+export function productGate(photo: Blob | string, name: string, kind: string): ProductGateAnswer {
+  if (productFieldsReady(name, kind)) return { pass: true };
+  return { pass: false, hold: { photo, ask: "Name the product and what it is." } };
+}
+
 export function registerLink(url: string): Promise<UserProduct> {
   return api<UserProduct>("/api/products/link", {
     method: "POST",

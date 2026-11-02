@@ -14,6 +14,8 @@ import { PhotoPreview } from "./preview.svelte";
 import {
   chunkBytes,
   finishUpload,
+  productFieldsReady,
+  productGate,
   registerLink,
   registerProduct,
   registerSelfie,
@@ -122,6 +124,123 @@ function installTransport(dropPuts: () => boolean): {
   };
   return { calls, bodies, dropped: () => dropped, accepted: () => accepted };
 }
+
+test("a product photo picked before its name and kind is held whole, never dropped", () => {
+  const blob = new Blob([block()], { type: "image/jpeg" });
+
+  // The fields are empty: the gate holds, and the hold carries the exact
+  // photo the user chose — the pick is never voided the way the reset
+  // FileList once voided it.
+  const unnamed = productGate(blob, "", "");
+  expect(unnamed.pass).toBe(false);
+  if (unnamed.pass) throw new Error("the gate passed with the fields empty");
+  expect(unnamed.hold.photo).toBe(blob);
+  expect(unnamed.hold.ask).toBe("Name the product and what it is.");
+
+  // Whitespace is not a name and it is not a kind.
+  expect(productGate(blob, "  ", "earrings").pass).toBe(false);
+  expect(productGate(blob, "Gold jhumkas", "   ").pass).toBe(false);
+
+  // The fields typed, the photo passes and the product completes from it.
+  expect(productGate(blob, " Gold jhumkas ", " earrings ").pass).toBe(true);
+
+  // An upload already on the server waits by the same gate: the hold is
+  // the id, so the registration needs no second tap and no re-send.
+  const heldId = productGate("5e1f1e0000000000000000000000000a", "", "");
+  expect(heldId.pass).toBe(false);
+  if (!heldId.pass) expect(heldId.hold.photo).toBe("5e1f1e0000000000000000000000000a");
+
+  // Readiness is the gate's other half: the screen's effect answers it to
+  // release the hold.
+  expect(productFieldsReady("Gold jhumkas", "earrings")).toBe(true);
+  expect(productFieldsReady("Gold jhumkas", "")).toBe(false);
+  expect(productFieldsReady("", "earrings")).toBe(false);
+  expect(productFieldsReady(" Gold jhumkas ", " earrings ")).toBe(true);
+});
+
+test("a product pick with the fields empty is held and asked for, at the fields, without a re-pick", () => {
+  const source = readFileSync(path.join(here, "capture.svelte"), "utf8");
+
+  // The FileList is live (T5.22): the copy-out stays ahead of the reset,
+  // and the whole pick is handed to bring after it — nothing between the
+  // reset and the hand-off voids the pick.
+  const gallery = source.slice(
+    source.indexOf("async function onGallery"),
+    source.indexOf("async function bring"),
+  );
+  const copied = gallery.indexOf("const files = input.files ? [...input.files] : null;");
+  const reset = gallery.indexOf('input.value = "";');
+  const handed = gallery.indexOf("await bring(blob, kind);");
+  expect(copied).toBeGreaterThanOrEqual(0);
+  expect(reset).toBeGreaterThan(copied);
+  expect(handed).toBeGreaterThan(reset);
+  expect(gallery).toContain("a refusal now would");
+  // The old gate lived here and landed after the reset; it is gone from
+  // the picker.
+  expect(gallery).not.toContain("productGate");
+  expect(source).not.toContain("productReady()");
+
+  // The gate answers inside bring: an unnamed product photo is held whole,
+  // with the sentence naming what is missing, and nothing is sent.
+  const bring = source.slice(
+    source.indexOf("async function bring"),
+    source.indexOf("async function addLink"),
+  );
+  expect(bring).toContain("const answer = productGate(blob, productName, productKind);");
+  expect(bring).toContain("if (!answer.pass) {");
+  expect(bring).toContain("heldProduct = answer.hold;");
+  expect(bring.indexOf("productGate(blob")).toBeLessThan(bring.indexOf("Preparing the photo."));
+
+  // The camera paths refuse nothing before the shot: the photo is taken
+  // first and meets the same gate in bring, so no lens flow loses work the
+  // user has already done.
+  const lens = source.slice(
+    source.indexOf("async function openLens"),
+    source.indexOf("async function onGallery"),
+  );
+  const take = source.slice(
+    source.indexOf("async function take()"),
+    source.indexOf("async function onGallery"),
+  );
+  expect(lens).not.toContain("productGate");
+  expect(lens).not.toContain("Name the product");
+  expect(take).not.toContain("productGate");
+  expect(take).not.toContain("Name the product");
+  expect(take).toContain("await bring(blob, kind);");
+
+  // The held photo completes without a second pick: the effect waits for
+  // the fields and releases the hold — bytes go to bring, an upload id
+  // goes straight to its registration.
+  const release = source.slice(
+    source.indexOf("const held = heldProduct;"),
+    source.indexOf("async function openLens"),
+  );
+  expect(release).toContain("if (!productFieldsReady(productName, productKind)) return;");
+  expect(release).toContain("heldProduct = undefined;");
+  expect(release).toContain("void useHeldUpload(held.photo);");
+  expect(release).toContain("void bring(held.photo, \"product\");");
+
+  // The ask stands at the fields, before the Name field it names, and
+  // reads the hold's own sentence.
+  const drawer = source.slice(
+    source.indexOf('<details class="product-drawer'),
+    source.indexOf("</details>"),
+  );
+  const ask = drawer.indexOf("{#if heldProduct}");
+  const name = drawer.indexOf("Name");
+  expect(ask).toBeGreaterThanOrEqual(0);
+  expect(name).toBeGreaterThan(ask);
+  expect(drawer.slice(ask, drawer.indexOf("{/if}"))).toContain("{heldProduct.ask}");
+
+  // The resumed upload waits by the same hold: no tap is wasted on a
+  // refusal the user cannot act past.
+  const resumed = source.slice(
+    source.indexOf("async function useResumed"),
+    source.indexOf("async function checkDressCode"),
+  );
+  expect(resumed).toContain("productFieldsReady(productName, productKind)");
+  expect(resumed).toContain("heldProduct = answer.hold;");
+});
 
 test("a gallery file uploads and the photo is registered", async () => {
   installMock();

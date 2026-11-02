@@ -8,6 +8,8 @@
   import { verdictHash } from "../look/verdict/route";
   import {
     finishUpload,
+    productFieldsReady,
+    productGate,
     registerLink,
     registerProduct,
     registerSelfie,
@@ -18,6 +20,7 @@
     storyOccasion,
     uploadCaptured,
     type NormalisedPhoto,
+    type ProductHold,
     type UserProduct,
   } from "./upload";
 
@@ -37,6 +40,10 @@
   let selfie = $state<NormalisedPhoto | undefined>(undefined);
   let productName = $state("");
   let productKind = $state("");
+  /** A chosen product photo that waits for its name and kind. It stays
+   * here whole — the pick is never voided — and completes the product the
+   * moment the fields are typed, without a second pick. */
+  let heldProduct = $state<ProductHold | undefined>(undefined);
   let link = $state("");
   let savedProducts = $state<UserProduct[]>([]);
   let pending = $state<ChunkUploader | undefined>(undefined);
@@ -82,14 +89,20 @@
     };
   });
 
-  function productReady(): boolean {
-    if (productName.trim() !== "" && productKind.trim() !== "") return true;
-    problem = { code: "capture", message: "Name the product and what it is." };
-    return false;
-  }
+  /** The gate's other half: a held photo leaves the moment the fields are
+   * typed. The bytes go through the usual prepare-and-send path; an upload
+   * already on the server goes straight to its registration. Either way the
+   * product completes without a second pick. */
+  $effect(() => {
+    const held = heldProduct;
+    if (held === undefined) return;
+    if (!productFieldsReady(productName, productKind)) return;
+    heldProduct = undefined;
+    if (typeof held.photo === "string") void useHeldUpload(held.photo);
+    else void bring(held.photo, "product");
+  });
 
   async function openLens(next: "selfie" | "product"): Promise<void> {
-    if (next === "product" && !productReady()) return;
     const element = video;
     if (!element) return;
     lens = next;
@@ -101,7 +114,6 @@
 
   async function take(): Promise<void> {
     if (lens !== "selfie" && lens !== "product") return;
-    if (lens === "product" && !productReady()) return;
     const kind = lens;
     try {
       const blob = await sessionBackend(session).capture();
@@ -120,7 +132,9 @@
     const files = input.files ? [...input.files] : null;
     input.value = "";
     if (!files || files.length === 0) return;
-    if (kind === "product" && !productReady()) return;
+    // No gate here: the pick is already in hand, and a refusal now would
+    // void it. The gate answers inside bring, where an unnamed product
+    // photo is held instead of dropped.
     try {
       const blob = await fileBackend(files).capture();
       await bring(blob, kind);
@@ -130,6 +144,14 @@
   }
 
   async function bring(blob: Blob, kind: "selfie" | "product"): Promise<void> {
+    if (kind === "product") {
+      const answer = productGate(blob, productName, productKind);
+      if (!answer.pass) {
+        // The photo waits whole for its name; the ask stands at the fields.
+        heldProduct = answer.hold;
+        return;
+      }
+    }
     problem = undefined;
     status = "Preparing the photo.";
     busy = true;
@@ -147,9 +169,7 @@
         selfie = await registerSelfie(receipt.id);
         status = "The selfie is in.";
       } else {
-        const saved = await registerProduct(receipt.id, productName.trim(), productKind.trim());
-        savedProducts = [...savedProducts, saved];
-        status = "The product is in.";
+        await saveProduct(receipt.id);
       }
     } catch (error) {
       status = "";
@@ -157,6 +177,30 @@
     } finally {
       busy = false;
       current = undefined;
+    }
+  }
+
+  /** Save the product from an upload already on the server, under the name
+   * and kind as typed. */
+  async function saveProduct(uploadId: string): Promise<void> {
+    const saved = await registerProduct(uploadId, productName.trim(), productKind.trim());
+    savedProducts = [...savedProducts, saved];
+    status = "The product is in.";
+  }
+
+  /** The held upload id completing: the same registration the resumed
+   * button would have run, with no second tap. */
+  async function useHeldUpload(uploadId: string): Promise<void> {
+    problem = undefined;
+    busy = true;
+    try {
+      await saveProduct(uploadId);
+      if (resumedId === uploadId) resumedId = undefined;
+    } catch (error) {
+      status = "";
+      problem = shownError(error);
+    } finally {
+      busy = false;
     }
   }
 
@@ -206,7 +250,14 @@
   async function useResumed(kind: "selfie" | "product"): Promise<void> {
     const uploadId = resumedId;
     if (!uploadId) return;
-    if (kind === "product" && !productReady()) return;
+    if (kind === "product" && !productFieldsReady(productName, productKind)) {
+      // The upload is safe on the server; the product waits for its name
+      // by the same hold as a fresh pick, and completes the moment the
+      // fields are typed — no second tap.
+      const answer = productGate(uploadId, productName, productKind);
+      if (!answer.pass) heldProduct = answer.hold;
+      return;
+    }
     problem = undefined;
     busy = true;
     try {
@@ -214,9 +265,7 @@
         selfie = await registerSelfie(uploadId);
         status = "The selfie is in.";
       } else {
-        const saved = await registerProduct(uploadId, productName.trim(), productKind.trim());
-        savedProducts = [...savedProducts, saved];
-        status = "The product is in.";
+        await saveProduct(uploadId);
       }
       resumedId = undefined;
     } catch (error) {
@@ -364,6 +413,12 @@
 <details class="product-drawer disclosure">
   <summary>Try your own piece</summary>
   <section>
+    {#if heldProduct}
+      <!-- The ask stands at the fields, where the pick is waiting: the photo
+       * is held whole above, and the product completes the moment both
+       * fields are typed. -->
+      <p class="hint" role="status">{heldProduct.ask}</p>
+    {/if}
     <label class="field">
       Name
       <input bind:value={productName} autocomplete="off" />
