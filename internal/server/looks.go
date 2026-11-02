@@ -568,26 +568,15 @@ func (rt *lookRuntime) readProductIDs(w http.ResponseWriter, r *http.Request, fi
 	return brought, basket, true
 }
 
-// judgeLease takes the judge session's seats for one look: one fresh
-// selfie and the pair of renders a look may make, the settings' own
-// arithmetic (the fresh-selfie cap is one per occasion; the render cap
-// is a render and a runner-up for each). A session out of seats is
-// refused with the cap that has none, and no seat is taken.
-//
-// The seats are the last thing a start takes, after the selfie, the
-// products and the budget have all been read: a refusal above this line
-// spends no judge capacity, so a user who mistypes an id does not burn
-// the session's fresh looks.
+// judgeLease takes the judge session's counters for one look: one fresh
+// selfie and the pair of renders a look may make. It refuses nothing any
+// more — the user's ruling removed the per-session caps, so anyone can
+// try any number of looks — and the counters stay as the accounting the
+// judging posture reads. The lease is still the last thing a start takes,
+// after the selfie, the products and the budget have all been read.
 func (rt *lookRuntime) judgeLease(w http.ResponseWriter, r *http.Request) bool {
 	session, ok := identity.SessionFromContext(r.Context())
 	if !ok || session.ID == "" {
-		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
-		return false
-	}
-	freshCap := rt.cfg.Lease.Judge.FreshSelfies
-	renderCap := rt.cfg.Lease.Judge.Renders
-	if freshCap < 1 || renderCap < 1 {
-		rt.log.Error("server: looks: the lease caps are unset")
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
 		return false
 	}
@@ -599,38 +588,15 @@ func (rt *lookRuntime) judgeLease(w http.ResponseWriter, r *http.Request) bool {
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
 		return false
 	}
-	taken, err := rt.srv.db.Writer().ExecContext(ctx,
+	if _, err := rt.srv.db.Writer().ExecContext(ctx,
 		`UPDATE judge_sessions SET fresh_selfies = fresh_selfies + 1, renders = renders + 2
-		 WHERE session_id = ? AND fresh_selfies + 1 <= ? AND renders + 2 <= ?`,
-		session.ID, freshCap, renderCap)
-	if err != nil {
+		 WHERE session_id = ?`,
+		session.ID); err != nil {
 		rt.log.Error("server: looks: judge lease", "err", err.Error())
 		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
 		return false
 	}
-	n, err := taken.RowsAffected()
-	if err != nil {
-		rt.log.Error("server: looks: judge lease", "err", err.Error())
-		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
-		return false
-	}
-	if n == 1 {
-		return true
-	}
-	var held struct{ fresh, renders int }
-	if err := rt.srv.db.Reader().QueryRowContext(ctx,
-		`SELECT fresh_selfies, renders FROM judge_sessions WHERE session_id = ?`, session.ID,
-	).Scan(&held.fresh, &held.renders); err != nil {
-		rt.log.Error("server: looks: judge lease", "err", err.Error())
-		writeAPI(w, http.StatusInternalServerError, wire.CodeInternal, msgInternal, nil)
-		return false
-	}
-	cap := capFreshSelfies
-	if held.fresh < freshCap {
-		cap = capRenders
-	}
-	writeAPI(w, http.StatusConflict, codeLeaseRefused, msgLeaseRefused, map[string]string{"cap": cap})
-	return false
+	return true
 }
 
 // releaseJudgeSeat hands back the counters one start took. Only a start

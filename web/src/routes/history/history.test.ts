@@ -137,12 +137,14 @@ test("the switch starts off and a fresh session's screen says nothing about memo
     expect(staticText(readFileSync(file, "utf8")), file).not.toMatch(memoryWords);
   }
 
-  // With the switch off nothing is even asked: the second visit refuses
-  // before it fetches, so no word of memory arrives anywhere.
+  // With the switch off the looks still come — viewing what you have
+  // already tried is free — and not one recall request is made, so not
+  // one word of memory arrives anywhere.
   const seen = watchFetch();
   try {
-    expect(await loadSecondVisit()).toEqual({ groups: [] });
-    expect(seen.calls).toEqual([]);
+    const visit = await loadSecondVisit();
+    for (const group of visit.groups) expect(group.line).toBe("");
+    expect(seen.calls.some((call) => call.path.includes("/api/history/recall"))).toBe(false);
   } finally {
     seen.stop();
   }

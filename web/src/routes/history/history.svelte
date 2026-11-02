@@ -1,6 +1,8 @@
 <script lang="ts">
   import ErrorNotice from "../../app/error-notice.svelte";
   import type { ShownError } from "../../lib/api/types";
+  import { verdictHash } from "../look/verdict/route";
+  import { keepLook } from "../capture/upload";
   import { emptyVisitSentence, lookLine, openingSentence, openingVisitSentence, type HistoryState, type SecondVisit } from "./copy";
   import { loadSecondVisit, readHistory, shownFailure, writeHistory } from "./flow";
 
@@ -10,6 +12,14 @@
   let visitProblem = $state<ShownError | undefined>(undefined);
   let openingVisit = $state(false);
   let saving = $state(false);
+
+  /** A look already tried is free to view: the whole look is on the
+   * server, so opening it spends nothing. The job id is the look id —
+   * the look row is the look, the job is its engine. */
+  function openLook(id: string): void {
+    keepLook(id, id);
+    if (typeof window !== "undefined") window.location.hash = verdictHash;
+  }
 
   $effect(() => {
     const control = new AbortController();
@@ -28,7 +38,7 @@
 
   $effect(() => {
     const current = switchState;
-    if (current === undefined || !current.enabled) {
+    if (current === undefined) {
       visit = undefined;
       visitProblem = undefined;
       openingVisit = false;
@@ -93,33 +103,33 @@
       <p class="info-card">{switchState.notice}</p>
     </details>
 
-    {#if switchState.enabled}
-      {#if visitProblem}
-        <ErrorNotice error={visitProblem} />
-      {:else if openingVisit || visit === undefined}
-        <p class="hint" role="status">{openingVisitSentence}</p>
-      {:else if visit.groups.length === 0}
-        <p class="hint">{emptyVisitSentence}</p>
-      {:else}
-        {#each visit.groups as group (group.occasion.id)}
-          <div class="group">
-            <h3>{group.occasion.name}</h3>
-            {#if group.line !== ""}
-              <p class="line">{group.line}</p>
-            {/if}
-            <ul>
-              {#each group.looks as look (look.id)}
-                <li>
-                  <p>{lookLine(look)}</p>
+    {#if visitProblem}
+      <ErrorNotice error={visitProblem} />
+    {:else if openingVisit || visit === undefined}
+      <p class="hint" role="status">{openingVisitSentence}</p>
+    {:else if visit.groups.length === 0}
+      <p class="hint">{emptyVisitSentence}</p>
+    {:else}
+      {#each visit.groups as group (group.occasion.id)}
+        <div class="group">
+          <h3>{group.occasion.name}</h3>
+          {#if group.line !== ""}
+            <p class="line">{group.line}</p>
+          {/if}
+          <ul>
+            {#each group.looks as look (look.id)}
+              <li>
+                <button type="button" class="look-link" onclick={() => openLook(look.id)}>
+                  <span class="look-words">{lookLine(look)}</span>
                   {#if look.verdict !== ""}
-                    <p class="tag">{look.verdict}</p>
+                    <span class="tag">{look.verdict}</span>
                   {/if}
-                </li>
-              {/each}
-            </ul>
-          </div>
-        {/each}
-      {/if}
+                </button>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/each}
     {/if}
   {/if}
 </section>
@@ -312,5 +322,45 @@
 
   .tag {
     color: var(--dim);
+  }
+
+  /* A look already tried is a door, not a record: the whole look sits on
+   * the server, so opening it from here spends nothing. */
+  .look-link {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    width: 100%;
+    padding: 0.45rem 0.55rem;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .look-words {
+    overflow-wrap: break-word;
+    max-width: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .look-link {
+      transition:
+        border-color 0.15s ease,
+        background 0.15s ease,
+        transform 0.15s ease;
+    }
+
+    .look-link:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .look-link:active {
+      transform: scale(0.99);
+    }
   }
 </style>

@@ -92,17 +92,21 @@ async function quiet<T>(task: Promise<T>): Promise<T | undefined> {
 }
 
 /** The second visit: past looks by occasion, and the sentence memory keeps
- * for each. It refuses before it asks while the switch is off in this
- * session, so with history off nothing is fetched and nothing is shown. */
+ * for each. The looks are the user's own record and load whatever the
+ * switch says — viewing a look that is already tried costs nothing. The
+ * sentence is memory's half, and memory stays opt-in: the recall read
+ * answers enabled false while the switch is off, and the group's line
+ * stays empty. */
 export async function loadSecondVisit(signal?: AbortSignal): Promise<SecondVisit> {
-  if (stored !== true) return { groups: [] };
   const occasions = await listOccasions(signal);
   const groups: VisitGroup[] = [];
   for (const occasion of occasions) {
     const looks = await quiet(readLooks(occasion.id, signal));
     if (looks === undefined) continue;
     let line = "";
-    if (looks.length > 0) {
+    if (looks.length > 0 && stored === true) {
+      // The sentence is memory's half, and memory stays opt-in: with the
+      // switch off in this session, not one recall request is made.
       const recall = await quiet(readRecall(occasion.id, signal));
       if (recall?.enabled === true) line = recall.line;
     }

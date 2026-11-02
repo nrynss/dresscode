@@ -1637,33 +1637,33 @@ func TestTheStartRefusals(t *testing.T) {
 		}
 	})
 
-	t.Run("the fresh selfie cap", func(t *testing.T) {
+	t.Run("the lease only counts, it never refuses", func(t *testing.T) {
 		t.Parallel()
+		// The user's ruling removed the per-session caps: any number of
+		// looks. The lease still counts the spend, and a repeat start is
+		// answered, not refused.
 		env := newLookEnv(t, earringAnswers(), 8, nil)
-		env.srv.looksOf().cfg.Lease.Judge.FreshSelfies = 1
 		user, cookie := bootUser(t, env.handler)
 		selfieID := env.storySeeds(t, user)
-		env.optIn(t, user, "family-function", "family-gold-jhumkas")
+		env.optIn(t, user, "family-function", "family-gold-jhumkas", "family-red-lip")
 		_, jobID, _ := env.start(t, cookie, selfieID)
 		env.waitDone(t, cookie, jobID)
 		body := map[string]any{"occasion": "family-function", "selfie_id": selfieID}
-		compare(t, "errors/lease-refused", postJSON(t, env.handler, "/api/looks", cookie, body), nil)
-		if creates, _, _, _ := env.cam.count(); creates != 1 {
-			t.Fatalf("creates %d, want the one accepted look's task", creates)
-		}
-	})
-
-	t.Run("the render cap", func(t *testing.T) {
-		t.Parallel()
-		env := newLookEnv(t, earringAnswers(), 8, nil)
-		env.srv.looksOf().cfg.Lease.Judge.Renders = 1
-		user, cookie := bootUser(t, env.handler)
-		selfieID := env.storySeeds(t, user)
-		env.optIn(t, user, "family-function", "family-gold-jhumkas")
-		body := map[string]any{"occasion": "family-function", "selfie_id": selfieID}
 		rec := postJSON(t, env.handler, "/api/looks", cookie, body)
-		compare(t, "errors/lease-refused", rec, map[string]string{"fresh_selfies": "renders"})
-		assertNothingStarted(t, env)
+		var started struct {
+			JobID string `json:"job_id"`
+		}
+		if err := json.Unmarshal(rec.Body.Bytes(), &started); err != nil || started.JobID == "" {
+			t.Fatalf("the second look was refused: %s", rec.Body.String())
+		}
+		var fresh, renders int
+		if err := env.srv.db.Reader().QueryRowContext(t.Context(),
+			`SELECT fresh_selfies, renders FROM judge_sessions`).Scan(&fresh, &renders); err != nil {
+			t.Fatal(err)
+		}
+		if fresh < 1 || renders < 2 {
+			t.Fatalf("fresh_selfies %d, renders %d, want the spend counted", fresh, renders)
+		}
 	})
 
 	t.Run("the request is validated", func(t *testing.T) {
