@@ -228,8 +228,8 @@ var expectedChecks = map[string]struct {
 	},
 	"check-clef-flash-V04-to-woman-white": {
 		shown: false, change: false, same: false, met: false,
-		words:      "gold, nude, buttoned, loose, red, flat, plain-shirt",
-		attributes: 7,
+		words:      "nude, buttoned, loose, red, flat, plain-shirt",
+		attributes: 6,
 	},
 }
 

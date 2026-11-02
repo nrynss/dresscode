@@ -156,56 +156,70 @@ type outcome struct {
 	issue string
 }
 
-// expected is every sample's outcome at readingAt, read off the recorded
-// probabilities in docs/clef.md's judge tables. On a few cells the read
-// is not the README's ground truth: at 0.5, V02's light, V21's and P09's
-// beards, V06's and P12's expressions, V08's light and beard, P11's
-// garment, V09's and V12's collars, P13's beard, V16's light and P16's
-// beard sit on the other side of the line. Those cells are the read the
-// judge turns out; T3.9 owns moving the lines, not this table.
+// expected is every sample's outcome at readingAt, generated from the
+// recorded probabilities in the shipped corpus by running the real Judge
+// over every judge recording (docs/clef.md's tables carry the same read,
+// cell by cell). On many cells the read is not the README's ground truth:
+// at 0.5, V01's, V02's, V09's, V15's, V17's and P09's beards; V02's light;
+// V04's and P03's expressions; V08's and P11's beards; P11's garment;
+// V09's, V11's, V12's and P05's collars; V11's and P05's interview
+// expressions — nineteen cells — sit on the other side of the line. Those
+// cells are the read the judge turns out; T3.9 owns moving the lines, not
+// this table.
+//
+// The issue half of each row is the model's pinned choice id, not prose:
+// Judge asks one biggest_issue choice question whose options are the
+// criterion ids (judge.go's request), and Issue's label is the option's
+// own wording from the occasion data (judge.go's read, which errors on a
+// choice outside the options). The recorder refuses a choice that is not
+// one of the request's option ids before it is ever stored
+// (systemone/recorder.go), so no model sentence can reach the label
+// field, and the label assertion can only fail when the id itself does. A
+// fresh recording therefore moves this table's issue ids as a stale
+// measurement, never as the service's wording arriving in a user's line.
 var expected = map[string]outcome{
 	// date
-	"V01": {issue: "none"},
-	"V02": {flags: []string{"date-collar-open", "date-garment-easy", "date-expression-engaged"}, issue: "date-expression-engaged"},
+	"V01": {flags: []string{"date-beard-even"}, issue: "date-beard-even"},
+	"V02": {flags: []string{"date-collar-open", "date-garment-easy", "date-beard-even", "date-expression-engaged"}, issue: "date-beard-even"},
 	"V03": {flags: []string{"date-hair-clear", "date-lip-clear"}, issue: "date-lip-clear"},
-	"V21": {issue: "date-collar-open"},
+	"V21": {flags: []string{"date-beard-even"}, issue: "date-beard-even"},
 	"P01": {issue: "none"},
 	"P02": {flags: []string{"date-collar-open", "date-garment-easy", "date-hair-clear", "date-lip-clear"}, issue: "date-lip-clear"},
 	"P09": {flags: []string{"date-beard-even"}, issue: "date-beard-even"},
 	"P10": {flags: []string{"date-beard-even", "date-expression-engaged", "date-light-see"}, issue: "date-beard-even"},
 	// family function
-	"V04": {flags: []string{"family-earring-festive", "family-lip-colour"}, issue: "family-earring-festive"},
+	"V04": {flags: []string{"family-earring-festive", "family-lip-colour", "family-expression-present"}, issue: "family-earring-festive"},
 	"V05": {issue: "none"},
-	"V06": {flags: []string{"family-hair-finished"}, issue: "family-hair-finished"},
+	"V06": {flags: []string{"family-hair-finished", "family-expression-present"}, issue: "family-hair-finished"},
 	"V07": {flags: []string{"family-earring-festive", "family-lip-colour"}, issue: "none"},
-	"V08": {flags: []string{"family-earring-festive", "family-lip-colour", "family-garment-festive", "family-expression-present"}, issue: "family-garment-festive"},
-	"P03": {issue: "none"},
+	"V08": {flags: []string{"family-earring-festive", "family-lip-colour", "family-garment-festive", "family-expression-present", "family-light-even"}, issue: "family-garment-festive"},
+	"P03": {flags: []string{"family-expression-present"}, issue: "none"},
 	"P04": {flags: []string{"family-earring-festive", "family-lip-colour", "family-garment-festive", "family-hair-finished", "family-expression-present", "family-light-even"}, issue: "family-garment-festive"},
-	"P11": {flags: []string{"family-earring-festive", "family-lip-colour", "family-garment-festive"}, issue: "family-garment-festive"},
-	"P12": {flags: []string{"family-earring-festive", "family-lip-colour", "family-garment-festive", "family-beard-even"}, issue: "family-garment-festive"},
+	"P11": {flags: []string{"family-earring-festive", "family-lip-colour", "family-garment-festive", "family-beard-even"}, issue: "family-beard-even"},
+	"P12": {flags: []string{"family-earring-festive", "family-lip-colour", "family-garment-festive", "family-beard-even", "family-expression-present"}, issue: "family-beard-even"},
 	// interview
-	"V09": {flags: []string{"interview-collar-buttoned"}, issue: "none"},
+	"V09": {flags: []string{"interview-collar-buttoned", "interview-beard-short"}, issue: "interview-beard-short"},
 	"V10": {flags: []string{"interview-collar-buttoned", "interview-garment-plain", "interview-beard-short", "interview-expression-calm", "interview-light-plain"}, issue: "interview-garment-plain"},
-	"V11": {flags: []string{"interview-hair-close", "lip-quiet"}, issue: "lip-quiet"},
+	"V11": {flags: []string{"interview-collar-buttoned", "interview-hair-close", "lip-quiet", "interview-expression-calm"}, issue: "lip-quiet"},
 	"V12": {flags: []string{"interview-collar-buttoned"}, issue: "none"},
-	"P05": {flags: []string{"interview-hair-close"}, issue: "interview-hair-close"},
-	"P13": {flags: []string{"interview-collar-buttoned", "interview-garment-plain", "interview-expression-calm", "interview-light-plain"}, issue: "interview-garment-plain"},
+	"P05": {flags: []string{"interview-collar-buttoned", "interview-hair-close", "interview-expression-calm"}, issue: "interview-hair-close"},
+	"P13": {flags: []string{"interview-collar-buttoned", "interview-garment-plain", "interview-beard-short", "interview-expression-calm", "interview-light-plain"}, issue: "interview-garment-plain"},
 	// festival
 	"V13": {issue: "none"},
 	"V14": {flags: []string{"festival-garment-festive", "festival-earring", "festival-necklace", "festival-lip", "festival-hair", "festival-expression", "festival-light"}, issue: "festival-hair"},
-	"V15": {flags: []string{"festival-earring", "festival-necklace", "festival-lip"}, issue: "none"},
-	"V16": {flags: []string{"festival-garment-festive", "festival-earring", "festival-necklace", "festival-lip", "festival-beard"}, issue: "festival-garment-festive"},
-	"P06": {flags: []string{"festival-hair", "festival-expression"}, issue: "festival-hair"},
+	"V15": {flags: []string{"festival-earring", "festival-necklace", "festival-lip", "festival-beard"}, issue: "festival-beard"},
+	"V16": {flags: []string{"festival-garment-festive", "festival-earring", "festival-necklace", "festival-lip", "festival-beard", "festival-light"}, issue: "festival-garment-festive"},
+	"P06": {flags: []string{"festival-hair", "festival-expression"}, issue: "festival-expression"},
 	"P14": {flags: []string{"festival-earring", "festival-necklace", "festival-lip", "festival-beard"}, issue: "festival-beard"},
 	// funeral
-	"V17": {issue: "none"},
+	"V17": {flags: []string{"funeral-beard-close"}, issue: "funeral-beard-close"},
 	"V18": {flags: []string{"funeral-garment-dark", "funeral-collar-plain", "funeral-beard-close", "funeral-expression-still", "funeral-light-plain"}, issue: "funeral-garment-dark"},
 	"V19": {issue: "none"},
-	"V20": {flags: []string{"funeral-garment-dark", "funeral-collar-plain", "funeral-jewellery-quiet", "lip-quiet", "funeral-hair-plain", "funeral-expression-still", "funeral-light-plain"}, issue: "funeral-garment-dark"},
+	"V20": {flags: []string{"funeral-garment-dark", "funeral-collar-plain", "funeral-jewellery-quiet", "lip-quiet", "funeral-hair-plain", "funeral-expression-still", "funeral-light-plain"}, issue: "funeral-expression-still"},
 	"P07": {issue: "none"},
 	"P08": {flags: []string{"funeral-collar-plain", "funeral-jewellery-quiet", "lip-quiet", "funeral-hair-plain"}, issue: "funeral-jewellery-quiet"},
-	"P15": {issue: "funeral-beard-close"},
-	"P16": {flags: []string{"funeral-expression-still", "funeral-light-plain"}, issue: "funeral-expression-still"},
+	"P15": {flags: []string{"funeral-beard-close"}, issue: "funeral-beard-close"},
+	"P16": {flags: []string{"funeral-beard-close", "funeral-expression-still", "funeral-light-plain"}, issue: "funeral-expression-still"},
 }
 
 // TestJudgeReplaysEverySample runs the judge on all 37 recorded judge
