@@ -167,16 +167,23 @@ type outcome struct {
 // cells are the read the judge turns out; T3.9 owns moving the lines, not
 // this table.
 //
-// The issue half of each row is the model's pinned choice id, not prose:
-// Judge asks one biggest_issue choice question whose options are the
-// criterion ids (judge.go's request), and Issue's label is the option's
-// own wording from the occasion data (judge.go's read, which errors on a
-// choice outside the options). The recorder refuses a choice that is not
-// one of the request's option ids before it is ever stored
-// (systemone/recorder.go), so no model sentence can reach the label
-// field, and the label assertion can only fail when the id itself does. A
-// fresh recording therefore moves this table's issue ids as a stale
-// measurement, never as the service's wording arriving in a user's line.
+// The issue half of each row is the biggest issue Judge reports for that
+// sample, in the pinned choice id, not prose: Judge asks one
+// biggest_issue choice question whose options are the criterion ids
+// (judge.go's request), and Issue's label is the option's own wording
+// from the occasion data (judge.go's read, which errors on a choice
+// outside the options). The id is gated (judge.go's gateIssue): a choice
+// naming a criterion this look's flags do not hold is reported as none,
+// and none and cant-tell pass through whatever the flags say. At
+// readingAt the two coincide on all 37 recordings - every recorded choice
+// names a criterion the 0.5 line does flag, or is none - so T3.11's gate
+// moved no row of this table, and the ids below stay the model's own
+// pinned choices. The recorder refuses a choice that is not one of the
+// request's option ids before it is ever stored (systemone/recorder.go),
+// so no model sentence can reach the label field, and the label assertion
+// can only fail when the id itself does. A fresh recording therefore moves
+// this table's issue ids as a stale measurement, never as the service's
+// wording arriving in a user's line.
 var expected = map[string]outcome{
 	// date
 	"V01": {flags: []string{"date-beard-even"}, issue: "date-beard-even"},
@@ -594,6 +601,269 @@ func TestJudgeThresholds(t *testing.T) {
 			t.Fatalf("error %v, want it to name no-such-criterion", err)
 		}
 	})
+}
+
+// TestJudgeIssueGatedOnTheFlags is the biggest issue's gate in the three
+// shapes it has to get right, each on its own lines of the two-criterion
+// occasion, and named in the report:
+//
+//   - a choice naming a criterion this look does not flag becomes the
+//     occasion's own none (the misattribution the re-recorded corpus hits
+//     on the interview sample);
+//   - a choice naming a criterion this look does flag survives, label and
+//     all, which is what four of the five demo stories already are;
+//   - the two options that name no criterion - cant-tell and none -
+//     survive on a look with no flags at all, because the gate suppresses
+//     a misattributed criterion and never the model's uncertainty.
+//
+// A suppression is not an error: every case here judges clean.
+func TestJudgeIssueGatedOnTheFlags(t *testing.T) {
+	t.Parallel()
+	occ := testOccasion()
+	photo := systemone.Image{ContentType: "image/jpeg", Bytes: []byte{0xff, 0xd8, 0xff, 0xe0}}
+
+	for _, tc := range []struct {
+		name       string
+		nouls      map[string]float64
+		choice     string
+		flags      []string
+		issue      string
+		label      string
+		suppressed bool
+	}{
+		{
+			// a flags, b reads met: the choice names b, which this
+			// look does not flag. Neither the empty nor the
+			// half-full flag list matters here - the choice
+			// contradicts the flags either way.
+			name:   "a criterion the flags do not hold becomes none",
+			nouls:  map[string]float64{"a": 0.1, "b": 0.9},
+			choice: "b", flags: []string{"a"}, issue: "none", label: "none",
+			suppressed: true,
+		},
+		{
+			// The same on a look with nothing flagged, the demo
+			// story's shape: nothing to single out, so nothing is
+			// singled out.
+			name:   "a criterion the look flags nothing of becomes none",
+			nouls:  map[string]float64{"a": 0.9, "b": 0.9},
+			choice: "b", flags: nil, issue: "none", label: "none",
+			suppressed: true,
+		},
+		{
+			name:   "a criterion the flags do hold survives",
+			nouls:  map[string]float64{"a": 0.1, "b": 0.9},
+			choice: "a", flags: []string{"a"}, issue: "a", label: "the a",
+		},
+		{
+			name:   "one of several flags survives in its own wording",
+			nouls:  map[string]float64{"a": 0.1, "b": 0.1},
+			choice: "b", flags: []string{"a", "b"}, issue: "b", label: "the b",
+		},
+		{
+			// judge_test.go's existing pin, restated beside the gate:
+			// a refusal to pick is not a claim about a criterion, so
+			// the flags being empty does not touch it.
+			name:   "can't tell survives a look with no flags",
+			nouls:  map[string]float64{"a": 0.9, "b": 0.9},
+			choice: "cant-tell", flags: nil, issue: "cant-tell", label: "can't tell",
+		},
+		{
+			name:   "none survives a look with no flags",
+			nouls:  map[string]float64{"a": 0.9, "b": 0.9},
+			choice: "none", flags: nil, issue: "none", label: "none",
+		},
+		{
+			name:   "none survives a look that does flag",
+			nouls:  map[string]float64{"a": 0.1, "b": 0.1},
+			choice: "none", flags: []string{"a", "b"}, issue: "none", label: "none",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client := &stubClient{resp: noulAnswers(tc.nouls, tc.choice)}
+			got, err := Judge(context.Background(), client, photo, occ, Thresholds{Met: readingAt})
+			if err != nil {
+				t.Fatalf("judge: %v", err)
+			}
+			if ids := flagIDs(got); !slices.Equal(ids, tc.flags) {
+				t.Fatalf("flags %v, want %v", ids, tc.flags)
+			}
+			if got.Issue.ID != tc.issue {
+				t.Errorf("issue %q, want %q (the flags hold %v, the choice named %q)",
+					got.Issue.ID, tc.issue, tc.flags, tc.choice)
+			}
+			if got.Issue.Label != tc.label {
+				t.Errorf("issue label %q, want the occasion's own %q", got.Issue.Label, tc.label)
+			}
+			// The suppressed rows must not read back as the model's
+			// choice: the whole point is that a misattributed
+			// criterion never reaches the app.
+			if tc.suppressed && got.Issue.ID == tc.choice {
+				t.Errorf("the choice %q passed through unconditioned", tc.choice)
+			}
+		})
+	}
+}
+
+// TestJudgeGatesTheRecordedInterviewIssue is the gate on the recording
+// that turned the defect red: testdata/clef/judge-V09-interview.json, the
+// interview sample behind sample-interview. Its biggest_issue choice is
+// interview-beard-short, and the beard's own reading 0.2175 sits above its
+// shipped line 0.18815, so a look read at a line every criterion clears
+// flags nothing and the choice names a criterion none of the flags hold.
+// Through the pipeline that is none; on the recording it stays
+// interview-beard-short, because the recordings are evidence and this task
+// edits none of them.
+//
+// The two thresholds are the proof the gate reads the flags and not the
+// file: the same recording, the same choice, survives at a line that does
+// flag the beard and is suppressed at one that does not. The shipped lines
+// read this look flagless; internal/server/samples_test.go's clause (d) is
+// where the real Judge runs over it at those lines.
+func TestJudgeGatesTheRecordedInterviewIssue(t *testing.T) {
+	t.Parallel()
+	clefDir := filepath.Join(repoRoot(t), "testdata", "clef")
+	replay := openRecordings(t)
+	occasions := loadOccasions(t)
+	occ := occasions["interview"]
+	s := sample(t, clefDir, filepath.Join(clefDir, "judge-V09-interview.json"), occasions)
+
+	recorded, err := replay.Reply(s.exchange)
+	if err != nil {
+		t.Fatalf("reply: %v", err)
+	}
+	// The raw choice, straight out of the recording: no threshold reads it.
+	if raw := recordedChoice(t, recorded); raw != "interview-beard-short" {
+		t.Fatalf("the recording chose %q, want the choice the defect rode on", raw)
+	}
+
+	// A line every criterion on this look clears, so the look flags
+	// nothing - the shipped lines' shape for this sample. The beard's
+	// reading is the lowest on it at 0.2175, so 0.2 leaves every criterion
+	// met and no flag for the choice to name.
+	got, err := Judge(context.Background(), replay, s.photo, occ, Thresholds{Met: 0.2})
+	if err != nil {
+		t.Fatalf("judge: %v", err)
+	}
+	if n := len(got.Flags); n != 0 {
+		t.Fatalf("flags %v, want a look with nothing flagged", flagIDs(got))
+	}
+	if got.Issue.ID != "none" {
+		t.Errorf("issue %q through the pipeline, want none: the recording's choice names a criterion the flags do not hold",
+			got.Issue.ID)
+	}
+	if got.Issue.Label != issueLabel(t, occ, "none") {
+		t.Errorf("issue label %q is not the occasion's own wording for none", got.Issue.Label)
+	}
+
+	// At readingAt the beard does flag, and the very same choice is the
+	// look's own honest issue: the gate kept it.
+	flagged, err := Judge(context.Background(), replay, s.photo, occ, Thresholds{Met: readingAt})
+	if err != nil {
+		t.Fatalf("judge: %v", err)
+	}
+	if ids := flagIDs(flagged); !slices.Equal(ids, []string{"interview-collar-buttoned", "interview-beard-short"}) {
+		t.Fatalf("flags %v, want the collar and the beard at %v", ids, readingAt)
+	}
+	if flagged.Issue.ID != "interview-beard-short" {
+		t.Errorf("issue %q, want the choice kept: it names a criterion this look flags", flagged.Issue.ID)
+	}
+	if flagged.Issue.Label != issueLabel(t, occ, "interview-beard-short") {
+		t.Errorf("issue label %q is not the occasion's own wording", flagged.Issue.Label)
+	}
+}
+
+// TestJudgeGateRefusesAnOccasionWithNoNoneOption closes the gate's one
+// loose end. A suppressed choice is reported as the occasion's own none,
+// id and label taken from its option list, never composed here - so an
+// occasion whose options carried no none has nothing honest to report, and
+// the judge says so instead of inventing a string no occasion's wording
+// carries or quietly keeping the misattribution. The loader guarantees
+// every occasion that loads has its none (domain.load.go's
+// validateBiggest), so no real dress code reaches this; the rule is what
+// would happen if one did.
+func TestJudgeGateRefusesAnOccasionWithNoNoneOption(t *testing.T) {
+	t.Parallel()
+	photo := systemone.Image{ContentType: "image/jpeg", Bytes: []byte{0xff, 0xd8, 0xff, 0xe0}}
+	occ := testOccasion()
+	withoutNone := *occ
+	withoutNone.BiggestIssue = domain.BiggestIssue{
+		Question: occ.BiggestIssue.Question,
+		Options: []domain.IssueOption{
+			{ID: "a", Label: "the a"},
+			{ID: "b", Label: "the b"},
+			{ID: "cant-tell", Label: "can't tell"},
+		},
+	}
+
+	t.Run("a choice that needs suppressing is an error", func(t *testing.T) {
+		client := &stubClient{resp: noulAnswers(map[string]float64{"a": 0.9, "b": 0.9}, "b")}
+		_, err := Judge(context.Background(), client, photo, &withoutNone, Thresholds{Met: readingAt})
+		if err == nil || !strings.Contains(err.Error(), `"none"`) {
+			t.Fatalf("error %v, want it to name the none option the occasion does not carry", err)
+		}
+	})
+
+	t.Run("a choice that needs no suppression still reads", func(t *testing.T) {
+		// The refusal is about the fallback, not about the occasion's
+		// shape: a flagged criterion and can't tell are both reported
+		// straight from this occasion's own options.
+		client := &stubClient{resp: noulAnswers(map[string]float64{"a": 0.1, "b": 0.9}, "a")}
+		got, err := Judge(context.Background(), client, photo, &withoutNone, Thresholds{Met: readingAt})
+		if err != nil {
+			t.Fatalf("judge: %v", err)
+		}
+		if got.Issue.ID != "a" || got.Issue.Label != "the a" {
+			t.Errorf("issue %+v, want the flagged criterion kept", got.Issue)
+		}
+		tell := &stubClient{resp: noulAnswers(map[string]float64{"a": 0.9, "b": 0.9}, "cant-tell")}
+		again, err := Judge(context.Background(), tell, photo, &withoutNone, Thresholds{Met: readingAt})
+		if err != nil {
+			t.Fatalf("judge: %v", err)
+		}
+		if again.Issue.ID != "cant-tell" {
+			t.Errorf("issue %q, want can't tell kept on a look with no flags", again.Issue.ID)
+		}
+	})
+}
+
+// recordedChoice is the biggest_issue choice a recording answered, read
+// out of its own response body: what the model said, before any line or
+// any gate. The answer is looked for at the two nestings a recording
+// carries it at, the bare result and the result inside the HTTP body, so
+// this reads the file as stored rather than through the seam.
+func recordedChoice(t *testing.T, rec systemone.Recording) string {
+	t.Helper()
+	var env struct {
+		Result json.RawMessage `json:"result"`
+		Body   struct {
+			Result json.RawMessage `json:"result"`
+		} `json:"body"`
+	}
+	if err := json.Unmarshal(rec.Response, &env); err != nil {
+		t.Fatalf("recorded response: %v", err)
+	}
+	raw := env.Result
+	if len(raw) == 0 {
+		raw = env.Body.Result
+	}
+	var result struct {
+		Answers map[string]struct {
+			Type   systemone.Kind `json:"type"`
+			Choice string         `json:"choice"`
+		} `json:"answers"`
+	}
+	if err := json.Unmarshal(raw, &result); err != nil || len(result.Answers) == 0 {
+		t.Fatalf("recorded response carries no answers: %v", err)
+	}
+	one, ok := result.Answers[biggestIssueID]
+	if !ok {
+		t.Fatal("the recording answers no biggest_issue")
+	}
+	if one.Type != systemone.TypeChoice || one.Choice == "" {
+		t.Fatalf("the recorded biggest issue is %q, not a choice", one.Type)
+	}
+	return one.Choice
 }
 
 func TestJudgeRefusals(t *testing.T) {

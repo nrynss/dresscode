@@ -718,8 +718,10 @@ func TestSamplesNeedTheLookRoutes(t *testing.T) {
 // or the dataset it names, or derived by a rule the file states and this
 // test re-executes: the miss list against the evaluation ground truth AND
 // against what the shipped judge lines read out of the recorded Clef
-// answer, the biggest issue against that same recording, the runner-up
-// against the rule the source states, the shown render against the YouCam
+// answer, the biggest issue against the real pipeline read of that same
+// recording at the shipped lines - the gated issue, never the raw choice
+// the recording carries (judge.go's gateIssue) - the runner-up against the
+// rule the source states, the shown render against the YouCam
 // flow that made it (including the photo it uploaded) AND against the
 // recorded check that showed it - the occasion it was read for, the
 // original it read, the criterion it was asked about, the model it ran on,
@@ -744,6 +746,14 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 	settings := testSettings()
 	lines := settings.Judge
 	checkLines := settings.Check
+	// The Clef recordings, replayed as the seam the judge calls. Clause
+	// (d) runs the real pipeline.Judge over a story's own recording, so
+	// the test holds the gate to the shipped rule instead of re-stating
+	// it here.
+	replay, err := systemone.Open(filepath.Join(root, "testdata", "clef"))
+	if err != nil {
+		t.Fatalf("open testdata/clef: %v", err)
+	}
 	misses := groundTruthMisses(t, root)
 	youcamResults := youcamResultFiles(t, root)
 	checks := recordedChecks(t, root)
@@ -798,9 +808,24 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 				sid, read, wantMiss)
 		}
 
-		// (d) The biggest issue is that recording's own choice.
-		if got := recordedIssue(t, root, dec.Variant, dec.Occasion); got != dec.Judge.Issue {
-			t.Fatalf("%s: issue %q, the recording chose %q", sid, dec.Judge.Issue, got)
+		// (d) The biggest issue is the gated issue: the real pipeline's
+		// read of that same recording at the shipped lines, which keeps
+		// the model's choice only where this look's own flags hold it
+		// (clause (c)'s flags). The raw choice travels in the failure so a
+		// reader sees both sides of a suppression - the recording says what
+		// the model said, and the story is held to what the flags support.
+		// Comparing the raw choice here would pin the incoherence, not the
+		// story: sample-interview's recording answers a criterion its own
+		// readings leave unflagged, and the app has nothing to offer for
+		// it.
+		told, gated := gatedIssueOfRecording(t, replay, root, dec.Variant, dec.Occasion, lines, occ)
+		if dec.Judge.Issue != gated.ID {
+			t.Fatalf("%s: issue %q, the pipeline reads %q from this recording at the shipped lines (the recording itself chose %q)",
+				sid, dec.Judge.Issue, gated.ID, told)
+		}
+		if gated.Label == "" || gated.Label != issueOf(occ, dec.Judge.Issue).Label {
+			t.Fatalf("%s: the pipeline's issue label %q is not the occasion's own wording for %q",
+				sid, gated.Label, dec.Judge.Issue)
 		}
 
 		// (e) The runner-up. Three stories state one rule and this test
@@ -2047,10 +2072,18 @@ func lineFor(j config.Judge, criterionID string) float64 {
 }
 
 // recording is the shape both the Clef and the YouCam recordings share: a
-// request and a response, as recorded.
+// request and a response, as recorded. The request's own images are read
+// for the judge recordings, whose photo is named by file rather than
+// inlined.
 type recording struct {
 	Request struct {
 		File string `json:"file"`
+		Body struct {
+			Images []struct {
+				ContentType string `json:"content_type"`
+				File        string `json:"file"`
+			} `json:"images"`
+		} `json:"body"`
 	} `json:"request"`
 	Response struct {
 		File string          `json:"file"`
@@ -2141,7 +2174,10 @@ func recordedJudgeAnswers(t *testing.T, root, variant, occasion string) map[stri
 	return out
 }
 
-// recordedIssue is the biggest issue the same recording chose.
+// recordedIssue is the biggest issue the same recording chose: the model's
+// raw word for it, before any line and before judge.go's gate. Clause (d)
+// reports it beside the gated one, so a reader can see which of the two the
+// story was held to.
 func recordedIssue(t *testing.T, root, variant, occasion string) string {
 	t.Helper()
 	rec := readRecording(t, root, "clef/judge-"+variant+"-"+occasion)
@@ -2156,6 +2192,52 @@ func recordedIssue(t *testing.T, root, variant, occasion string) string {
 		t.Fatal(err)
 	}
 	return one.Choice
+}
+
+// gatedIssueOfRecording runs the real pipeline.Judge over one variant's own
+// judge recording, at the shipped lines and on the picture that recording
+// sent, and returns the choice the recording carries beside the issue the
+// pipeline reports. The two are one value on a look whose flags hold the
+// choice, and they part on a misattribution: judge.go's gate keeps a choice
+// naming a criterion in this look's flags, keeps the occasion's own none and
+// can't tell whatever the flags say, and turns a choice naming a criterion
+// the flags do not hold into none.
+//
+// This is clause (d) reading the story through the shipped rule rather than
+// restating the rule in the test: pass the choice through unconditioned and
+// sample-interview fails here, because the file says none and the pipeline
+// would say the beard. Nothing in this file re-implements the gate, and
+// nothing in testdata moves - the recordings keep the raw choice, which is
+// what this returns first.
+func gatedIssueOfRecording(t *testing.T, replay *systemone.Replay, root, variant, occasion string, lines config.Judge, occ *domain.Occasion) (string, pipeline.Issue) {
+	t.Helper()
+	chosen := recordedIssue(t, root, variant, occasion)
+	photo := recordedJudgePhoto(t, root, variant, occasion)
+	got, err := pipeline.Judge(context.Background(), replay, photo, occ, thresholdsFor(occ, lines))
+	if err != nil {
+		t.Fatalf("%s: the judge over the recording: %v", variant, err)
+	}
+	return chosen, got.Issue
+}
+
+// recordedJudgePhoto is the picture one judge recording sent, read from the
+// file its own request names, relative to the recording directory. Those
+// bytes are what the replay matches the request by, so the judge's rebuilt
+// request finds this recording and no other: the clause reads the story back
+// through the very call that made it.
+func recordedJudgePhoto(t *testing.T, root, variant, occasion string) systemone.Image {
+	t.Helper()
+	rec := readRecording(t, root, "clef/judge-"+variant+"-"+occasion)
+	images := rec.Request.Body.Images
+	if len(images) != 1 || images[0].File == "" || images[0].ContentType == "" {
+		t.Fatalf("judge-%s-%s carries %d request images, want the one photo the judge sent",
+			variant, occasion, len(images))
+	}
+	data, err := os.ReadFile(filepath.Join(root, "testdata", "clef", filepath.FromSlash(images[0].File)))
+	if err != nil {
+		t.Fatalf("judge-%s-%s: %v", variant, occasion, err)
+	}
+	return systemone.Image{ContentType: images[0].ContentType, Bytes: data}
 }
 
 // recCheck is one recorded render check read out of a Clef check
