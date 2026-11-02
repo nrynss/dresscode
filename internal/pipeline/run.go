@@ -463,7 +463,14 @@ func Run(ctx context.Context, deps Deps, req Request, progress func(job.Progress
 	emit(progress, stagePick, pick)
 
 	look := Look{
-		Flags:      j.Flags,
+		Flags: j.Flags,
+		// The judge's gated issue, not the model's raw choice: where a
+		// look's flags hold nothing the choice named, this is the
+		// occasion's own none and the service actually said something
+		// else (judge.go's gateIssue). A suppression is not an error -
+		// the flags are the look's truth and the choice is a hint - and
+		// nothing downstream re-reads the recording to find out which
+		// of the two this was.
 		Issue:      j.Issue,
 		FixID:      pick.Fix,
 		RunnerUpID: pick.RunnerUp,

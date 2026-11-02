@@ -22,6 +22,15 @@ import (
 // the id the recordings carry.
 const biggestIssueID = "biggest_issue"
 
+// cantTellID is the id of the biggest-issue option that says the model
+// will not pick. It is the id the occasions' data already uses for it, the
+// same one the loader reserves beside none (domain.load.go), and every
+// occasion's biggest-issue options carry it: validateBiggest wants the
+// criteria plus none and can't tell, and refuses any other set. The id is
+// hyphenated because the id is a wire value; the label is the data's own
+// words, "can't tell".
+const cantTellID = "cant-tell"
+
 // judgeState is the whole state of a judge request: the occasion's id and
 // its name. The request is built from this struct, so nothing else can
 // reach Clef in the state: a YouCam analysis, a score, or a user
@@ -84,6 +93,11 @@ func (t Thresholds) forCriterion(id string) float64 {
 // the occasion's own wording. ID is one of the occasion's criterion ids,
 // or "none", or "cant-tell". The label is the option's label from the
 // data, never composed.
+//
+// A criterion id here is a criterion this look's own Flags hold: read
+// gates the model's choice on those flags, the rule gateIssue states. An
+// ID naming a criterion the flags do not carry never arrives, and on a
+// look with nothing flagged Issue.ID is the occasion's own none.
 type Issue struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
@@ -110,7 +124,9 @@ type Judgement struct {
 // (docs/clef.md), so an empty photo is refused before any call.
 //
 // The flags come back in the occasion's criteria order. Their wording is
-// the occasion's, so the app renders a suggestion and never a score.
+// the occasion's, so the app renders a suggestion and never a score. The
+// biggest issue is the model's choice gated on those flags: gateIssue
+// states the rule and why a suppressed choice is not an error.
 func Judge(ctx context.Context, client systemone.SystemOne, photo systemone.Image, occ *domain.Occasion, th Thresholds) (Judgement, error) {
 	if occ == nil {
 		return Judgement{}, errors.New("judge: no occasion")
@@ -176,7 +192,8 @@ func request(photo systemone.Image, occ *domain.Occasion) (systemone.Request, er
 // read turns the answers into a judgement. A criterion flags when its
 // yes-probability sits under its threshold; the flagged criterion is
 // carried whole, so its suggestion travels with it. The biggest issue is
-// carried as the occasion words the chosen option.
+// the model's own choice, gated on those flags by gateIssue: what reaches
+// the app is the choice only where this look's flags support it.
 func read(occ *domain.Occasion, resp systemone.Response, th Thresholds) (Judgement, error) {
 	var judgement Judgement
 	for _, c := range occ.Criteria {
@@ -200,9 +217,93 @@ func read(occ *domain.Occasion, resp systemone.Response, th Thresholds) (Judgeme
 	}
 	for _, o := range occ.BiggestIssue.Options {
 		if o.ID == answer.Choice {
-			judgement.Issue = Issue{ID: o.ID, Label: o.Label}
+			// The read site, and the one thing a later reader must not
+			// infer from it: where this line hands back none or
+			// can't tell in place of a criterion, the service did NOT
+			// say so - it named a criterion this look does not flag, and
+			// gateIssue suppressed that misattribution. The flags are the
+			// truth and the choice is a hint; a suppression is not an
+			// error, and nothing here records which one it was.
+			gated, err := gateIssue(occ, judgement.Flags, o)
+			if err != nil {
+				return Judgement{}, err
+			}
+			judgement.Issue = gated
 			return judgement, nil
 		}
 	}
 	return Judgement{}, fmt.Errorf("judge: the biggest issue %q is not one of this occasion's options", answer.Choice)
+}
+
+// gateIssue is the biggest issue's gate: the model's choice is reported
+// when this look's flags support it, and suppressed when they do not.
+//
+// It keeps the choice in two cases. The first is a criterion the look
+// actually flags: the app has a suggestion to hang on it, and the pick
+// downstream reads the same flags. The second is an option that names no
+// criterion at all, which on this data means the occasion's own none and
+// cant-tell (domain.load.go's validateBiggest asks for the criteria plus
+// those two and refuses any other set). Neither is a claim about a
+// criterion, so neither can contradict the flags: a model that will not
+// pick has said so, and that says something the app should show. The gate
+// suppresses a misattributed criterion, never uncertainty.
+//
+// It suppresses in the case the corpus actually hits: a choice naming a
+// specific criterion this look does not flag. A user whose look meets the
+// dress code would otherwise be told its beard is the biggest issue, with
+// nothing flagged and no fix to offer for it - the re-recorded
+// testdata/clef/judge-V09-interview.json answers interview-beard-short
+// while that criterion's own reading sits above its line, so the flags are
+// empty and the choice names a criterion none of them is. The choice and
+// the flags are two reads of one probability set, and the flags are the
+// one the thresholds set and the pick and the suggestions follow; the
+// choice that contradicts them is the misattribution. So it is reported
+// as the occasion's own none, which is what the user is being told: this
+// look has nothing to single out.
+//
+// The none is the occasion's own option, id and label together, never a
+// string composed here - the same way pick.go takes its decline label
+// from the data (noneLabel). An occasion whose options carried no none is
+// an error rather than a silent fallback: with no none to report, keeping
+// the misattributed criterion would tell the user something the flags
+// refuse, and the loader guarantees none is there, so this cannot be
+// reached by any occasion that loads.
+func gateIssue(occ *domain.Occasion, flags []domain.Criterion, chosen domain.IssueOption) (Issue, error) {
+	if !namesCriterion(occ, chosen.ID) || namesFlagged(flags, chosen.ID) {
+		return Issue{ID: chosen.ID, Label: chosen.Label}, nil
+	}
+	for _, o := range occ.BiggestIssue.Options {
+		if o.ID == noneID {
+			return Issue{ID: o.ID, Label: o.Label}, nil
+		}
+	}
+	return Issue{}, fmt.Errorf("judge: occasion %q has no %q option to report a suppressed issue with", occ.ID, noneID)
+}
+
+// namesCriterion reports whether an option id is one of the occasion's
+// criteria. The two options that are not - none and can't tell - are the
+// ones the gate lets through whatever the flags say: they claim nothing
+// about a criterion, so they cannot misattribute one. cantTellID is named
+// here because the rule is about the criterion options, not about the two
+// ids the loader reserves.
+func namesCriterion(occ *domain.Occasion, id string) bool {
+	if id == noneID || id == cantTellID {
+		return false
+	}
+	for _, c := range occ.Criteria {
+		if c.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// namesFlagged reports whether id is among the criteria this look flags.
+func namesFlagged(flags []domain.Criterion, id string) bool {
+	for _, f := range flags {
+		if f.ID == id {
+			return true
+		}
+	}
+	return false
 }
