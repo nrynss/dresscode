@@ -45,7 +45,7 @@ requires:   T6.1, T3.9
 fixture-ok: yes
 size:       S · mid
 owns:       README.md
-status:     in-review
+status:     done
 ```
 First screen: what Dresscode does, the YouCam APIs it uses and why each, the public URL, and a **"For judges: start here"** table (the URL, the samples, the video, the evaluation numbers). Then setup from a fresh clone, keys by name, the architecture in one picture, Keel, Chaaya and Lambo named as dependencies, and the licence.
 
