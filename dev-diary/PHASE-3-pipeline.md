@@ -550,3 +550,30 @@ Notes:
 - Mutation ledger - two mutations, each applied, run red, restored: (a) deleting the refusal → `TestTheLoaderRefusesBrokenPhrases/a_phrase_of_pure_placeholders_is_refused` fails "expected an error" (the load succeeds), the valid-direction subtest stays green; (b) making `LookLine`'s render resolve embed the referenced option's own phrase → the pin fails with `line "gilded jhumkas"` - a mutation invisible on the shipped table, where the colour carries no phrase, which is exactly the gap the synthetic set closes.
 - Surprised twice: `TestTheLoaderRefusesBrokenPhrases` lives in `phrases_test.go`, not `load_test.go`; and docs/occasions.md's phrase-table paragraph lists the loader's refusals without the new one, and states no no-recursion rule - that file is outside this block's owns, left for whoever touches the docs next.
 - Gate: `./tools/check.sh` exit 0; the Go stages re-run uncached under `-race ./... -count=1`, all ok (domain 1.5 s, pipeline 74.8 s, eval 226.6 s, server 207.5 s); svelte-check 0 errors, app unit and 101 accessibility tests green. Zero live calls, zero units, no new dependency.
+
+---
+
+### T3.11: The biggest issue is only an issue the app flags
+```yaml
+id:         T3.11
+title:      Judge reports the model's choice only when it names a flagged criterion
+owns:       internal/pipeline/, internal/server/samples_test.go
+requires:   T3.9e
+status:     pending
+```
+T3.9e's fresh corpus turned a latent defect into a red gate. `internal/pipeline/judge.go` copies Clef's `biggest_issue` choice straight into `Judgement.Issue`, unconditioned on `Judgement.Flags`, and `internal/server/samples_test.go` clause (d) pins the demo stories to that raw choice. On the re-recorded corpus the interview story — the product's *compliant look*, ground truth `miss: []`, reading zero flags at the shipped lines — answers `interview-beard-short` at 0.6416 while that criterion's own noul 0.2175 sits **above** its chosen override 0.18815. A user whose look meets the dress code would be told its beard is the biggest issue, with nothing flagged and no fix to offer. The T0.6 corpus hid this only because that recording happened to answer `none`.
+
+Measured blast radius, which is why the fix is small: four of the five demo stories already name a flagged criterion (`date-lip-clear`, `family-earring-festive`, `festival-hair`, `funeral-garment-dark`), so gating changes exactly one story — the one already written as `none`. A rejected alternative: `V12` is a second zero-flag interview variant whose recording does answer `none`, so the demo could be re-told on a different sample person with no behaviour change — refused, because it hides a defect real users hit. A second rejected alternative: re-quote the cache to the raw choice, which would encode the incoherence as intended behaviour.
+
+**Ruling (the user's, 2026-11-02, taken from three options and named here so the implementer does not reopen it): gate the issue on the flags.**
+
+**Done when:**
+- `Judge` reports `Issue` only when the model's choice names a criterion in this look's own `Flags`; otherwise `Issue` is `none`, and a choice naming an unflagged criterion is **not** an error — the app reads the flags as the truth and the choice as a hint. Where the suppression is visible in a log or a comment at the read site, so the next reader knows the service said something else.
+- `samples_test.go` clause (d) compares the cached story's `issue` against the **gated** issue, not the raw recording choice — and a mutation proves it: a story whose raw choice names an unflagged criterion must read `none` through the pipeline while the recording still says otherwise. Clause (d) must keep biting on a story that claims an issue the flags do not support.
+- All five demo stories pass unedited, `judge_test.go`'s expectations move only where the gate genuinely changes a result, and every such row is named in the report with the flag set that justifies it.
+- The gate is green, which is what unblocks landing T3.9e.
+- `internal/pipeline/check_test.go`'s and `judge_test.go`'s existing labels stay the occasion's own wording — T3.9e already ruled that the label field cannot carry a model sentence.
+
+Notes:
+
+- Lands in T3.9e's branch, and the reason is recorded in that section: the fix's own proof is `testdata/clef/judge-V09-interview.json`, which exists only there.
