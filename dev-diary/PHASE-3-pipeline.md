@@ -516,3 +516,17 @@ Notes:
 - One item outside `owns`, landed under an orchestrator grant (T4.4's pattern: scoped, named, recorded): `internal/server/looks_test.go` carried two accommodations that existed only because the pipeline could not derive the fixture English — `renames`' `fixtureWords → storyWords` mapping and the smile-name rename in `TestTheSmileStoryShopsASimulation`. The grant deleted exactly those — the two rename entries, their constants and comment, and the two header bullets that described the gap as open — test-only, no server code. One corner the first blast-radius read got wrong, and the grant's letter held anyway: the samples tests reuse the shared `renames`, but the sample rig does not run the pipeline — it composes its own words through `samples.go`'s `wordsOf`, which the grant keeps as-is. Those two tests now carry their own local bridge (`r["gold jhumkas"] = "jhumkas, gold"`, commented), the sample path's accommodation until `wordsOf` adopts `pipeline.LookLine` — proposed, not taken, and the follow-on's landing spot. The two `storyWords` references in `samples_test.go` (pins of `wordsOf`'s own output, not the pipeline bridge) keep the same value as literals. After the grant: the pipeline-path comparisons need no bridge — the served bodies equal the fixtures, which is the decision's whole point.
 - Surprised three times. The server's sample rig turned out to hold a fourth composition of the same line (`wordsOf`) — the task named three sites, the code had four, and the fourth is not this task's to fix. The `omitempty` contract means a blank display field is indistinguishable from an absent one, so "refuse a blank name" was unimplementable as written and the loader refuses the one malformed form instead: a display that names nothing. And the nested-brace mutation survived its first proof — a template with braces inside a placeholder also fails the stray-close branch, so an "an error" assertion could not see the difference; pinning each refusal to its own named reason fixed it, which is exactly why the ledger runs every assertion and not just the happy path.
 - Zero live calls, zero units, no new dependency, `testdata/api/` untouched, recordings untouched.
+
+---
+
+### T3.10b: The phrase-table hardenings
+```yaml
+requires:   T3.10
+fixture-ok: no
+size:       XS · light
+owns:       internal/domain/
+status:     claimed:glm-5.3-flash
+```
+The user accepted the shipped wording as is (2026-11-03); the two hardenings T3.10's review queued ride alone. (a) The loader refuses a phrase template with no literal text — pure placeholders load today and render `""` if all placeholders vanish, which `LookLine` would emit as an empty segment. (b) A synthetic pin that placeholders never recurse — a referenced attribute that itself carries a phrase renders its label, not its phrase (the rule is stated in code and docs, untested because the shipped table's only reference carries no phrase).
+
+**Done when:** both guards live and mutation-proven (pure-placeholder refused by name; a phrase-on-phrase data set renders labels, red by mutation when the recursion guard is broken); the gate is green; no wording bytes changed.
