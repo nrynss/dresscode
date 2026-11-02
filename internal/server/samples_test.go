@@ -1041,6 +1041,75 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 	}
 }
 
+// TestTheIssueClauseBitesOnAnIssueTheFlagsDoNotSupport is clause (d)'s
+// mutation proof, kept in the file so the bite does not depend on someone
+// editing a commit out of history. sample-interview is the witness, and the
+// three facts that make it one are read here rather than assumed: its own
+// recording chose interview-beard-short, the shipped lines flag nothing on
+// that look, and the real pipeline therefore reports the occasion's own
+// none - which is exactly what the cached story says, while the recording
+// still says otherwise.
+//
+// The last assertion is the mutation. Clause (d) is an equality against the
+// gated issue, so a story re-quoted onto the recording's raw choice - the
+// alternative the ruling refused, because it would encode the incoherence as
+// intended behaviour - fails it the moment the two values differ, and this
+// test refuses to let them quietly coincide. Pass the choice through
+// unconditioned in judge.go and the gated issue becomes the raw one, this
+// test names itself, and TestEveryCachedStoryIsWhatTheRecordingsSay fails
+// sample-interview beside it. Suppress the other way, a gate that swallowed
+// can't tell or a criterion the flags do hold, and internal/pipeline's
+// TestJudgeIssueGatedOnTheFlags and
+// TestJudgeGatesTheRecordedInterviewIssue name themselves.
+func TestTheIssueClauseBitesOnAnIssueTheFlagsDoNotSupport(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	sm := env.srv.samplesOf()
+	root := repoRoot(t)
+	lines := testSettings().Judge
+	replay, err := systemone.Open(filepath.Join(root, "testdata", "clef"))
+	if err != nil {
+		t.Fatalf("open testdata/clef: %v", err)
+	}
+
+	st := sm.byID["sample-interview"]
+	told, gated := gatedIssueOfRecording(t, replay, root, st.Variant, st.Occasion, lines, st.occ)
+
+	// The recording's raw choice, untouched: the gate does not edit
+	// evidence, and the file still says the beard.
+	if told != "interview-beard-short" {
+		t.Fatalf("the %s recording chose %q, want the choice the defect rode on", st.Variant, told)
+	}
+	// The premise: this look flags nothing at the shipped lines, so the
+	// choice names a criterion no flag holds. If a re-measured line ever
+	// flags the beard, this story stops being the witness and the test
+	// says so instead of passing on a vacuous pair.
+	answers := recordedJudgeAnswers(t, root, st.Variant, st.Occasion)
+	for _, c := range st.occ.Criteria {
+		if answers[c.ID] < lineFor(lines, c.ID) {
+			t.Fatalf("the shipped lines flag %s on the %s story, so this is no longer a flagless look", c.ID, st.Variant)
+		}
+	}
+	if gated.ID != "none" {
+		t.Fatalf("the pipeline reads %q through the gate, want none: the look holds no flag for %q", gated.ID, told)
+	}
+	if gated.Label != issueOf(st.occ, "none").Label {
+		t.Fatalf("the gated issue's label %q is not the occasion's own wording for none", gated.Label)
+	}
+	// The shipped story is the gated issue, not the recording's choice.
+	if st.Judge.Issue != gated.ID {
+		t.Fatalf("the cached story's issue is %q, the pipeline reads %q", st.Judge.Issue, gated.ID)
+	}
+	if st.Judge.Issue == told {
+		t.Fatalf("the cached story already carries the raw choice %q, so clause (d) has nothing to separate", told)
+	}
+	// The mutation, stated as the difference the clause compares on.
+	if told == gated.ID {
+		t.Fatal("clause (d) cannot bite: the raw choice and the gated issue coincide on the witness story")
+	}
+}
+
 // TestCachedRulesRefuseAnInventedStory is the other half of the honesty
 // proof: the mount refuses each way a story could drift from what was
 // recorded, so the cache cannot quietly grow a number no provider read.
