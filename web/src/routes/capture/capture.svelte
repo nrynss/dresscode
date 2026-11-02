@@ -204,6 +204,26 @@
     }
   }
 
+  /** The one forward action for the product drawer: a held photo completes
+   * the moment its fields are typed (the button says so without a second
+   * tap), a pasted link reads as its own product, and with neither the user
+   * is told what is missing. */
+  async function proceed(): Promise<void> {
+    const held = heldProduct;
+    if (held !== undefined) {
+      if (!productFieldsReady(productName, productKind)) return;
+      heldProduct = undefined;
+      if (typeof held.photo === "string") void useHeldUpload(held.photo);
+      else void bring(held.photo, "product");
+      return;
+    }
+    if (link.trim() !== "") {
+      void addLink();
+      return;
+    }
+    problem = { code: "capture", message: "Choose a product photo or paste a link first." };
+  }
+
   async function addLink(): Promise<void> {
     const url = link.trim();
     if (url === "") {
@@ -437,14 +457,14 @@
     <form
       onsubmit={(event) => {
         event.preventDefault();
-        void addLink();
+        void proceed();
       }}
     >
       <label class="field">
         Link
         <input bind:value={link} autocomplete="off" />
       </label>
-      <button type="submit" disabled={busy}>Add the link</button>
+      <button type="submit" disabled={busy}>Proceed</button>
     </form>
     {#if savedProducts.length > 0}
       <ul>
