@@ -779,7 +779,7 @@ func TestJudgeGatesTheRecordedInterviewIssue(t *testing.T) {
 // occasion whose options carried no none has nothing honest to report, and
 // the judge says so instead of inventing a string no occasion's wording
 // carries or quietly keeping the misattribution. The loader guarantees
-// every occasion that loads has its none (domain.load.go's
+// every occasion that loads has its none (internal/domain/load.go's
 // validateBiggest), so no real dress code reaches this; the rule is what
 // would happen if one did.
 func TestJudgeGateRefusesAnOccasionWithNoNoneOption(t *testing.T) {

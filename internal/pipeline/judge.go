@@ -24,7 +24,7 @@ const biggestIssueID = "biggest_issue"
 
 // cantTellID is the id of the biggest-issue option that says the model
 // will not pick. It is the id the occasions' data already uses for it, the
-// same one the loader reserves beside none (domain.load.go), and every
+// same one the loader reserves beside none (internal/domain/load.go), and every
 // occasion's biggest-issue options carry it: validateBiggest wants the
 // criteria plus none and can't tell, and refuses any other set. The id is
 // hyphenated because the id is a wire value; the label is the data's own
@@ -242,7 +242,7 @@ func read(occ *domain.Occasion, resp systemone.Response, th Thresholds) (Judgeme
 // actually flags: the app has a suggestion to hang on it, and the pick
 // downstream reads the same flags. The second is an option that names no
 // criterion at all, which on this data means the occasion's own none and
-// cant-tell (domain.load.go's validateBiggest asks for the criteria plus
+// cant-tell (internal/domain/load.go's validateBiggest asks for the criteria plus
 // those two and refuses any other set). Neither is a claim about a
 // criterion, so neither can contradict the flags: a model that will not
 // pick has said so, and that says something the app should show. The gate
@@ -285,7 +285,10 @@ func gateIssue(occ *domain.Occasion, flags []domain.Criterion, chosen domain.Iss
 // ones the gate lets through whatever the flags say: they claim nothing
 // about a criterion, so they cannot misattribute one. cantTellID is named
 // here because the rule is about the criterion options, not about the two
-// ids the loader reserves.
+// ids the loader reserves. The reserved ids are tested before the criteria
+// are read rather than left to that reservation, because this id arrives
+// over the wire from the service and the guard is the boundary check, not a
+// restatement of the loader's.
 func namesCriterion(occ *domain.Occasion, id string) bool {
 	if id == noneID || id == cantTellID {
 		return false
