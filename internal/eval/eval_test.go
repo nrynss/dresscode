@@ -170,7 +170,9 @@ var wrongAtChosen = map[string]float64{
 
 // TestTheJudgeAnchors pins the judge read against docs/clef.md: the
 // sample count, the cell count, the 254-of-273 agreement at 0.5, the
-// nineteen anchor cells, and the biggest-issue count.
+// nineteen anchor cells, and the biggest issue in both labelled reads -
+// the service's raw choice (docs/clef.md's count, left unadjusted) and
+// the flag-gated read pipeline.Judge reports.
 func TestTheJudgeAnchors(t *testing.T) {
 	report := runOnce(t)
 	j := report.Judge
@@ -210,6 +212,16 @@ func TestTheJudgeAnchors(t *testing.T) {
 	}
 	if !reflect.DeepEqual(j.Issues.Missed, []string{"P09", "P11", "P15", "V01", "V02", "V07", "V09", "V15", "V17"}) {
 		t.Fatalf("the biggest issue missed %v, want the nine docs/clef.md names", j.Issues.Missed)
+	}
+	// The gated read, scored by the same rule over the same ground
+	// truth: what pipeline.Judge reports at the shipped settings, the
+	// read the app shows. It is carried beside the raw count above, not
+	// in place of it.
+	if j.GatedIssues.Named != 32 || j.GatedIssues.Of != 37 {
+		t.Fatalf("the flag-gated biggest issue named %d of %d, want 32 of 37", j.GatedIssues.Named, j.GatedIssues.Of)
+	}
+	if !reflect.DeepEqual(j.GatedIssues.Missed, []string{"P11", "V02", "V07", "V15", "V21"}) {
+		t.Fatalf("the flag-gated biggest issue missed %v, want the five the gate leaves unnamed", j.GatedIssues.Missed)
 	}
 }
 

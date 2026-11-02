@@ -64,8 +64,9 @@ var liveNeuronsPerMillion = map[string]int64{
 // against the same numbers the tagged sweep runs on. None of them is a
 // threshold: the lines the sweep measures with are read from the committed
 // settings file, and the pinned tests take them from the transcript that
-// records what that sweep was measured with - never from the settings file
-// of today, which is what a re-record moves.
+// records what that sweep was measured with - the lines the T0.6 corpus
+// was measured at, never the settings file the shipped tree carries, which
+// is what a re-record moves.
 
 // liveProbeCeiling covers the probe's two calls. liveSweepCeiling is
 // 8 cents, about four times the sweep's expected settle (~1,950 neurons,
@@ -216,32 +217,21 @@ func sortOffCells(cells []OffCell) {
 }
 
 // liveIssues counts the live biggest-issue answers that name one of the
-// variant's misses, or none when the variant misses nothing - the rule the
-// recorded report scores with.
+// variant's misses, or none when the variant misses nothing, by the one
+// rule the recorded report scores both its columns with
+// (judge.go's issueNamesAGroundTruthMiss).
 //
-// That rule is a copy, not a call: this mirrors internal/eval/judge.go
-// (the ground truth's shape for the biggest issue, counted into
-// report.Issues). The extraction that would remove the duplication is a
-// product-file edit and outside this task, so the copy stands. Read it as a
-// standing risk: an edit to judge.go's issue count that does not come here
-// leaves the live biggest-issue count scored by different rules than the
-// recorded one, and the 28/37 beside 31/37 line is where the difference
-// would show.
+// T3.11's review found this rule standing here as a copy, with a warning
+// that an edit to judge.go's issue count that did not come here would
+// leave the two biggest-issue counts scored by different rules. T3.13
+// retired the copy: the rule lives once in judge.go, and this file calls
+// it. The count itself is unchanged - the transcript's raw choice on the
+// live side, and the recorded side's, both scored by the ground truth's
+// shape.
 func liveIssues(reads []JudgeRead) int {
 	named := 0
 	for _, r := range reads {
-		yes := false
-		if len(r.Sample.Miss) == 0 {
-			yes = r.Issue == "none"
-		} else {
-			for _, miss := range r.Sample.Miss {
-				if r.Issue == miss {
-					yes = true
-					break
-				}
-			}
-		}
-		if yes {
+		if issueNamesAGroundTruthMiss(r.Sample.Miss, r.Issue) {
 			named++
 		}
 	}

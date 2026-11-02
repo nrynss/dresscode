@@ -14,15 +14,23 @@ import (
 
 // JudgeRead is one sample's recorded judge read: its photo (the
 // recording's own bytes), the raw probabilities the pipeline turned
-// into flags, and the biggest issue Clef named. The probabilities
+// into flags, and the biggest issue, read two ways. The probabilities
 // exist only here, in the evaluation; the pipeline never carries them
 // past the threshold.
+//
+// The two issue reads are the point (T3.13): Issue is the service's raw
+// choice, exactly as the recording carries it - Clef's quality. GatedIssue
+// is what pipeline.Judge reports for the same recording at the shipped
+// settings, its choice gated on the look's own flags - what a user is
+// told. Both are carried and neither replaces the other; the printed
+// report names each (JudgeReport.IssueLines).
 type JudgeRead struct {
 	Sample        Sample
 	Occasion      *domain.Occasion
 	Photo         systemone.Image
 	Probabilities map[string]float64
 	Issue         string
+	GatedIssue    string
 }
 
 // readJudgeSamples replays all 37 judge recordings through the real
@@ -73,6 +81,13 @@ func readJudgeSamples(clefDir string, replay *systemone.Replay, occasions map[st
 			return nil, fmt.Errorf("eval: %s: %w", rec.Exchange, err)
 		}
 		capture := &captureClient{inner: replay}
+		// The judgement this call returns is deliberately discarded: the
+		// call exists for its replay hit - the proof that judge builds the
+		// recorded probe request byte for byte - and for the raw answers
+		// captured beside it. Its gate ran at the 0.5 reading, which is
+		// not the gate the app ships, so its issue is not either read the
+		// report prints. The gated read runs at the shipped settings in
+		// evaluateJudge, where the chosen thresholds exist.
 		if _, err := pipeline.Judge(context.Background(), capture, photo, occ, pipeline.Thresholds{Met: readingAt}); err != nil {
 			return nil, fmt.Errorf("eval: %s: %w", rec.Exchange, err)
 		}
@@ -204,21 +219,44 @@ type OffCell struct {
 }
 
 // AppliedSample is one sample's flags at the chosen settings, read
-// through the real pipeline.Judge.
+// through the real pipeline.Judge, with that judgement's biggest issue
+// beside the service's raw choice for the same recording. Both travel
+// with the row so the printed report (and the doc that quotes it) names
+// which read each figure came from.
 type AppliedSample struct {
-	Sample   string   `json:"sample"`
-	Occasion string   `json:"occasion"`
-	Flags    []string `json:"flags"`
+	Sample     string   `json:"sample"`
+	Occasion   string   `json:"occasion"`
+	Flags      []string `json:"flags"`
+	Issue      string   `json:"issue"`
+	GatedIssue string   `json:"gated_issue"`
 }
 
-// IssueReport counts the biggest-issue choice against the ground
-// truth's shape: Clef is expected to name one of the variant's misses,
-// or none when the variant misses nothing. The choice steers the pick;
-// it is informational here, not a threshold.
+// IssueReport counts one read of the biggest issue against the ground
+// truth's shape: the read is expected to name one of the variant's
+// misses, or none when the variant misses nothing. The choice steers
+// the pick; it is informational here, not a threshold.
 type IssueReport struct {
 	Named  int      `json:"named"`
 	Of     int      `json:"of"`
 	Missed []string `json:"missed"`
+}
+
+// issueNamesAGroundTruthMiss is the ground truth's shape for the
+// biggest issue, the one scoring rule both reads go through: named when
+// the read is one of the variant's misses, or none when the variant
+// misses nothing. One rule, two callers - the service's raw choice and
+// the flag-gated one pipeline.Judge reports - so the two columns of the
+// report are always scored the same way.
+func issueNamesAGroundTruthMiss(miss []string, issue string) bool {
+	if len(miss) == 0 {
+		return issue == "none"
+	}
+	for _, m := range miss {
+		if issue == m {
+			return true
+		}
+	}
+	return false
 }
 
 // JudgeReport is the judging evaluation.
@@ -239,7 +277,18 @@ type JudgeReport struct {
 	ChosenTotal  int             `json:"chosen_total"`
 	Applied      []AppliedSample `json:"applied"`
 	Wrong        []OffCell       `json:"wrong"`
-	Issues       IssueReport     `json:"issues"`
+	// Issues and GatedIssues are the biggest issue's two reads, each
+	// counted against the ground truth's shape by the one rule
+	// issueNamesAGroundTruthMiss carries. Issues scores the service's
+	// raw choice, the recording's own biggest_issue answer - Clef's
+	// quality. GatedIssues scores what pipeline.Judge reports for the
+	// same recording at the shipped settings, the choice gated on the
+	// look's own flags - what a user is told. Neither is recomputed by
+	// hand and neither silently replaces the other: the printed report
+	// (IssueLines) names both, and docs/evaluation.md says which of the
+	// two each of its figures is read from.
+	Issues      IssueReport `json:"issues"`
+	GatedIssues IssueReport `json:"gated_issues"`
 }
 
 // evaluateJudge reads the samples, sweeps the curves, chooses, and
@@ -279,13 +328,19 @@ func evaluateJudge(clefDir string, replay *systemone.Replay, occasions map[strin
 
 	// Apply the chosen settings through the real judge, one call per
 	// sample, and compare the flags with the ground truth.
-	for _, r := range reads {
+	for i, r := range reads {
 		capture := &captureClient{inner: replay}
 		j, err := pipeline.Judge(context.Background(), capture, r.Photo, r.Occasion, thresholdsFor(r.Occasion, settings))
 		if err != nil {
 			return JudgeReport{}, JudgeSettings{}, err
 		}
-		applied := AppliedSample{Sample: r.Sample.ID, Occasion: r.Sample.Occasion}
+		// The judgement's own biggest issue: the choice gated on this
+		// look's flags at the shipped settings - what the app reports.
+		// It travels with the read (so nothing recomputes it) and is
+		// scored beside the raw choice, never instead of it.
+		gated := j.Issue.ID
+		reads[i].GatedIssue = gated
+		applied := AppliedSample{Sample: r.Sample.ID, Occasion: r.Sample.Occasion, Issue: r.Issue, GatedIssue: gated}
 		flagged := make(map[string]bool, len(j.Flags))
 		for _, f := range j.Flags {
 			applied.Flags = append(applied.Flags, f.ID)
@@ -305,24 +360,21 @@ func evaluateJudge(clefDir string, replay *systemone.Replay, occasions map[strin
 		}
 		report.Applied = append(report.Applied, applied)
 
-		// The biggest issue, against the ground truth's shape: one of
-		// the variant's misses, or none when it misses nothing.
+		// The biggest issue, both reads against the same ground truth's
+		// shape: one of the variant's misses, or none when it misses
+		// nothing. The raw choice is Clef's quality; the gated one is
+		// what a user is told. Neither replaces the other.
 		report.Issues.Of++
-		named := false
-		if len(r.Sample.Miss) == 0 {
-			named = r.Issue == "none"
-		} else {
-			for _, miss := range r.Sample.Miss {
-				if r.Issue == miss {
-					named = true
-					break
-				}
-			}
-		}
-		if named {
+		if issueNamesAGroundTruthMiss(r.Sample.Miss, r.Issue) {
 			report.Issues.Named++
 		} else {
 			report.Issues.Missed = append(report.Issues.Missed, r.Sample.ID)
+		}
+		report.GatedIssues.Of++
+		if issueNamesAGroundTruthMiss(r.Sample.Miss, gated) {
+			report.GatedIssues.Named++
+		} else {
+			report.GatedIssues.Missed = append(report.GatedIssues.Missed, r.Sample.ID)
 		}
 	}
 	sort.Slice(report.Applied, func(i, j int) bool { return report.Applied[i].Sample < report.Applied[j].Sample })
@@ -333,5 +385,52 @@ func evaluateJudge(clefDir string, replay *systemone.Replay, occasions map[strin
 		return report.Wrong[i].Criterion < report.Wrong[j].Criterion
 	})
 	sort.Strings(report.Issues.Missed)
+	sort.Strings(report.GatedIssues.Missed)
 	return report, settings, nil
+}
+
+// IssueLines renders the judge report's biggest-issue block: the lines
+// the evaluation prints about the two reads. Each read is named on its
+// own line - the service's raw choice, and the flag-gated read
+// pipeline.Judge reports - with the variants it misses, then one line
+// per missed variant carrying both choices, so nothing downstream of
+// this block (docs/evaluation.md quotes it) can quote a figure the
+// block does not carry. The read each count belongs to is on the line
+// with it; neither count is printed unlabelled.
+func (r JudgeReport) IssueLines() []string {
+	raw := fmt.Sprintf("biggest issue, the service's raw choice: names a miss (or none) on %d of %d variants",
+		r.Issues.Named, r.Issues.Of)
+	rawMissed := fmt.Sprintf("biggest issue, the service's raw choice, missed: %s",
+		strings.Join(r.Issues.Missed, ", "))
+	gated := fmt.Sprintf("biggest issue, gated on the look's own flags (what pipeline.Judge reports): names a miss (or none) on %d of %d variants",
+		r.GatedIssues.Named, r.GatedIssues.Of)
+	gatedMissed := fmt.Sprintf("biggest issue, gated on the look's own flags, missed: %s",
+		strings.Join(r.GatedIssues.Missed, ", "))
+	lines := []string{raw, rawMissed, gated, gatedMissed,
+		"biggest issue, per variant, both reads, for every variant either read misses:"}
+	missed := map[string]bool{}
+	for _, m := range r.Issues.Missed {
+		missed[m] = true
+	}
+	for _, m := range r.GatedIssues.Missed {
+		missed[m] = true
+	}
+	byID := make(map[string]AppliedSample, len(r.Applied))
+	for _, a := range r.Applied {
+		byID[a.Sample] = a
+	}
+	names := make([]string, 0, len(missed))
+	for name := range missed {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		a, ok := byID[name]
+		if !ok {
+			lines = append(lines, fmt.Sprintf("  %s: no applied read", name))
+			continue
+		}
+		lines = append(lines, fmt.Sprintf("  %s: raw %s, gated %s", a.Sample, a.Issue, a.GatedIssue))
+	}
+	return lines
 }
