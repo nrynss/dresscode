@@ -22,15 +22,6 @@ import (
 // the id the recordings carry.
 const biggestIssueID = "biggest_issue"
 
-// cantTellID is the id of the biggest-issue option that says the model
-// will not pick. It is the id the occasions' data already uses for it, the
-// same one the loader reserves beside none (internal/domain/load.go), and every
-// occasion's biggest-issue options carry it: validateBiggest wants the
-// criteria plus none and can't tell, and refuses any other set. The id is
-// hyphenated because the id is a wire value; the label is the data's own
-// words, "can't tell".
-const cantTellID = "cant-tell"
-
 // judgeState is the whole state of a judge request: the occasion's id and
 // its name. The request is built from this struct, so nothing else can
 // reach Clef in the state: a YouCam analysis, a score, or a user
@@ -283,16 +274,14 @@ func gateIssue(occ *domain.Occasion, flags []domain.Criterion, chosen domain.Iss
 // namesCriterion reports whether an option id is one of the occasion's
 // criteria. The two options that are not - none and can't tell - are the
 // ones the gate lets through whatever the flags say: they claim nothing
-// about a criterion, so they cannot misattribute one. cantTellID is named
-// here because the rule is about the criterion options, not about the two
-// ids the loader reserves. The reserved ids are tested before the criteria
-// are read rather than left to that reservation, because this id arrives
-// over the wire from the service and the guard is the boundary check, not a
-// restatement of the loader's.
+// about a criterion, so they cannot misattribute one. Their ids are not
+// re-tested here. An id reaches this function only after the model's answer
+// matched one of this occasion's own options, and the loader refuses an
+// occasion whose options are anything other than its criteria plus that
+// pair, so a criterion can never be named none or can't tell - and a wire
+// value that is not one of the options is refused before the gate is
+// reached, not passed to it.
 func namesCriterion(occ *domain.Occasion, id string) bool {
-	if id == noneID || id == cantTellID {
-		return false
-	}
 	for _, c := range occ.Criteria {
 		if c.ID == id {
 			return true
