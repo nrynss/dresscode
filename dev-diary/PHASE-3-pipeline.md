@@ -577,3 +577,27 @@ Measured blast radius, which is why the fix is small: four of the five demo stor
 Notes:
 
 - Lands in T3.9e's branch, and the reason is recorded in that section: the fix's own proof is `testdata/clef/judge-V09-interview.json`, which exists only there.
+
+---
+
+### T3.12: The demo caches are generated, not hand-kept
+```yaml
+id:         T3.12
+title:      A committed generator for testdata/samples/cached, and the festival runner-up it re-quotes
+owns:       testdata/samples/cached/, internal/eval/, internal/server/samples_test.go
+requires:   T3.11
+status:     pending
+```
+T3.9e's re-record left one red assertion that no threshold and no behaviour change can close. `internal/server/samples_test.go` clause (e) re-executes the runner-up rule the story's own `source` states, and on the fresh corpus `sample-festival` reads: cached `festival-gold-chain`, rule gives **`festival-festive-top`**. Cause, named by the swap's own feedback entry: two flagged criteria reordered inside 0.013 — `festival-garment-festive` 0.0401 → 0.056 crossing `festival-necklace` 0.0304 → 0.069. The flags themselves are unchanged and ground truth did not move; only the ordering that produces a runner-up did.
+
+The reason this is its own task and not a line edit: **there is no committed generator for `testdata/samples/cached/`.** T0.6 built `testdata/clef` with a scratch script that was never committed and the repo has carried that gap ever since; a hand-edited cache is the same trap as a hand-quoted table — the next re-record re-breaks it and there is no way to tell which field is measurement and which is prose. The fix is the generator, and the re-quote falls out of it.
+
+**Ruling (the orchestrator's): the caches become derived data.** The five demo stories' flags, issue, pick and runner-up are all readings of the recordings at the shipped lines; the occasion, variant, selfie and provenance text are not measurements and stay authored.
+
+**Done when:**
+- A committed generator produces every measured field of all five caches from the recordings, the shipped `[judge]`/`[check]` lines and `testdata/eval/ground-truth.json`. Default mode **asserts** the committed bytes equal what it derives; regeneration happens only behind a named opt-in, so the tree cannot silently drift again.
+- `sample-festival.json`'s runner-up moves to what the rule gives. The pick, the flags, the issue and every other story's bytes do **not** move — if the generator wants to move any of them, it is wrong and the task stops and reports.
+- `testdata/eval/ground-truth.json` and every recording are untouched (AGENTS.md and T3.9e's owns ruling both hold there); no probability ever reaches a user-visible string.
+- Report every place the old runner-up id appears elsewhere — `docs/`, `README.md`, `web/`, `testdata/api/` — **quoted, not edited**, so the orchestrator sees the ripple before landing it.
+- Clause (e) still bites after the change: a story claiming a runner-up the flags do not produce must fail by name. Mutation-prove it.
+- **`./tools/check.sh` passes in full, for the first time on this line of work.** T3.11 fixed clause (d); clause (e) is the last red assertion. A green gate is the deliverable, not an afterthought.
