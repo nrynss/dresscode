@@ -1,0 +1,12 @@
+# The Dresscode tunnel's own cloudflared config. Install to
+# ~/.cloudflared/config-dresscode.yml (deploy/dresscode-tunnel.service
+# points there). The tunnel id is not a secret; the credential file it
+# names is, and never leaves ~/.cloudflared/.
+
+tunnel: 7f69d01b-2983-4191-aed3-030764372497
+credentials-file: /home/nryn/.cloudflared/7f69d01b-2983-4191-aed3-030764372497.json
+
+ingress:
+  - hostname: dresscode.nryn.dev
+    service: http://127.0.0.1:8091
+  - service: http_status:404

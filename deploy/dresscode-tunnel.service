@@ -1,0 +1,29 @@
+# The user-level cloudflared that serves dresscode.nryn.dev over the
+# dedicated Dresscode tunnel. It runs next to the machine's other tunnel
+# (a system unit on its own config); this unit never touches that one and
+# needs no root: its config and credentials live in ~/.cloudflared/.
+#
+# Install:
+#   cp deploy/config-dresscode.yml ~/.cloudflared/config-dresscode.yml
+#   cp deploy/dresscode-tunnel.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now dresscode-tunnel.service
+#
+# One-time DNS routing (uses the zone certificate ~/.cloudflared/cert.pem):
+#   cloudflared tunnel route dns <tunnel-id> dresscode.nryn.dev
+
+[Unit]
+Description=Cloudflare Tunnel for Dresscode (dresscode.nryn.dev)
+After=default.target dresscode.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/cloudflared --config /home/nryn/.cloudflared/config-dresscode.yml tunnel run
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

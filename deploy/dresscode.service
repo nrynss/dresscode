@@ -1,0 +1,41 @@
+# Dresscode's own server, as a systemd user unit, on the same pattern as
+# the machine's Lambo unit (lambo-dresscode.service): a runtime directory
+# outside the repository, an EnvironmentFile, Restart=on-failure, and
+# WantedBy=default.target so linger brings it back at boot.
+#
+# Install:
+#   cp deploy/dresscode.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now dresscode.service
+#
+# The runtime directory /home/nryn/dresscode-run holds:
+#   env            environment file, mode 600: the provider key names from
+#                  docs/keys.md plus DRESSCODE_SIGNING_KEY and
+#                  DRESSCODE_CODE_KEY (deploy/README.md generates those two)
+#   dresscode.toml the settings, derived from dresscode.toml.example, with
+#                  [paths] pointed at the copies under data/
+#   data/          the two [paths] directories (occasions, samples and the
+#                  sibling youcam/ the samples mount reads) and the SQLite
+#                  store dresscode.db, created at first boot
+#   web/dist/      the built app (pnpm build in web/, output copied here)
+#
+# Nothing here points into a source checkout: the running service reads
+# only the runtime directory.
+
+[Unit]
+Description=Dresscode (own DB, HTTP 127.0.0.1:8091)
+After=default.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/home/nryn/dresscode-run
+EnvironmentFile=/home/nryn/dresscode-run/env
+ExecStart=/home/nryn/.local/bin/dresscode serve --config /home/nryn/dresscode-run/dresscode.toml --db /home/nryn/dresscode-run/data/dresscode.db --app /home/nryn/dresscode-run/web/dist --addr 127.0.0.1:8091
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

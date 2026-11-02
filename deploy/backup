@@ -1,0 +1,40 @@
+#!/bin/sh
+# One backup of Dresscode's runtime state into
+# /home/nryn/dresscode-backups/<timestamp>/.
+#
+# What is backed up:
+#   - the SQLite store, online, with sqlite3's .backup (the server keeps
+#     running)
+#   - everything beside it under /home/nryn/dresscode-run/data: the media
+#     blobs (Keel's mediastore keeps them as files in media/), the
+#     upload staging area, the occasions, the sample people and products,
+#     and the recorded results the samples mount reads
+#
+# What is never backed up: the environment file. It holds the keys.
+#
+# The nightly timer dresscode-backup.timer runs this; running it by hand
+# works too. Old backup directories are not pruned here; delete them
+# like ordinary files when they add up.
+
+set -eu
+
+run=/home/nryn/dresscode-run
+db="$run/data/dresscode.db"
+dest_root=/home/nryn/dresscode-backups
+dest="$dest_root/$(date +%Y%m%d-%H%M%S)"
+
+if [ ! -f "$db" ]; then
+    printf 'backup: no store at %s\n' "$db" >&2
+    exit 1
+fi
+
+mkdir -p "$dest"
+sqlite3 "$db" ".backup '$dest/dresscode.db'"
+
+# The directories beside the store: everything except the database file
+# itself (that went out through .backup above) and nothing from env.
+find "$run/data" -mindepth 1 -maxdepth 1 ! -name 'dresscode.db*' \
+    -exec cp -a {} "$dest/" \;
+
+printf 'backup: wrote %s\n' "$dest"
+ls -A "$dest"

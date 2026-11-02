@@ -20,13 +20,20 @@ requires:   T4.6, T5.6, T5.23
 fixture-ok: no
 size:       M · mid
 owns:       deploy/
-status:     claimed:zcode-t61
+status:     in-review
 ```
 `dresscode` and the Dresscode Lambo server as systemd user units that restart on failure and start at boot; the built app served by `dresscode`; a public hostname through the existing Cloudflare Tunnel (HTTPS, which the camera and install need). Nightly backup of the SQLite file and media. A health check that fails the deploy if the public URL doesn't answer.
 
 Bound every long-running process the deploy starts with `timeout` or a unit; never a bare background job.
 
 **Done when:** the public URL serves the app on a phone; a reboot brings everything back; the backup ran once by hand.
+
+Notes (T6.1 implementer):
+- What exists: `deploy/` holds both unit files, the tunnel ingress config, `health-check`, `backup`, the backup service and timer, and a README with the install order, update steps and rollback. The machine-side install lives in `/home/nryn/dresscode-run/` (env mode 600, the derived `dresscode.toml`, `data/` copied from `testdata/{occasions,samples,youcam}` so the samples mount finds its sibling `youcam/results`, the built app in `web/dist/`, scripts in `bin/`), the binary in `~/.local/bin/dresscode`, units and timer in `~/.config/systemd/user/`, the tunnel config at `~/.cloudflared/config-dresscode.yml`.
+- The deploy follows the machine's own Lambo pattern: user units, `EnvironmentFile`, `Restart=on-failure`, `WantedBy=default.target`, linger already on. The tunnel is a second, user-level cloudflared on the unused credential; the system tunnel was not touched, and nothing needed sudo.
+- Port: 8090 was already held by an unrelated user process, so the service binds `127.0.0.1:8091` and the tunnel ingress points there. Health check hits both the public URL and the local port, page and samples list, and never dials a provider.
+- Proofs: `https://dresscode.nryn.dev` answers 200 with the SPA HTML, and `GET /api/samples` through it lists the five samples (recorded data only); SIGKILL of the main process saw the unit restart (NRestarts 0→1) and the health check pass again; reboot-bring-back is verified by config (enabled units + `default.target` + `Linger=yes`), not by an actual reboot; `deploy/backup` ran once by hand and `PRAGMA integrity_check` passed on the copy; no env file in any backup.
+- Surprises: the app build writes `web/build`, while `serve`'s default `-app` is `web/dist` — the unit passes `-app` explicitly, so the deploy is unaffected, but a bare `dresscode serve` from a checkout will not find the built app. Keel's mediastore keeps blobs as files under `data/media` (plus `upload-staging`), so the backup captures the store file and every sibling directory, not the DB alone.
 
 ---
 

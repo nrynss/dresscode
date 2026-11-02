@@ -1,0 +1,69 @@
+#!/bin/sh
+# Fails the deploy when either answer is wrong: the public URL must serve
+# the app's HTML, and the local port must serve the same plus the samples
+# list. Everything here is free: the samples route reads recorded data,
+# it never dials a provider.
+#
+# Usage: deploy/health-check [public-url] [local-url]
+#   default public URL https://dresscode.nryn.dev
+#   default local URL  http://127.0.0.1:8091
+
+set -u
+
+public="${1:-https://dresscode.nryn.dev}"
+local_url="${2:-http://127.0.0.1:8091}"
+status=0
+
+say() { printf '%s\n' "$*"; }
+
+body_of() {
+    # body_of NAME URL: print the body on stdout when the answer is 200,
+    # otherwise name the failure on stderr and return nonzero.
+    curl -fsS --max-time 20 "$2" 2>&1
+}
+
+check_page() {
+    name="$1"
+    url="$2"
+    body="$(body_of "$name" "$url")" || {
+        say "FAIL $name: $url did not answer 200"
+        return 1
+    }
+    case "$body" in
+        *'<div id="app">'*'<title>Dresscode</title>'*|*'<title>Dresscode</title>'*'<div id="app">'*)
+            say "ok   $name: $url serves the app"
+            return 0
+            ;;
+    esac
+    say "FAIL $name: $url answered but not with the app's HTML"
+    return 1
+}
+
+check_samples() {
+    name="$1"
+    url="$2"
+    body="$(body_of "$name" "$url/api/samples")" || {
+        say "FAIL $name: $url/api/samples did not answer 200"
+        return 1
+    }
+    case "$body" in
+        *sample-date*)
+            say "ok   $name: $url/api/samples lists the samples"
+            return 0
+            ;;
+    esac
+    say "FAIL $name: $url/api/samples answered without the sample list"
+    return 1
+}
+
+check_page "public" "$public"      || status=1
+check_samples "public" "$public"   || status=1
+check_page "local" "$local_url"    || status=1
+check_samples "local" "$local_url" || status=1
+
+if [ "$status" -eq 0 ]; then
+    say "health check: pass"
+else
+    say "health check: FAIL"
+fi
+exit "$status"

@@ -1,0 +1,6 @@
+[Unit]
+Description=Backup of Dresscode's store and data directories
+
+[Service]
+Type=oneshot
+ExecStart=/home/nryn/dresscode-run/bin/backup
