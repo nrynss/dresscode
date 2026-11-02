@@ -24,86 +24,90 @@ The same sweep runs per gate on the render check, over the honest pair (V04 agai
 
 ## Judging
 
-**At 0.5** — the reading docs/clef.md counts, an anchor and not a setting — 260 of 273 cells agree with the ground truth, and the thirteen off-side cells are exactly the ones docs/clef.md names: V02's light; V21's, P09's, P13's and P16's beards; V06's and P12's expressions; V08's light and beard; P11's garment; V09's and V12's collars; V16's light. The curves show them: every one of the thirteen sits inside a plateau where the right line reads it correctly, and the sweep moves ten of them.
+**At 0.5** — the reading docs/clef.md counts, an anchor and not a setting — 254 of 273 cells agree with the ground truth, and the nineteen off-side cells are exactly the ones docs/clef.md names: the nine beards (V01's, V02's and P09's on `date-beard-even`, P11's and V08's on `family-beard-even`, V09's on `interview-beard-short`, V15's on `festival-beard`, P15's and V17's on `funeral-beard-close`); P05's, V09's, V11's and V12's collars; P03's and V04's family expressions and P05's and V11's interview ones; V02's light; P11's garment. The curves show them: seventeen of the nineteen sit inside a plateau where the right line reads them correctly, and the sweep moves exactly those seventeen. The two it cannot are V02's light and V08's beard, both in the irreducible table below. Two cells that 0.5 reads correctly are wrong at the shipped lines instead — P12's flat stare and V21's patchy beard — which is how 254 becomes 269.
 
 **The chosen settings** (`[judge]` in `dresscode.toml`):
 
 ```toml
 [judge]
 # The default met line: the single line that reads the most cells
-# correctly across all 36 criteria (260 of 273) with the fewest
-# per-criterion overrides. Measured by T3.9 (docs/evaluation.md).
-met = 0.628
+# correctly across all 36 criteria (262 of 273) with the fewest
+# per-criterion overrides. Measured on the re-recorded corpus by
+# T3.9e (docs/evaluation.md).
+met = 0.35265
 
 [judge.per_criterion]
 # Lines from each criterion's own curve, where the criterion's best
 # point sits off the default (docs/evaluation.md).
-family-expression-present = 0.5466
-family-garment-festive = 0.2394
-interview-collar-buttoned = 0.11395
-interview-expression-calm = 0.36925
+date-beard-even = 0.19435
+family-beard-even = 0.1682
+funeral-beard-close = 0.26845
+interview-beard-short = 0.18815
+interview-collar-buttoned = 0.1126
+interview-expression-calm = 0.2022
 ```
 
 **What they read: 269 of 273.** The four cells no line can save, because a misread probability sits inside the other group's own range:
 
 | Cell | Reads | Should be | What happened |
 |---|---|---|---|
-| `date-beard-even` on P09 | 0.4508 | pass | the East Asian man's even beard under-reads, under the line that flags V21's patchy one |
-| `family-beard-even` on P11 | 0.5106 | pass | the same face's neat short beard, under the line that flags V08's |
-| `family-expression-present` on P12 | 0.6120 | flag | the flat stare reads calmer than three genuinely calm faces |
-| `date-light-see` on V02 | 0.7913 | flag | flat dull frontal light reads brighter than real light misses |
+| `family-expression-present` on P12 | 0.3702 | flag | the flat stare reads 0.0022 above V04's genuinely present face (0.3680); the curve's two equally good plateaus save one of the pair each, and the default sits on V04's side |
+| `date-light-see` on V02 | 0.6666 | flag | flat dull frontal light still reads brighter than every real light miss but P10's 0.1126; the curve's other equally good plateau flags it and loses V21's genuinely lit 0.6247 instead |
+| `family-beard-even` on V08 | 0.5740 | flag | the patchy beard reads above six of the seven even ones; flagging it means flagging V07's even 0.5341 with it, and the 8-of-9 plateau sits under P11's even 0.2058 instead |
+| `date-beard-even` on V21 | 0.2869 | flag | the even beards read so low (P09 0.1965, V02 0.2087) that the only 7-of-8 plateau — between P10's patchy 0.1922 and P09's even 0.1965 — passes V21 with them |
 
-Three of the four are the men's beard and light readings; the sample README already flags V08 and P10's shadows as the weakest ground truth, and V02's wording gap was open in docs/clef.md. These four are a wording problem, not a threshold problem — see Recommendations.
+All four sit on the two male groups, and two of them are beard readings. None of them is the README's weakest ground truth: on this corpus the shadows the README flags read V08 0.2636 and P10 0.1126, both on the expected side, and V08 is in this table for its beard, not its light. V02's wording gap is open in docs/clef.md still. These four are a wording problem, not a threshold problem — see Recommendations.
 
-**Per criterion** — n = cells, best = the most agreement any line reads, plateau = the widest best interval, line = the shipped line (the default `met` = 0.628 unless an override carries it), margin = the shipped line's distance to the nearest observed probability, 0.5 = the cells off the expected side at 0.5 (the anchors):
+**Per criterion** — n = cells, best = the most agreement any line reads, plateau = the widest best interval, line = the shipped line (the default `met` = 0.35265 unless an override carries it), margin = the shipped line's distance to the nearest observed probability, 0.5 = the cells off the expected side at 0.5 (the anchors):
 
 | Criterion | n | best | apart | plateau | line | margin | 0.5 |
 |---|---|---|---|---|---|---|---|
-| date-collar-open | 8 | 8/8 | yes | (0.0509, 0.8095) | 0.628 | 0.1815 | — |
-| date-garment-easy | 8 | 8/8 | yes | (0.0376, 0.8085) | 0.628 | 0.1805 | — |
-| date-hair-clear | 8 | 8/8 | yes | (0.4052, 0.7847) | 0.628 | 0.1567 | — |
-| date-beard-even | 8 | 7/8 | no | (0.5985, 0.7217) | 0.628 | 0.0295 | V21, P09 |
-| date-lip-clear | 8 | 8/8 | yes | (0.0925, 0.6691) | 0.628 | 0.0411 | — |
-| date-expression-engaged | 8 | 8/8 | yes | (0.3786, 0.7236) | 0.628 | 0.0956 | — |
-| date-light-see | 8 | 7/8 | no | (0.3259, 0.6337) | 0.628 | 0.0057 | V02 |
-| family-earring-festive | 9 | 9/9 | yes | (0.0351, 0.9422) | 0.628 | 0.3142 | — |
-| family-lip-colour | 9 | 9/9 | yes | (0.2094, 0.9390) | 0.628 | 0.3110 | — |
-| family-garment-festive | 9 | 9/9 | yes | (0.0363, 0.4425) | **0.2394** | 0.2031 | P11 |
-| family-hair-finished | 9 | 9/9 | yes | (0.0312, 0.7673) | 0.628 | 0.1393 | — |
-| family-beard-even | 9 | 8/9 | no | (0.6090, 0.8676) | 0.628 | 0.0190 | V08 |
-| family-expression-present | 9 | 8/9 | no | (0.5431, 0.5501) | **0.5466** | 0.0035 | V06, P12 |
-| family-light-even | 9 | 9/9 | yes | (0.6223, 0.8574) | 0.628 | 0.0057 | V08 |
-| interview-collar-buttoned | 6 | 6/6 | yes | (0.0426, 0.1853) | **0.11395** | 0.0713 | V09, V12 |
-| interview-garment-plain | 6 | 6/6 | yes | (0.0307, 0.9297) | 0.628 | 0.3017 | — |
-| interview-hair-close | 6 | 6/6 | yes | (0.0412, 0.8563) | 0.628 | 0.2283 | — |
-| interview-beard-short | 6 | 6/6 | yes | (0.5771, 0.7586) | 0.628 | 0.0509 | P13 |
-| interview-expression-calm | 6 | 6/6 | yes | (0.1603, 0.5782) | **0.36925** | 0.2090 | — |
-| interview-light-plain | 6 | 6/6 | yes | (0.1864, 0.6679) | 0.628 | 0.0399 | — |
-| lip-quiet (interview + funeral) | 14 | 14/14 | yes | (0.0462, 0.8262) | 0.628 | 0.1982 | — |
-| festival-garment-festive | 6 | 6/6 | yes | (0.0866, 0.8575) | 0.628 | 0.2295 | — |
-| festival-earring | 6 | 6/6 | yes | (0.0490, 0.9567) | 0.628 | 0.3287 | — |
-| festival-necklace | 6 | 6/6 | yes | (0.0304, 0.8437) | 0.628 | 0.2157 | — |
-| festival-lip | 6 | 6/6 | yes | (0.0715, 0.9364) | 0.628 | 0.3084 | — |
-| festival-hair | 6 | 6/6 | yes | (0.0464, 0.8211) | 0.628 | 0.1931 | — |
-| festival-beard | 6 | 6/6 | yes | (0.2369, 0.8214) | 0.628 | 0.1934 | — |
-| festival-expression | 6 | 6/6 | yes | (0.1154, 0.7474) | 0.628 | 0.1194 | — |
-| festival-light | 6 | 6/6 | yes | (0.5734, 0.7533) | 0.628 | 0.0546 | V16 |
-| funeral-garment-dark | 8 | 8/8 | yes | (0.0443, 0.9049) | 0.628 | 0.2769 | — |
-| funeral-collar-plain | 8 | 8/8 | yes | (0.1014, 0.8866) | 0.628 | 0.2586 | — |
-| funeral-jewellery-quiet | 8 | 8/8 | yes | (0.0554, 0.8438) | 0.628 | 0.2158 | — |
-| funeral-hair-plain | 8 | 8/8 | yes | (0.2700, 0.7195) | 0.628 | 0.0915 | — |
-| funeral-beard-close | 8 | 8/8 | yes | (0.5737, 0.6420) | 0.628 | 0.0140 | P16 |
-| funeral-expression-still | 8 | 8/8 | yes | (0.0588, 0.8732) | 0.628 | 0.2452 | — |
-| funeral-light-plain | 8 | 8/8 | yes | (0.0873, 0.7755) | 0.628 | 0.1475 | — |
+| date-collar-open | 8 | 8/8 | yes | (0.1745, 0.7543) | 0.35265 | 0.17815 | — |
+| date-garment-easy | 8 | 8/8 | yes | (0.0591, 0.7953) | 0.35265 | 0.29355 | — |
+| date-hair-clear | 8 | 8/8 | yes | (0.2651, 0.8246) | 0.35265 | 0.08755 | — |
+| date-beard-even | 8 | 7/8 | no | (0.1922, 0.1965) | **0.19435** | 0.00215 | P09, V01, V02 |
+| date-lip-clear | 8 | 8/8 | yes | (0.0942, 0.7254) | 0.35265 | 0.25845 | — |
+| date-expression-engaged | 8 | 8/8 | yes | (0.2031, 0.7531) | 0.35265 | 0.14955 | — |
+| date-light-see | 8 | 7/8 | no | (0.1126, 0.6247) | 0.35265 | 0.24005 | V02 |
+| family-earring-festive | 9 | 9/9 | yes | (0.0676, 0.8744) | 0.35265 | 0.28505 | — |
+| family-lip-colour | 9 | 9/9 | yes | (0.3101, 0.8231) | 0.35265 | 0.04255 | — |
+| family-garment-festive | 9 | 9/9 | yes | (0.1105, 0.4358) | 0.35265 | 0.08315 | P11 |
+| family-hair-finished | 9 | 9/9 | yes | (0.0738, 0.5991) | 0.35265 | 0.24645 | — |
+| family-beard-even | 9 | 8/9 | no | (0.1306, 0.2058) | **0.1682** | 0.0376 | P11, V08 |
+| family-expression-present | 9 | 8/9 | no | (0.3702, 0.4709) | 0.35265 | 0.00685 | P03, V04 |
+| family-light-even | 9 | 9/9 | yes | (0.2636, 0.6214) | 0.35265 | 0.08905 | — |
+| interview-collar-buttoned | 6 | 6/6 | yes | (0.0596, 0.1656) | **0.1126** | 0.053 | P05, V09, V11, V12 |
+| interview-garment-plain | 6 | 6/6 | yes | (0.0425, 0.8391) | 0.35265 | 0.31015 | — |
+| interview-hair-close | 6 | 6/6 | yes | (0.0397, 0.7117) | 0.35265 | 0.31295 | — |
+| interview-beard-short | 6 | 6/6 | yes | (0.1588, 0.2175) | **0.18815** | 0.02935 | V09 |
+| interview-expression-calm | 6 | 6/6 | yes | (0.0845, 0.3199) | **0.2022** | 0.1177 | P05, V11 |
+| interview-light-plain | 6 | 6/6 | yes | (0.1396, 0.6428) | 0.35265 | 0.21305 | — |
+| lip-quiet (interview + funeral) | 14 | 14/14 | yes | (0.0672, 0.7247) | 0.35265 | 0.28545 | — |
+| festival-garment-festive | 6 | 6/6 | yes | (0.0647, 0.8682) | 0.35265 | 0.28795 | — |
+| festival-earring | 6 | 6/6 | yes | (0.0836, 0.9194) | 0.35265 | 0.26905 | — |
+| festival-necklace | 6 | 6/6 | yes | (0.1455, 0.6929) | 0.35265 | 0.20715 | — |
+| festival-lip | 6 | 6/6 | yes | (0.0942, 0.8856) | 0.35265 | 0.25845 | — |
+| festival-hair | 6 | 6/6 | yes | (0.0501, 0.7265) | 0.35265 | 0.30255 | — |
+| festival-beard | 6 | 6/6 | yes | (0.0677, 0.492) | 0.35265 | 0.13935 | V15 |
+| festival-expression | 6 | 6/6 | yes | (0.0827, 0.6256) | 0.35265 | 0.26995 | — |
+| festival-light | 6 | 6/6 | yes | (0.3245, 0.6178) | 0.35265 | 0.02815 | — |
+| funeral-garment-dark | 8 | 8/8 | yes | (0.0468, 0.8998) | 0.35265 | 0.30585 | — |
+| funeral-collar-plain | 8 | 8/8 | yes | (0.2605, 0.8747) | 0.35265 | 0.09215 | — |
+| funeral-jewellery-quiet | 8 | 8/8 | yes | (0.0437, 0.708) | 0.35265 | 0.30895 | — |
+| funeral-hair-plain | 8 | 8/8 | yes | (0.1951, 0.6473) | 0.35265 | 0.15755 | — |
+| funeral-beard-close | 8 | 8/8 | yes | (0.2387, 0.2982) | **0.26845** | 0.02975 | P15, V17 |
+| funeral-expression-still | 8 | 8/8 | yes | (0.0496, 0.8866) | 0.35265 | 0.30305 | — |
+| funeral-light-plain | 8 | 8/8 | yes | (0.0887, 0.7056) | 0.35265 | 0.26395 | — |
 
-32 of 36 criteria separate perfectly (apart). Four notes on the choices:
+32 of 36 criteria separate perfectly (apart). Five notes on the choices:
 
-- **The tie the sweep had to break.** `date-beard-even` and `family-beard-even` have two plateaus with the same best agreement; the wider one wins, and it is the conservative direction — it flags a patchy beard (V21 0.5985, V08 0.609) at the cost of flagging one genuinely even one (P09 0.4508, P11 0.5106). A false flag offers a fix; a false pass hides one.
-- **The thin lines.** `family-expression-present`'s plateau is 0.007 wide and its line carries a 0.0035 margin — the curve has no room, because calm faces read 0.5501–0.5943 and one flat stare reads 0.612. `date-light-see` rides the default with a 0.0057 margin. Both are honest lines at the curve's best point, and both are on the rewording list below; neither should be nudged by hand.
-- **`interview-collar-buttoned` reads 6/6 only at 0.11395.** Clef under-reads a shirt-and-tie collar (V09 0.1853, V12 0.401); the low line recovers both, with 0.0713 of margin. A tie hiding the top button is the wording's problem (docs/clef.md noted it); the line is the widening until a rewording is recorded.
-- **`family-garment-festive` at 0.2394** recovers P11's navy festive kurta (0.4425) that 0.5 flagged.
+- **The ties the sweep had to break have moved.** On this corpus two curves carry two plateaus with the same best agreement, and the wider one wins in both: `family-expression-present` (0.3458, 0.3680) 0.0222 wide against (0.3702, 0.4709) 0.1007, and `date-light-see` (0.1126, 0.6247) 0.5121 wide against (0.6666, 0.7259) 0.0593. The beard criteria, where the T0.6 corpus had its tie, now have exactly one interval at their best each: `date-beard-even` 7/8 in (0.1922, 0.1965) and `family-beard-even` 8/9 in (0.1306, 0.2058).
+- **Neither beard line is the conservative direction any more.** Both read the group's best, and both pay for it with a false *pass*: V21's patchy beard (0.2869) and V08's (0.5740) sit above the plateau the even beards need. A false flag offers a fix; a false pass hides one — and on this set the rule that maximises agreement has no room to choose the flagging side. That is the wording's problem, not the line's, and it is why the beard pair heads Recommendations.
+- **`family-expression-present` is the one row whose shipped line sits outside its listed plateau.** The default reads the curve at its 8-of-9 best from the *other* tied interval, 0.35265 between V06's 0.3458 and V04's 0.3680, so the table prints the wider plateau the curve alone would choose and the line the product actually ships. Its margin is 0.00685, to V06's 0.3458.
+- **The thin lines.** `date-beard-even` is now the thinnest line in the product: 0.19435 on a plateau 0.0043 wide, a margin of 0.00215, bounded by P10's patchy 0.1922 and P09's even 0.1965. After it come `family-expression-present` at 0.00685, then `festival-light` 0.02815, `interview-beard-short` 0.02935, `funeral-beard-close` 0.02975 and `family-beard-even` 0.0376. Four of the six overrides are beard lines (`date-beard-even`, `family-beard-even`, `funeral-beard-close`, `interview-beard-short`) — four of the five beard criteria need a line of their own. None of these should be nudged by hand. `date-light-see`, thin on the T0.6 corpus at 0.0057, rides the default here with 0.24005 of margin.
+- **`interview-collar-buttoned` reads 6/6 only far below the default.** Its plateau is (0.0596, 0.1656) and the override 0.1126 is its midpoint, with 0.053 of margin. Clef under-reads every buttoned collar on this set — V12 0.1656, P05 0.2583, V09 0.3842 in the shirt and tie, V11 0.4634 — against the two open ones at 0.0369 and 0.0596, so the low line recovers four cells where the T0.6 line recovered two. A tie hiding the top button is still the wording's problem (docs/clef.md notes it); the line is the widening until a rewording is recorded. **`family-garment-festive` needs no override at all now:** P11's festive kurta reads 0.4358 and the default 0.35265 passes it, where the T0.6 corpus needed 0.2394.
 
-**The biggest-issue choice** names one of the variant's misses — or `none` when it misses nothing — on 31 of 37 variants, matching docs/clef.md. The six it misses: V07 and V15 (the men's earring and lip misses, where it says none or the garment), P11 (same), V21 (names the collar, not the beard), P09 and P15 (names the beard, where none is expected). The issue steers the pick's wording only; the flags carry the decision.
+**The biggest-issue choice** names one of the variant's misses — or `none` when it misses nothing — on 28 of 37 variants, matching docs/clef.md. The nine it misses: V01, V09, P09, P15 and V17 miss nothing on the shipped lines and Clef names a beard anyway; V02, V15 and P11 name a beard where the expected misses lie elsewhere; and V07 answers `none` where the earring and the lip are the misses. Eight of the nine are the beard pick. The issue steers the pick's wording only; the flags carry the decision.
 
 ## Render check
 
