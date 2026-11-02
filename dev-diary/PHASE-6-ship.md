@@ -66,11 +66,19 @@ requires:   T6.1
 fixture-ok: yes
 size:       S · frontier
 owns:       docs/video-script.md
-status:     claimed:zcode-t63
+status:     in-review
 ```
 Under three minutes, on a phone, the real hosted app. The second visit is the spine: first visit (two criteria missed, the jhumkas kept, the red lip dismissed), then the return and what memory changed. Name each YouCam API as it works. One evaluation number, said early. No brand logos, no third-party footage, no music without permission.
 
 **Done when:** the script and shot list are committed and the user has read them.
+
+Notes (T6.3 implementer):
+
+- What exists: `docs/video-script.md` — 15 shots, 168 seconds of cut, each shot naming the screen, the exact taps, the caption text and the voiceover line, then the recording checklist with the preconditions and the clean-screen rules.
+- The decision that shaped the steps: the sample path carries no memory. `internal/server/samples.go` replays a recorded story (judge, pick, measure, render, check, shop) with "a sample carries no memory", and its idempotency rule answers a second open of the same sample with the same finished look — so no judge and no recording order can make the sample drawer show a second visit. The spine therefore runs on three real looks (earring keep, lip dismiss, second earring look) with style history on; the sample drawer is only the closing free-for-judges beat. Paid cost of the whole video: 3 YouCam units (earring 1, makeup 1, earring 1, per docs/youcam.md); judge and check calls are Workers AI, not units.
+- The one number: 269 of 273 (98.5%) from docs/evaluation.md, said in shot 1 and never repeated. Every screen word in the script (tab names, "Fixes to try", "Check look", "Dress code notes", "A fix", "See the render", "Shop the look", the Keep/Dismiss/Bought-it bar, the recall banner's exact sentence) was read out of the route components and the pipeline, not invented.
+- Surprise: the verdict's `remembered` field is not surfaced anywhere in the UI — the only visible confirmation of a verdict is the button filling as the stored one — so the checklist's truth-check for the memory write is "open the Occasion tab and confirm the banner" after the dismissal, before shooting the second visit.
+
 
 ---
 
