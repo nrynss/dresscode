@@ -222,69 +222,69 @@ The two halves of a cell move differently. The letter is the sample set's ground
 
 | Criterion | Agree | Lowest yes | Highest no | Apart | Off the expected side |
 |---|---|---|---|---|---|
-| `date-collar-open` | 8/8 | 0.8095 | 0.0509 | yes | |
-| `date-garment-easy` | 8/8 | 0.8085 | 0.0376 | yes | |
-| `date-hair-clear` | 8/8 | 0.7847 | 0.4052 | yes | |
-| `date-beard-even` | 6/8 | 0.4508 | 0.5985 | no | V21 (N, 0.5985), P09 (Y, 0.4508) |
-| `date-lip-clear` | 8/8 | 0.6691 | 0.0925 | yes | |
-| `date-expression-engaged` | 8/8 | 0.7236 | 0.3786 | yes | |
-| `date-light-see` | 7/8 | 0.6337 | 0.7913 | no | V02 (N, 0.7913) |
-| `family-earring-festive` | 9/9 | 0.9422 | 0.0351 | yes | |
-| `family-lip-colour` | 9/9 | 0.939 | 0.2094 | yes | |
-| `family-garment-festive` | 8/9 | 0.4425 | 0.0363 | yes | P11 (Y, 0.4425) |
-| `family-hair-finished` | 9/9 | 0.7673 | 0.0312 | yes | |
-| `family-beard-even` | 8/9 | 0.5106 | 0.609 | no | V08 (N, 0.609) |
-| `family-expression-present` | 7/9 | 0.5501 | 0.612 | no | V06 (N, 0.5431), P12 (N, 0.612) |
-| `family-light-even` | 8/9 | 0.8574 | 0.6223 | yes | V08 (N, 0.6223) |
-| `interview-collar-buttoned` | 4/6 | 0.1853 | 0.0426 | yes | V09 (Y, 0.1853), V12 (Y, 0.401) |
-| `interview-garment-plain` | 6/6 | 0.9297 | 0.0307 | yes | |
-| `interview-hair-close` | 6/6 | 0.8563 | 0.0412 | yes | |
-| `interview-beard-short` | 5/6 | 0.7586 | 0.5771 | yes | P13 (N, 0.5771) |
-| `interview-expression-calm` | 6/6 | 0.5782 | 0.1603 | yes | |
-| `interview-light-plain` | 6/6 | 0.6679 | 0.1864 | yes | |
-| `lip-quiet` (interview and funeral) | 14/14 | 0.8262 | 0.0462 | yes | |
-| `festival-garment-festive` | 6/6 | 0.8575 | 0.0866 | yes | |
-| `festival-earring` | 6/6 | 0.9567 | 0.049 | yes | |
-| `festival-necklace` | 6/6 | 0.8437 | 0.0304 | yes | |
-| `festival-lip` | 6/6 | 0.9364 | 0.0715 | yes | |
-| `festival-hair` | 6/6 | 0.8211 | 0.0464 | yes | |
-| `festival-beard` | 6/6 | 0.8214 | 0.2369 | yes | |
-| `festival-expression` | 6/6 | 0.7474 | 0.1154 | yes | |
-| `festival-light` | 5/6 | 0.7533 | 0.5734 | yes | V16 (N, 0.5734) |
-| `funeral-garment-dark` | 8/8 | 0.9049 | 0.0443 | yes | |
-| `funeral-collar-plain` | 8/8 | 0.8866 | 0.1014 | yes | |
-| `funeral-jewellery-quiet` | 8/8 | 0.8438 | 0.0554 | yes | |
-| `funeral-hair-plain` | 8/8 | 0.7195 | 0.27 | yes | |
-| `funeral-beard-close` | 7/8 | 0.642 | 0.5737 | yes | P16 (N, 0.5737) |
-| `funeral-expression-still` | 8/8 | 0.8732 | 0.0588 | yes | |
-| `funeral-light-plain` | 8/8 | 0.7755 | 0.0873 | yes | |
+| `date-collar-open` | 8/8 | 0.7543 | 0.1745 | yes |  |
+| `date-garment-easy` | 8/8 | 0.7953 | 0.0591 | yes |  |
+| `date-hair-clear` | 8/8 | 0.8246 | 0.2651 | yes |  |
+| `date-beard-even` | 5/8 | 0.1965 | 0.2869 | no | P09 (Y, 0.1965), V01 (Y, 0.4503), V02 (Y, 0.2087) |
+| `date-lip-clear` | 8/8 | 0.7254 | 0.0942 | yes |  |
+| `date-expression-engaged` | 8/8 | 0.7531 | 0.2031 | yes |  |
+| `date-light-see` | 7/8 | 0.6247 | 0.6666 | no | V02 (N, 0.6666) |
+| `family-earring-festive` | 9/9 | 0.8744 | 0.0676 | yes |  |
+| `family-lip-colour` | 9/9 | 0.8231 | 0.3101 | yes |  |
+| `family-garment-festive` | 8/9 | 0.4358 | 0.1105 | yes | P11 (Y, 0.4358) |
+| `family-hair-finished` | 9/9 | 0.5991 | 0.0738 | yes |  |
+| `family-beard-even` | 7/9 | 0.2058 | 0.574 | no | P11 (Y, 0.2058), V08 (N, 0.574) |
+| `family-expression-present` | 7/9 | 0.368 | 0.3702 | no | P03 (Y, 0.4709), V04 (Y, 0.368) |
+| `family-light-even` | 9/9 | 0.6214 | 0.2636 | yes |  |
+| `interview-collar-buttoned` | 2/6 | 0.1656 | 0.0596 | yes | P05 (Y, 0.2583), V09 (Y, 0.3842), V11 (Y, 0.4634), V12 (Y, 0.1656) |
+| `interview-garment-plain` | 6/6 | 0.8391 | 0.0425 | yes |  |
+| `interview-hair-close` | 6/6 | 0.7117 | 0.0397 | yes |  |
+| `interview-beard-short` | 5/6 | 0.2175 | 0.1588 | yes | V09 (Y, 0.2175) |
+| `interview-expression-calm` | 4/6 | 0.3199 | 0.0845 | yes | P05 (Y, 0.3199), V11 (Y, 0.4215) |
+| `interview-light-plain` | 6/6 | 0.6428 | 0.1396 | yes |  |
+| `lip-quiet` (interview and funeral) | 14/14 | 0.7247 | 0.0672 | yes |  |
+| `festival-garment-festive` | 6/6 | 0.8682 | 0.0647 | yes |  |
+| `festival-earring` | 6/6 | 0.9194 | 0.0836 | yes |  |
+| `festival-necklace` | 6/6 | 0.6929 | 0.1455 | yes |  |
+| `festival-lip` | 6/6 | 0.8856 | 0.0942 | yes |  |
+| `festival-hair` | 6/6 | 0.7265 | 0.0501 | yes |  |
+| `festival-beard` | 5/6 | 0.492 | 0.0677 | yes | V15 (Y, 0.492) |
+| `festival-expression` | 6/6 | 0.6256 | 0.0827 | yes |  |
+| `festival-light` | 6/6 | 0.6178 | 0.3245 | yes |  |
+| `funeral-garment-dark` | 8/8 | 0.8998 | 0.0468 | yes |  |
+| `funeral-collar-plain` | 8/8 | 0.8747 | 0.2605 | yes |  |
+| `funeral-jewellery-quiet` | 8/8 | 0.708 | 0.0437 | yes |  |
+| `funeral-hair-plain` | 8/8 | 0.6473 | 0.1951 | yes |  |
+| `funeral-beard-close` | 6/8 | 0.2982 | 0.2387 | yes | P15 (Y, 0.2982), V17 (Y, 0.3595) |
+| `funeral-expression-still` | 8/8 | 0.8866 | 0.0496 | yes |  |
+| `funeral-light-plain` | 8/8 | 0.7056 | 0.0887 | yes |  |
 
-In all, 260 of 273 criterion answers agree at 0.5, and 32 of 36 criteria have their yes and no apart on this set.
+In all, 254 of 273 criterion answers agree at 0.5, and 32 of 36 criteria have their yes and no apart on this set. The four that are not apart are `date-beard-even`, `date-light-see`, `family-beard-even` and `family-expression-present`: on this corpus no single line splits their yes from their no, whatever line is chosen.
 
 ### Agreement per person
 
 | Person | Agree | Off the expected side |
 |---|---|---|
-| Indian woman (`woman`, 10 variants) | 72/74 | V06 expression, V12 collar |
-| White woman (`woman-white`, 8) | 59/59 | |
-| Indian man (`man`, 11) | 75/81 | V02 light, V08 beard and light, V09 collar, V16 light, V21 beard |
-| East Asian man (`man-eastasian`, 8) | 54/59 | P09 beard, P11 garment, P12 expression, P13 beard, P16 beard |
+| Indian woman (`woman`, 10 variants) | 70/74 | V04 expression, V11 collar, V11 expression, V12 collar |
+| White woman (`woman-white`, 8 variants) | 56/59 | P03 expression, P05 collar, P05 expression |
+| Indian man (`man`, 11 variants) | 73/81 | V01 beard, V02 beard, V02 light, V08 beard, V09 collar, V09 beard, V15 beard, V17 beard |
+| East Asian man (`man-eastasian`, 8 variants) | 55/59 | P09 beard, P11 garment, P11 beard, P15 beard |
 
-The misses gather on the men, and on beard and light.
+The misses gather on the men — 12 of the 19 are on the two male groups — and on the beard question, which takes 9 of them. `interview-collar-buttoned` takes 4, the expression questions 4, light 1 and `family-garment-festive` 1. Five rows carry two misses each (V02, P11, V09, V11, P05); every other row carries one or none.
 
-- **`family-hair-finished` was reworded in this task** (user decision). The first round asked "Is the hair tied into one shape, rather than loose across the eyes?", and all four men's short hair, expected yes, read 0.0377 to 0.2203: Clef answered the word "tied". It now asks "Does the hair look finished and off the eyes, either tied back or cut short and neat?", and every family-function recording was redone on it. The men now read V07 0.8446, V08 0.8906, P11 0.8544, P12 0.8829. The women expected yes read V04 0.9253, V05 0.9012, P03 0.7673; the two expected no, hair loose across the eyes, read V06 0.0263 and P04 0.0312. 9 of 9 agree, and the two groups are far apart.
-- **Rewording one question moved the others.** The same photos, with only that one question's text changed, gave different answers to the other six: V04's expression went from 0.648 to 0.5943, P12's from 0.4616 to 0.612 (now on the wrong side), P11's beard from 0.6431 to 0.5106, P04's expression from 0.5057 to 0.4531 (now on the right side). Clef reads the questions together. Any change of wording invalidates every recording of that occasion, not just the one criterion, and T3.9 must measure on the final wording.
-- **`interview-collar-buttoned`** reads low on V09 (shirt and tie, 0.1853) and V12 (0.401). Both are buttoned in the README. A tie may hide the top button for Clef too.
-- **Beard calls are the weakest group.** The East Asian man's light beard sits near the middle whether it is expected even (P09 0.4508, P11 0.5106, P15 0.642) or patchy (P10 0.4486, P13 0.5771, P16 0.5737). V21 and V08, the Indian man's patchy beard, read 0.5985 and 0.609 against an expected no.
-- **The biggest-issue choice** names one of the variant's expected misses (or `none` when there are none) on 31 of 37. The six that do not: V07, V15 and P11 (the men's earring and lip misses, where Clef says `none` or the garment), V21 (`date-collar-open` at 0.3019 instead of the beard), and P09 and P15 (the beard, where none is expected). Its top probability is often low: under 0.4 on seven variants.
+- **`family-hair-finished` was reworded in the T0.6 round** (user decision), and both corpora since are recorded on the reworded question. The first round asked "Is the hair tied into one shape, rather than loose across the eyes?", and all four men's short hair, expected yes, read 0.0377 to 0.2203 on that recording — Clef answered the word "tied". The question now asks "Does the hair look finished and off the eyes, either tied back or cut short and neat?" On the fresh corpus the men expected yes read V07 0.5991, V08 0.8636, P11 0.8143, P12 0.7183. The women expected yes read V04 0.8327, V05 0.7558, P03 0.7102; the two expected no, hair loose across the eyes, read V06 0.0242 and P04 0.0738. 9 of 9 agree, and the two groups are far apart: lowest yes 0.5991 against highest no 0.0738.
+- **Rewording one question moved the others.** That is the T0.6 round's measurement, on the recording it replaced: the same photos, with only that one question's text changed, gave different answers to the other six — V04's expression went from 0.648 to 0.5943, P12's from 0.4616 to 0.612, P11's beard from 0.6431 to 0.5106, P04's expression from 0.5057 to 0.4531. Clef reads the questions together, so any change of wording invalidates every recording of that occasion, not just the one criterion, and the reading has to be redone on the final wording. The fresh pass is a live demonstration of the last half: those same four cells now read V04 0.368, P12 0.3702, P11 0.2058 and P04 0.2584, and two of them have changed which side of 0.5 they sit on — P12's expression is on its expected side now and P11's beard is not.
+- **`interview-collar-buttoned`** reads low on every variant the README expects to pass: V12 0.1656, P05 0.2583, V09 0.3842 (shirt and tie) and V11 0.4634, while the two expected no read 0.0369 and 0.0596. Both buttoned variants are buttoned in the README; a tie may hide the top button for Clef too. The criterion still separates — its lowest yes is above its highest no — but it separates far below mid-scale, which is one of the reasons it carries a line of its own.
+- **Beard calls are the weakest group.** Nine of the 19 misses on this corpus are beard cells, and eight of those nine are expected-yes beards read low: `date-beard-even` V01 0.4503, V02 0.2087 and P09 0.1965, `family-beard-even` P11 0.2058, `interview-beard-short` V09 0.2175, `festival-beard` V15 0.492, `funeral-beard-close` V17 0.3595 and P15 0.2982. The ninth is V08's patchy beard at 0.574, the one expected-no beard still read as yes. The East Asian man's light beard is the clearest case: expected even it reads P09 0.1965, P11 0.2058 and P15 0.2982; expected patchy it reads P10 0.1922, P13 0.1588 and P16 0.2387. The two groups span 0.1588 to 0.2982 between them, and on this set no line at all splits even from patchy on `date-beard-even` or `family-beard-even`. The four beard criteria are four of the six criteria that carry a line of their own in `dresscode.toml.example`, and `date-beard-even`'s sits on a plateau 0.00215 wide.
+- **The biggest-issue choice** names one of the variant's expected misses (or `none` when there are none) on 28 of 37. Eight of the nine that do not name a beard question: V01, V09, P09, P15 and V17 have no expected miss at all and Clef says the beard, and V02, V15 and P11 say the beard where a different miss was expected. Only V07 goes the other way, answering `none` where the earring and the lip are the misses. Its top probability is often low: under 0.4 on nine variants, under 0.3 on four.
 
 ### The weakest calls the README names
 
 The README flags the light misses on V08 and P10 as moderate shadows, the weakest ground truth in the set.
 
-- **V08** (`family-light-even`, expected N): 0.6223, on the yes side. Its beard (expected N) reads 0.609, also on the yes side. Biggest issue `family-garment-festive` at 0.5698. V08 is the least reliable row in the set.
-- **P10** (`date-light-see`, expected N): 0.3259, on the expected side. Its beard (N) 0.4486 and expression (N) 0.3786 are also on the expected side, though near the middle. Biggest issue `date-beard-even` at 0.4168.
-- **V02**, not flagged in the README: its flat dull frontal light (expected N for `date-light-see`) reads 0.7913. "Can the eyes be seen" is a yes for flat light; the criterion's wording may not catch "dull".
+- **V08** (`family-light-even`, expected N): 0.2636, on the expected side — the moderate shadow does not read as light on this corpus. Its beard (expected N) reads 0.574, still on the yes side, and is the row's only miss. Biggest issue `family-garment-festive` at 0.5824.
+- **P10** (`date-light-see`, expected N): 0.1126, on the expected side and no longer near the middle. Its beard (N) 0.1922 and expression (N) 0.2031 are on the expected side too, and P10 agrees with the README on all seven of its cells. Biggest issue `date-beard-even` at 0.4486.
+- **V02**, not flagged in the README: its flat dull frontal light (expected N for `date-light-see`) reads 0.6666, and it is the only light miss left on the set. "Can the eyes be seen" is a yes for flat light; the criterion's wording may not catch "dull".
 
 ## The check: proxies only
 
