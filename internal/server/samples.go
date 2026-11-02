@@ -323,6 +323,17 @@ func (s *Server) MountSamples(ctx context.Context, cfg SamplesConfig) error {
 	sm := &sampleRuntime{rt: rt, jobs: jobs, log: log, now: now, list: list, byID: byID}
 	s.mux.Handle(routeSamples, http.HandlerFunc(sm.serveList))
 	s.mux.Handle(routeSampleStart, http.HandlerFunc(sm.serveStart))
+	// The chips' faces: the sample people's photographs, at the paths the
+	// front door names (/samples/<variant>/<file>.jpg). Only images are
+	// served — the tree also holds the recorded stories under cached/, and
+	// those are measurements, which never reach a user.
+	s.mux.Handle("/samples/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, ".jpg") {
+			http.NotFound(w, r)
+			return
+		}
+		http.StripPrefix("/samples/", http.FileServer(http.Dir(cfg.SamplesDir))).ServeHTTP(w, r)
+	}))
 	samplesBy[s] = sm
 	return nil
 }

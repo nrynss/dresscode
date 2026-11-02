@@ -2922,3 +2922,30 @@ func dropStreamOnly(payload any) any {
 	}
 	return m
 }
+
+// The samples mount serves the chips' faces: a photograph answers at the
+// path the front door names, and a recorded story — a measurement — does
+// not.
+func TestTheSamplesMountServesFacesAndRefusesStories(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	_, cookie := bootUser(t, env.handler)
+
+	face := env.get(t, cookie, "/samples/woman/V04-family-function.jpg")
+	if face.Code != http.StatusOK {
+		t.Fatalf("the sample photograph answers %d, want 200", face.Code)
+	}
+	if got := face.Header().Get("Content-Type"); got != "image/jpeg" {
+		t.Fatalf("the sample photograph is %q, want image/jpeg", got)
+	}
+	body := face.Body.Bytes()
+	if len(body) < 2 || body[0] != 0xFF || body[1] != 0xD8 {
+		t.Fatal("the sample photograph is not a JPEG")
+	}
+
+	story := env.get(t, cookie, "/samples/cached/sample-family.json")
+	if story.Code != http.StatusNotFound {
+		t.Fatalf("a recorded story answers %d, want 404 — measurements never reach a user", story.Code)
+	}
+}
