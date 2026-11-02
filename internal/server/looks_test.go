@@ -393,22 +393,34 @@ type lookEnv struct {
 }
 
 // testSettings carries the measured lines of T3.9 and the lease caps.
+//
+// The judge and check lines are a hand-written copy of what
+// dresscode.toml.example ships, and TestShippedSettingsLinesMatchTheToml
+// in settings_pin_test.go fails the moment the two disagree. This copy was
+// the fourth one the T3.9e corpus re-record had to chase: every line moved
+// and this one did not, so the demo stories read broken against a fresh
+// corpus that judged them correctly. It stays a copy so the numbers a test
+// scores a recording against are visible where the scoring happens, and so
+// a suite of route tests does not become a settings load; the pin is what
+// keeps the copy honest rather than letting it drift again in silence.
 func testSettings() *config.Settings {
 	return &config.Settings{
 		Lease: config.Lease{Judge: config.JudgeLease{FreshSelfies: 5, Renders: 10}},
 		Judge: config.Judge{
-			Met: 0.628,
+			Met: 0.35265,
 			PerCriterion: map[string]float64{
-				"family-expression-present": 0.5466,
-				"family-garment-festive":    0.2394,
-				"interview-collar-buttoned": 0.11395,
-				"interview-expression-calm": 0.36925,
+				"date-beard-even":           0.19435,
+				"family-beard-even":         0.1682,
+				"funeral-beard-close":       0.26845,
+				"interview-beard-short":     0.18815,
+				"interview-collar-buttoned": 0.1126,
+				"interview-expression-calm": 0.2022,
 			},
 		},
 		Check: config.Check{
-			ChangeMade:   0.50085,
-			SamePerson:   0.48355,
-			CriterionMet: 0.50315,
+			ChangeMade:   0.4978,
+			SamePerson:   0.4799,
+			CriterionMet: 0.4986,
 			Model:        "clef",
 		},
 	}
