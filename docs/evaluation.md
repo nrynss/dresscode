@@ -6,9 +6,9 @@ The machinery is `internal/eval/`; the ground truth is `testdata/eval/ground-tru
 
 ## Headline numbers
 
-- **Judging: 269 of 273 criterion answers correct (98.5%)** against the sample set's ground truth, at the shipped lines. A flat 0.5 line reads 260 (95.2%). Every line is on its own curve's measured best plateau.
-- **Render check: every known bad render discarded, no honest render lost.** On the recorded proxies — the different-person negative and the honest second-visit pair, on both models — the shipped lines decide all four reads correctly, with at least 0.42 of margin on every gate.
-- **Look vocabulary: 19 of 22 attribute answers true** on the honest render and the discarded proxy with the chosen model (clef). Three misses sit on the discarded proxy render whose words die with it; of the honest render's misses, the expression gap is a word the vocabulary cannot say yet — the hair and lip reads are misreadings the vocabulary can say (the table below is exact).
+- **Judging: 269 of 273 criterion answers correct (98.5%)** against the sample set's ground truth, at the shipped lines. A flat 0.5 line reads 254 (93.0%). Every line reads its own curve's maximum agreement; the one shipped line outside the plateau its curve lists (`family-expression-present`, at the default) sits in that curve's other tied interval, which reads the same cells.
+- **Render check: every known bad render discarded, no honest render lost.** On the recorded proxies — the different-person negative and the honest second-visit pair, on both models — the shipped lines decide all four reads correctly, with at least 0.44 of margin on every gate.
+- **Look vocabulary: 19 of 22 attribute answers true** on the honest render and the discarded proxy with the chosen model (clef), against clef-flash's 18 of 22. Two of clef's three misses sit on the honest render — the expression, a word the vocabulary cannot say yet, and the hair, which it can — and the third is the proxy's bare lips read `nude`, on a render whose words die with it (the table below is exact).
 - **Stability: eleven recorded answers of one judge request are identical to the last digit.** Nothing flips across calls; what varies is between photos, not between calls.
 
 ## Method
