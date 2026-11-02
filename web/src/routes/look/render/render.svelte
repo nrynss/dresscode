@@ -13,6 +13,7 @@
     type RenderCopy,
   } from "./copy";
   import { loadLook, sendVerdict, shownFailure, storyLookId } from "./load";
+  import { keptLook } from "../../capture/upload";
   import ShopSheet from "./sheet.svelte";
   import Swipe from "./swipe.svelte";
 
@@ -21,9 +22,13 @@
   let saving = $state(false);
   let saved = $state<LookVerdict | undefined>(undefined);
 
+  /** The look this screen renders: the one the capture started when there
+   * is one, and the recorded story the samples replay otherwise. */
+  const activeLookId = keptLook()?.lookId ?? storyLookId;
+
   $effect(() => {
     const control = new AbortController();
-    const lookId = storyLookId;
+    const lookId = activeLookId;
     void loadLook(lookId, control.signal).then(
       (value) => {
         if (control.signal.aborted) return;

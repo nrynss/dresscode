@@ -19,6 +19,7 @@
     stillOptions,
     storyOccasion,
     uploadCaptured,
+    keepLook,
     type NormalisedPhoto,
     type ProductHold,
     type UserProduct,
@@ -303,11 +304,12 @@
     problem = undefined;
     status = "Opening the look.";
     try {
-      await startLook(
+      const started = await startLook(
         storyOccasion,
         photo.media_id,
         savedProducts.map((product) => product.id),
       );
+      keepLook(started.lookId, started.jobId);
       status = "";
       if (typeof window !== "undefined") window.location.hash = verdictHash;
     } catch (error) {

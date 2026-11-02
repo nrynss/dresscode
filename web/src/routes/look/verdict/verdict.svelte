@@ -18,6 +18,7 @@
   } from "./copy";
   import { followLook, loadVerdict, shownFailure, storyJobId, storyLookId } from "./follow";
   import { occasionHash } from "./route";
+  import { keptLook } from "../../capture/upload";
 
   let stream = $state<JobStream | undefined>(undefined);
   let verdict = $state<VerdictCopy | null>(null);
@@ -25,6 +26,11 @@
   /** The look's pictures, read beside the job: the mirror rides on them.
    * Undefined while it reads, null when there is nothing to show. */
   let look = $state<RenderCopy | null | undefined>(undefined);
+
+  /** The look this screen follows: the one the capture started when there
+   * is one, and the recorded story the samples replay otherwise. */
+  const activeLookId = keptLook()?.lookId ?? storyLookId;
+  const activeJobId = keptLook()?.jobId ?? storyJobId;
 
   const word = $derived(stream ? stageWord(stream.stage) : "");
   const paused = $derived(stream?.connection === "paused");
@@ -39,7 +45,7 @@
   const finished = $derived(stream?.status === "done" || verdict !== null);
 
   $effect(() => {
-    const follow = followLook(storyLookId, storyJobId, (opened) => {
+    const follow = followLook(activeLookId, activeJobId, (opened) => {
       stream = opened;
     });
     return () => follow.close();
@@ -50,7 +56,7 @@
   // down; the verdict's own words carry the screen.
   $effect(() => {
     const control = new AbortController();
-    const lookId = storyLookId;
+    const lookId = activeLookId;
     void loadLook(lookId, control.signal).then(
       (value) => {
         if (control.signal.aborted) return;
@@ -71,7 +77,7 @@
       return;
     }
     const control = new AbortController();
-    const lookId = storyLookId;
+    const lookId = activeLookId;
     problem = undefined;
     void loadVerdict(lookId, control.signal).then(
       (value) => {

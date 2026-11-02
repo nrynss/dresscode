@@ -52,6 +52,21 @@ export interface LookStart {
   jobId: string;
 }
 
+/** The look the capture started, for the verdict and render screens to
+ * follow. The screens' own constants carry the recorded story the samples
+ * replay, and a real look started here must not be mistaken for it. Module
+ * state, like keptOccasion: it survives the SPA's navigation, not a reload. */
+let keptLookId = "";
+let keptJobId = "";
+export function keepLook(lookId: string, jobId: string): void {
+  keptLookId = lookId;
+  keptJobId = jobId;
+}
+export function keptLook(): { lookId: string; jobId: string } | undefined {
+  if (keptLookId === "" || keptJobId === "") return undefined;
+  return { lookId: keptLookId, jobId: keptJobId };
+}
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return undefined;
   return value as Record<string, unknown>;
