@@ -66,7 +66,7 @@ requires:   T6.1
 fixture-ok: yes
 size:       S · frontier
 owns:       docs/video-script.md
-status:     in-review
+status:     done
 ```
 Under three minutes, on a phone, the real hosted app. The second visit is the spine: first visit (two criteria missed, the jhumkas kept, the red lip dismissed), then the return and what memory changed. Name each YouCam API as it works. One evaluation number, said early. No brand logos, no third-party footage, no music without permission.
 
