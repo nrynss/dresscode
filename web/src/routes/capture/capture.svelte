@@ -205,24 +205,30 @@
     }
   }
 
-  /** The one forward action for the product drawer: a held photo completes
-   * the moment its fields are typed (the button says so without a second
-   * tap), a pasted link reads as its own product, and with neither the user
-   * is told what is missing. */
+  /** The one forward action, named what it does: finish whatever product
+   * is in hand — a held photo with its fields typed, or a pasted link —
+   * and then run the check with everything in hand. One that did not
+   * land leaves its problem on the screen and stops here. */
   async function proceed(): Promise<void> {
     const held = heldProduct;
+    const before = savedProducts.length;
     if (held !== undefined) {
       if (!productFieldsReady(productName, productKind)) return;
       heldProduct = undefined;
-      if (typeof held.photo === "string") void useHeldUpload(held.photo);
-      else void bring(held.photo, "product");
+      if (typeof held.photo === "string") await useHeldUpload(held.photo);
+      else await bring(held.photo, "product");
+    } else if (link.trim() !== "") {
+      await addLink();
+    } else {
+      problem = { code: "capture", message: "Choose a product photo or paste a link first." };
       return;
     }
-    if (link.trim() !== "") {
-      void addLink();
+    if (savedProducts.length === before) return;
+    if (selfie === undefined) {
+      problem = { code: "capture", message: "Take a selfie first, then check the look." };
       return;
     }
-    problem = { code: "capture", message: "Choose a product photo or paste a link first." };
+    await checkDressCode();
   }
 
   async function addLink(): Promise<void> {
@@ -466,7 +472,7 @@
         Link
         <input bind:value={link} autocomplete="off" />
       </label>
-      <button type="submit" disabled={busy}>Proceed</button>
+      <button type="submit" disabled={busy}>Check look</button>
     </form>
     {#if savedProducts.length > 0}
       <ul>
