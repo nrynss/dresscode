@@ -516,8 +516,11 @@ func validateVocabulary(file string, v *Vocabulary) error {
 // validatePhrases checks the display-phrase table. Every key must name a
 // vocabulary attribute, every inner key one of that attribute's options
 // other than none and can't tell - the line never speaks those - and
-// every template must parse and reference attributes the vocabulary
-// holds, never its own. The rule is the loader's word for "a wiring bug
+// every template must parse, carry literal text, and reference
+// attributes the vocabulary holds, never its own. A template of pure
+// placeholders renders the empty string on the day its placeholders all
+// say nothing, and the line would emit an empty segment, so it is
+// refused here. The rule is the loader's word for "a wiring bug
 // is named, never papered over": a phrase the line could never speak, or
 // one naming an attribute that does not exist, is refused at load.
 func validatePhrases(file string, v *Vocabulary) error {
@@ -549,6 +552,16 @@ func validatePhrases(file string, v *Vocabulary) error {
 			parts, err := parsePhrase(template)
 			if err != nil {
 				return fail(file, "phrase for %s %q: %s", attrID, option, err.Error())
+			}
+			literal := false
+			for _, part := range parts {
+				if part.Ref == "" {
+					literal = true
+					break
+				}
+			}
+			if !literal {
+				return fail(file, "phrase for %s %q is all placeholders, with no literal text of its own", attrID, option)
 			}
 			for _, part := range parts {
 				if part.Ref == "" {

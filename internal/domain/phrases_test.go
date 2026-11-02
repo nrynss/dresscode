@@ -244,6 +244,35 @@ func TestTheLoaderRefusesBrokenPhrases(t *testing.T) {
 		assertFileError(t, dir, "vocabulary.json", `references attribute "scarf_colour", which the vocabulary does not have`)
 	})
 
+	t.Run("a phrase of pure placeholders is refused", func(t *testing.T) {
+		t.Parallel()
+		dir := copyOccasions(t)
+		editVocabulary(t, dir, func(v *Vocabulary) {
+			// The shipped seed stays in the table beside the broken
+			// entry: the refusal must name the placeholder-only template
+			// and leave the one with literal text alone.
+			v.Phrases["jewellery"] = map[string]string{
+				"jhumkas": "{jewellery_colour} jhumkas",
+				"studs":   "{jewellery_colour}",
+			}
+		})
+		assertFileError(t, dir, "vocabulary.json", `phrase for jewellery "studs" is all placeholders`)
+	})
+
+	t.Run("a phrase with literal text keeps loading", func(t *testing.T) {
+		t.Parallel()
+		dir := copyOccasions(t)
+		editVocabulary(t, dir, func(v *Vocabulary) {
+			// A placeholder plus literal words is exactly the shape the
+			// shipped seed has: it loads, the pure-placeholder refusal
+			// does not bite a template the line can always speak.
+			v.Phrases["necklace"] = map[string]string{"chain": "{necklace_colour} chain"}
+		})
+		if _, err := Load(dir); err != nil {
+			t.Fatalf("load: %v", err)
+		}
+	})
+
 	t.Run("display that names nothing is refused", func(t *testing.T) {
 		t.Parallel()
 		dir := copyOccasions(t)

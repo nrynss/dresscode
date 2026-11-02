@@ -525,8 +525,17 @@ requires:   T3.10
 fixture-ok: no
 size:       XS · light
 owns:       internal/domain/
-status:     claimed:glm-5.3-flash
+status:     in-review
 ```
 The user accepted the shipped wording as is (2026-11-03); the two hardenings T3.10's review queued ride alone. (a) The loader refuses a phrase template with no literal text — pure placeholders load today and render `""` if all placeholders vanish, which `LookLine` would emit as an empty segment. (b) A synthetic pin that placeholders never recurse — a referenced attribute that itself carries a phrase renders its label, not its phrase (the rule is stated in code and docs, untested because the shipped table's only reference carries no phrase).
 
 **Done when:** both guards live and mutation-proven (pure-placeholder refused by name; a phrase-on-phrase data set renders labels, red by mutation when the recursion guard is broken); the gate is green; no wording bytes changed.
+
+Notes:
+
+- Both hardenings landed as guards, no wording bytes moved: `testdata/` untouched, the shipped seed (`{jewellery_colour} jhumkas`) and every fixture byte-identical. The whole diff is `internal/domain/load.go` (refusal + doc line), `internal/domain/phrases_test.go` (two subtests) and `internal/pipeline/phrases_test.go` (one test).
+- (a) `validatePhrases` refuses a parsed template whose parts are all placeholders - `phrase for %s %q is all placeholders, with no literal text of its own`, naming attribute and option - placed after parsing, before the reference checks. `TestTheLoaderRefusesBrokenPhrases` gains one subtest per direction: the broken `{jewellery_colour}` on `studs` refused by name while the shipped seed sits unrefused in the same table, and a `{necklace_colour} chain` addition loading clean.
+- (b) The no-recursion pin is `TestAPlaceholderSpeaksTheLabelNotItsPhrase` (pipeline phrases_test): a synthetic table that phrases the colour itself ("gold" also carries "gilded") must still read "gold jhumkas". One scope note for the reviewer: the block's `owns` is `internal/domain/`, but the pin lives in the pipeline test file because `LookLine` is the only production code that resolves placeholders through the table - `RenderPhrase` takes its resolve injected and structurally cannot recurse, so a domain-side pin could never go red under this mutation. Test-only; no pipeline production bytes changed.
+- Mutation ledger - two mutations, each applied, run red, restored: (a) deleting the refusal → `TestTheLoaderRefusesBrokenPhrases/a_phrase_of_pure_placeholders_is_refused` fails "expected an error" (the load succeeds), the valid-direction subtest stays green; (b) making `LookLine`'s render resolve embed the referenced option's own phrase → the pin fails with `line "gilded jhumkas"` - a mutation invisible on the shipped table, where the colour carries no phrase, which is exactly the gap the synthetic set closes.
+- Surprised twice: `TestTheLoaderRefusesBrokenPhrases` lives in `phrases_test.go`, not `load_test.go`; and docs/occasions.md's phrase-table paragraph lists the loader's refusals without the new one, and states no no-recursion rule - that file is outside this block's owns, left for whoever touches the docs next.
+- Gate: `./tools/check.sh` exit 0; the Go stages re-run uncached under `-race ./... -count=1`, all ok (domain 1.5 s, pipeline 74.8 s, eval 226.6 s, server 207.5 s); svelte-check 0 errors, app unit and 101 accessibility tests green. Zero live calls, zero units, no new dependency.

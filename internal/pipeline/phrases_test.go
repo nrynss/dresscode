@@ -193,6 +193,39 @@ func TestTheLookLineSpeaksTheTable(t *testing.T) {
 	})
 }
 
+// TestAPlaceholderSpeaksTheLabelNotItsPhrase pins the no-recursion rule:
+// a placeholder embeds the referenced winner's own bare label, never
+// that option's display phrase. The rule is stated in RenderPhrase's
+// contract and the phrase-table docs, but no shipped data set can
+// observe it - the table's only referenced attribute (jewellery_colour)
+// carries no phrase of its own, so even a recursing renderer would say
+// "gold". This synthetic table is the one where the two readings differ:
+// the colour is itself phrased, and the line must still read "gold
+// jhumkas", not the colour's phrase.
+func TestAPlaceholderSpeaksTheLabelNotItsPhrase(t *testing.T) {
+	t.Parallel()
+	synth := &domain.Vocabulary{
+		Attributes: []domain.LookAttribute{
+			{ID: "jewellery", Options: []string{"none", "jhumkas", "can't tell"}},
+			{ID: "jewellery_colour", Options: []string{"none", "gold", "can't tell"}},
+		},
+		Phrases: map[string]map[string]string{
+			"jewellery":        {"jhumkas": "{jewellery_colour} jhumkas"},
+			"jewellery_colour": {"gold": "gilded"},
+		},
+	}
+	line, err := LookLine(synth, []domain.AnsweredAttribute{
+		{ID: "jewellery", Value: "jhumkas"},
+		{ID: "jewellery_colour", Value: "gold"},
+	})
+	if err != nil {
+		t.Fatalf("look line: %v", err)
+	}
+	if line != "gold jhumkas" {
+		t.Fatalf("line %q, want the winner's bare label embedded - one pass of the grammar, never the referenced option's own phrase", line)
+	}
+}
+
 // TestTheLookLineRefuses pins the refusals: a nil vocabulary, a winner
 // off its attribute's list, and a malformed phrase - the last reachable
 // only through a vocabulary that never went through domain.Load, which
