@@ -74,9 +74,13 @@ const (
 // never reach a wire: the proof's transport answers locally and refuses
 // anything it did not enumerate.
 const (
-	rerecordFreshDir  = "clef-fresh"
-	rerecordPaidEnv   = "DRESSCODE_RERECORD"
-	rerecordPaidValue = "yes"
+	// rerecordShippedDir is the corpus in the tree, the one docs/clef.md
+	// transcribes; rerecordFreshDir is the scratch tree a paid pass records
+	// into beside it, which becomes the shipped one when the swap lands.
+	rerecordShippedDir = "clef"
+	rerecordFreshDir   = "clef-fresh"
+	rerecordPaidEnv    = "DRESSCODE_RERECORD"
+	rerecordPaidValue  = "yes"
 
 	rerecordProofPrefix  = "rerecord-proof-"
 	rerecordStandToken   = "offline-proof-not-a-key"
@@ -164,7 +168,7 @@ func loadRerecordWorld(t *testing.T) rerecordWorld {
 	}
 	return rerecordWorld{
 		root:       root,
-		oldDir:     filepath.Join(root, "testdata", "clef"),
+		oldDir:     filepath.Join(root, "testdata", rerecordShippedDir),
 		freshDir:   filepath.Join(root, "testdata", rerecordFreshDir),
 		samplesDir: filepath.Join(root, "testdata", "samples"),
 		gt:         gt,
@@ -1490,28 +1494,52 @@ func TestRerecordGateRefusesWithoutTheFlag(t *testing.T) {
 // ---- Both corpora, read ----
 
 // TestRerecordReadsBothCorpora is the measurement the re-record exists for:
-// the shipped corpus and the fresh one, read by the same rules and printed
-// side by side. It is untagged and spends nothing - both sides are
-// recordings - and it skips while testdata/clef-fresh does not exist, so it
-// costs the gate nothing before the paid pass runs and nothing after the
-// fresh tree moves into testdata/clef.
+// the shipped corpus and, when a second tree sits beside it, that one too -
+// read by the same rules and printed side by side. It is untagged and spends
+// nothing: both sides are recordings.
 //
-// What it prints, in order: the hit count on the fresh tree stated as a
-// measured result, the fresh plateau sweep with every chosen line beside
-// the curve that chose it, the [check] gates and the model the same way,
-// the shipped lines read against the fresh bytes, and then every cell whose
-// fresh reading contradicts docs/clef.md's transcription, named. The
-// contradictions are named and left alone: this test does not re-transcribe
-// the doc, and nothing here adjusts a recorded number to match a live
-// reading.
+// The half that always runs is the doc guard. docs/clef.md transcribes the
+// corpus in testdata/clef, and since the swap that corpus is the re-recorded
+// one, so the doc-vs-corpus comparison has no reason to be conditional: every
+// commit reads it (rerecordReportTranscription). It asserts rather than logs -
+// a doc cell that contradicts the corpus it claims to transcribe, on the
+// ground-truth letter, on which side of 0.5 it sits or in the digits it prints,
+// fails the test and names the cell.
+//
+// The half that needs two trees is the side-by-side sweep the paid pass owed
+// while its scratch tree sat next to the shipped one; it runs when
+// testdata/clef-fresh exists, so a future hand that records a second corpus
+// gets it back, and its own doc comparison is reported rather than asserted
+// because mid-re-record the doc transcribes the old tree while the fresh one is
+// the new observation. With no second tree the test logs that and passes - it
+// does not skip, because a skip would hide the guard with it.
+//
+// What it prints, in order: the shipped corpus's own measurement against
+// docs/clef.md's transcription, then, when a second corpus is present, its hit
+// rate stated as a measured result, its plateau sweep with every chosen line
+// beside the curve that chose it, the [check] gates and the model the same way,
+// the shipped lines read against the fresh bytes, and every cell whose fresh
+// reading contradicts the transcription, named. The contradictions are named
+// and left alone: this test does not re-transcribe the doc, and nothing here
+// adjusts a recorded number to match a live reading.
 func TestRerecordReadsBothCorpora(t *testing.T) {
 	w := loadRerecordWorld(t)
-	if _, err := os.Stat(w.freshDir); err != nil {
-		t.Skipf("rerecord: no %s beside the shipped corpus yet: %v", rerecordFreshDir, err)
-	}
 	shipped, err := Run(w.root)
 	if err != nil {
 		t.Fatalf("rerecord: shipped corpus: %v", err)
+	}
+
+	// docs/clef.md's transcription against the corpus it transcribes. This is
+	// the shipped tree on every commit, and the assertions below are what keeps
+	// the doc's cells right rather than merely self-consistent.
+	tr := rerecordTranscription(t, filepath.Join(w.root, "docs", "clef.md"))
+	rerecordReportTranscription(t, tr, shipped.Judge.Curves, filepath.Join("testdata", rerecordShippedDir), true)
+
+	if _, err := os.Stat(w.freshDir); err != nil {
+		t.Logf("rerecord: no second corpus beside the shipped one (%v), so the side-by-side half below has"+
+			" nothing to compare; the doc guard above ran against %s, which is the corpus %s transcribes",
+			err, filepath.Join("testdata", rerecordShippedDir), tr.path)
+		return
 	}
 	fresh, err := RunAt(w.root, w.freshDir)
 	if err != nil {
@@ -1675,10 +1703,10 @@ func TestRerecordReadsBothCorpora(t *testing.T) {
 		fresh.Judge.Issues.Named, fresh.Judge.Issues.Of, shipped.Judge.Issues.Named, shipped.Judge.Issues.Of,
 		strings.Join(fresh.Judge.Issues.Missed, " "))
 
-	// docs/clef.md's transcription against the fresh reading: named, not
-	// re-transcribed.
-	tr := rerecordTranscription(t, filepath.Join(w.root, "docs", "clef.md"))
-	rerecordReportTranscription(t, tr, fresh.Judge.Curves)
+	// The same transcription against the second corpus, reported: mid-re-record
+	// the doc still transcribes the shipped tree, so a cell the fresh reading
+	// puts elsewhere is a finding to name, not a doc to fail.
+	rerecordReportTranscription(t, tr, fresh.Judge.Curves, filepath.Join("testdata", rerecordFreshDir), false)
 }
 
 // rerecordApart counts the criteria whose cells some line reads all
@@ -2004,15 +2032,23 @@ func rerecordParseCell(text string) (rerecordCell, error) {
 // contradicts docs/clef.md's transcription, and leaves it named: the ground
 // truth does not move with the service, so a contradiction is a finding about
 // the corpus, not a line to re-transcribe, and nothing here adjusts a recorded
-// number or a doc cell to make the two agree. Two counts close the report: the
-// cells whose side of 0.5 moved, and the cells whose expected answer the doc
-// and the committed ground truth disagree about.
+// number or a doc cell to make the two agree. Three counts close the report:
+// the cells whose side of 0.5 moved, the cells whose printed digits differ from
+// the reading at the precision the doc carries, and the cells whose expected
+// answer the doc and the committed ground truth disagree about.
 //
-// Coverage is the exception, and it is fatal rather than logged: a cell the doc
+// corpus names the reading in the failure messages, and transcribes says
+// whether this is the corpus the doc means: the shipped tree, on every commit,
+// so a stale digit there is a broken claim and fails. A second tree beside it
+// is the re-record's own observation while it waits for the swap, and the same
+// comparison there is evidence rather than a failure - it is the report the
+// charter asks the paid pass to state. Coverage and ground truth are fatal in
+// both, because neither depends on which corpus is being read: a cell the doc
 // does not transcribe or a transcribed cell the corpus does not read means the
 // comparison silently lost a cell, which is the one way this report could
-// under-report.
-func rerecordReportTranscription(t *testing.T, tr rerecordTranscribed, curves []Curve) {
+// under-report, and a letter that is not the committed ground truth is never
+// right.
+func rerecordReportTranscription(t *testing.T, tr rerecordTranscribed, curves []Curve, corpus string, transcribes bool) {
 	t.Helper()
 	samples := map[string]bool{}
 	criteria := map[string]bool{}
@@ -2067,19 +2103,23 @@ func rerecordReportTranscription(t *testing.T, tr rerecordTranscribed, curves []
 		t.Log(line)
 	}
 	for _, key := range unread {
-		t.Errorf("rerecord: %s is transcribed in %s and read by no curve of this corpus", key, tr.path)
+		t.Errorf("rerecord: %s is transcribed in %s and read by no curve of %s", key, tr.path, corpus)
 	}
 	if absent > 0 {
-		t.Errorf("rerecord: %d cells of this corpus are not transcribed by %s, so the comparison lost them",
-			absent, tr.path)
+		t.Errorf("rerecord: %d cells of %s are not transcribed by %s, so the comparison lost them",
+			absent, corpus, tr.path)
 	}
 	if letter > 0 {
 		t.Errorf("rerecord: %d cells contradict the ground truth as %s transcribes it, and the ground truth does not move with the service",
 			letter, tr.path)
 	}
-	t.Logf("transcription against this reading: %d cells contradict it on which side of %.2f they sit, "+
-		"%d on the expected answer, %d transcribed and not read, %d read and not transcribed",
-		side, readingAt, letter, len(unread), absent)
+	if side > 0 && transcribes {
+		t.Errorf("rerecord: %d of the %d cells %s transcribes sit on the other side of %.2f in %s than in the corpus it transcribes, so the doc is stale where it claims to be a measurement",
+			side, len(tr.cells), tr.path, readingAt, corpus)
+	}
+	t.Logf("transcription of %s against %s: %d cells contradict it on which side of %.2f they sit, "+
+		"%d on the expected answer, %d transcribed and not read, %d read and not transcribed (asserted: %t)",
+		corpus, tr.path, side, readingAt, letter, len(unread), absent, transcribes)
 }
 
 // rerecordShippedLines reads the shipped lines out of the committed
