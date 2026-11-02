@@ -12,7 +12,12 @@ export const emptyVisitSentence = "There are no past looks yet.";
 
 export const stillBeingFinishedSentence = "This look is still being finished.";
 
-export const nothingYetSentence = "There is nothing to show for this look yet.";
+/** A finished look that named a fix but showed no render: the suggestion
+ * and its products stand, so the line says so instead of "nothing". */
+export const suggestionOnlySentence = "A change to try, with the products for it.";
+
+/** A finished look that flagged nothing: the good outcome. */
+export const cleanLookSentence = "Nothing needed changing.";
 
 /** The verdicts a past look can carry. They are words, never a figure. */
 export const lookVerdicts = ["kept", "dismissed", "bought"] as const;
@@ -40,19 +45,21 @@ export interface Recall {
 }
 
 /** One past look, as the list records it. The id and the fix id are keys,
- * never shown. */
+ * never shown; `fixed` only says whether the look named a fix. */
 export interface PastLook {
   id: string;
   verdict: LookVerdict | "";
   ready: boolean;
   words: string;
+  fixed: boolean;
 }
 
 /** The line a past look shows: its words, or a plain sentence when the
  * check has not written any yet. */
 export function lookLine(look: PastLook): string {
   if (!look.ready) return stillBeingFinishedSentence;
-  return look.words === "" ? nothingYetSentence : look.words;
+  if (look.words !== "") return look.words;
+  return look.fixed ? suggestionOnlySentence : cleanLookSentence;
 }
 
 /** One occasion's group: its name, the sentence memory keeps for it, and
@@ -145,7 +152,13 @@ export function looksFromResponse(body: unknown, occasion: string): PastLook[] {
     ) {
       throw new Error(looksError);
     }
-    looks.push({ id, verdict: verdict === "" ? "" : verdict, ready: look.ready, words: look.words });
+    looks.push({
+      id,
+      verdict: verdict === "" ? "" : verdict,
+      ready: look.ready,
+      words: look.words,
+      fixed: typeof look.fix === "string" && look.fix !== "",
+    });
   }
   return looks;
 }

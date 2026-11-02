@@ -6,7 +6,10 @@ export const openingSentence = "Opening this look.";
 
 export const pendingSentence = "This look is still being finished. Open the verdict to follow it.";
 
-export const suggestionSentence = "No render passed the check. The suggestion and the products stand without one.";
+/** Said when every render was refused. It leads with what the user still
+ * gets, not with a failure: the fix and the products below stand. */
+export const suggestionSentence =
+  "Here is the change to make. The try-on picture did not keep your likeness, so we show your original instead.";
 
 /** The look that flags nothing is the good outcome: there is no fix to name,
  * so the screen says so instead of throwing. */

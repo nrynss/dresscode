@@ -9,11 +9,6 @@
   "body": {
     "samples": [
       {
-        "id": "sample-date",
-        "name": "Date",
-        "occasion": "date"
-      },
-      {
         "id": "sample-family",
         "name": "Family function",
         "occasion": "family-function"
@@ -22,6 +17,11 @@
         "id": "sample-interview",
         "name": "Interview",
         "occasion": "interview"
+      },
+      {
+        "id": "sample-date",
+        "name": "Date",
+        "occasion": "date"
       },
       {
         "id": "sample-festival",

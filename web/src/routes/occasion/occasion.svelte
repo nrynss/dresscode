@@ -3,7 +3,7 @@
   import ErrorNotice from "../../app/error-notice.svelte";
   import { readHistory } from "../history/flow";
   import { occasionIcons } from "./icons";
-  import { fixChipLabel, keepOccasion, listOccasions, readOccasion, readOptIn, readRecallLine, writeOptIn } from "./menu";
+  import { fixChipLabel, keepOccasion, keptOccasion, listOccasions, readOccasion, readOptIn, readRecallLine, writeOptIn } from "./menu";
   import type { OccasionDetail, OccasionSummary } from "./types";
 
   /** Standalone carries the way back and the screen heading's own route; the
@@ -11,7 +11,8 @@
   let { standalone = true }: { standalone?: boolean } = $props();
 
   let occasions = $state<OccasionSummary[]>([]);
-  let selected = $state("");
+  // The occasion chosen earlier this session stays picked on return.
+  let selected = $state(keptOccasion());
   let detail = $state<OccasionDetail | null>(null);
   let ticked = $state<string[]>([]);
   let historyOn = $state(false);

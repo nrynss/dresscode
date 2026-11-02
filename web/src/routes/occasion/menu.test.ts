@@ -4,7 +4,17 @@ import { afterEach, expect, test } from "vitest";
 import { installMock, pinAnswer, preferFixture } from "../../lib/api/mock";
 import type { ApiFixture } from "../../lib/api/types";
 import { occasionIcons } from "./icons";
-import { fixChipLabel, listOccasions, readOccasion, readOptIn, readRecallLine, resetOccasionMenu, writeOptIn } from "./menu";
+import {
+  fixChipLabel,
+  keepOccasion,
+  keptOccasion,
+  listOccasions,
+  readOccasion,
+  readOptIn,
+  readRecallLine,
+  resetOccasionMenu,
+  writeOptIn,
+} from "./menu";
 import type { OccasionFix } from "./types";
 
 interface Call {
@@ -264,5 +274,31 @@ test("the front door carries the short copy, the icon tiles and the clean select
       ),
     ) as { selfie: string };
     expect(avatar, `${id} shows its own recorded person`).toBe(`/samples/${story.selfie}`);
+  }
+});
+
+test("the chosen occasion survives a reload through the tab's session storage", () => {
+  const store = new Map<string, string>();
+  const stub = {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => void store.set(key, value),
+    removeItem: (key: string) => void store.delete(key),
+  };
+  const before = (globalThis as { sessionStorage?: unknown }).sessionStorage;
+  (globalThis as { sessionStorage?: unknown }).sessionStorage = stub;
+  try {
+    resetOccasionMenu();
+    expect(keptOccasion()).toBe("");
+    keepOccasion("interview");
+    expect(store.get("dresscode.occasion")).toBe("interview");
+    // A reload empties module state; the stored choice comes back.
+    store.set("dresscode.occasion", "funeral");
+    resetOccasionMenu();
+    expect(keptOccasion()).toBe("");
+    store.set("dresscode.occasion", "funeral");
+    expect(keptOccasion()).toBe("funeral");
+  } finally {
+    resetOccasionMenu();
+    (globalThis as { sessionStorage?: unknown }).sessionStorage = before;
   }
 });

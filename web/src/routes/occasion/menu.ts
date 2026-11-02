@@ -11,23 +11,47 @@ const remembered = new Map<string, string[]>();
 
 /** The occasion the picker is working on this session: recorded the moment it
  * is chosen, and re-recorded by a write of its fixes. The next look starts on
- * it; before any choice, the caller keeps its own occasion. A write that
- * fails keeps what was chosen. */
+ * it. A write that fails keeps what was chosen. It is mirrored into the tab's
+ * sessionStorage, so a reload on the mirror, or a return from the phone's own
+ * camera app, still knows the occasion instead of losing it. */
 let kept = "";
+
+const keptKey = "dresscode.occasion";
+
+function readStored(): string {
+  try {
+    return typeof sessionStorage === "undefined" ? "" : (sessionStorage.getItem(keptKey) ?? "");
+  } catch {
+    return "";
+  }
+}
+
+function writeStored(id: string): void {
+  try {
+    if (typeof sessionStorage === "undefined") return;
+    if (id === "") sessionStorage.removeItem(keptKey);
+    else sessionStorage.setItem(keptKey, id);
+  } catch {
+    // Storage blocked: the in-memory choice still stands for this page.
+  }
+}
 
 /** The occasion the picker set active, or "" before any choice this session. */
 export function keptOccasion(): string {
+  if (kept === "") kept = readStored();
   return kept;
 }
 
 /** Record the occasion the picker has in hand, the moment it is chosen. */
 export function keepOccasion(id: string): void {
   kept = id;
+  writeStored(id);
 }
 
 export function resetOccasionMenu(): void {
   remembered.clear();
   kept = "";
+  writeStored("");
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {

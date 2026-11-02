@@ -12,12 +12,13 @@ import {
   lookLine,
   lookVerdicts,
   looksFromResponse,
-  nothingYetSentence,
+  cleanLookSentence,
   occasionsOf,
   openingSentence,
   openingVisitSentence,
   recallFromResponse,
   stillBeingFinishedSentence,
+  suggestionOnlySentence,
 } from "./copy";
 import { loadSecondVisit, readHistory, resetHistory, shownFailure, writeHistory } from "./flow";
 import { historyHash, isHistoryHash } from "./route";
@@ -128,7 +129,8 @@ test("the switch starts off and a fresh session's screen says nothing about memo
     openingVisitSentence,
     emptyVisitSentence,
     stillBeingFinishedSentence,
-    nothingYetSentence,
+    suggestionOnlySentence,
+    cleanLookSentence,
   ].join(" ");
   expect(sentences).not.toMatch(memoryWords);
 
@@ -228,7 +230,7 @@ test("with history on, the second visit plays the recorded story", async () => {
   // The look under the sentence is the recorded story look, shown in words.
   const recorded = (disk("looks.json").body as { looks: { id: string; words: string }[] }).looks[0]!;
   expect(group.looks).toEqual([
-    { id: recorded.id, verdict: "", ready: true, words: recorded.words },
+    { id: recorded.id, verdict: "", ready: true, words: recorded.words, fixed: true },
   ]);
   expect(lookLine(group.looks[0]!)).toBe(recorded.words);
   expect(screen).toContain("{lookLine(look)}");
@@ -269,7 +271,7 @@ test("past looks group by occasion", async () => {
   // sentence, and its look still listed with its verdict word.
   expect(visit.groups[0]?.line).toBe("");
   expect(visit.groups[0]?.looks).toEqual([
-    { id: "100c0000000000000000000000000003", verdict: "kept", ready: true, words: "a plain watch" },
+    { id: "100c0000000000000000000000000003", verdict: "kept", ready: true, words: "a plain watch", fixed: false },
   ]);
   expect(lookLine(visit.groups[0]!.looks[0]!)).toBe("a plain watch");
 
@@ -345,7 +347,8 @@ test("no digit anywhere and no id on the screen", () => {
     openingVisitSentence,
     emptyVisitSentence,
     stillBeingFinishedSentence,
-    nothingYetSentence,
+    suggestionOnlySentence,
+    cleanLookSentence,
   ].join(" ");
   expect(words).not.toMatch(/\d/);
 
@@ -424,9 +427,11 @@ test("a body that cannot be read is refused", () => {
   expect(isLookVerdict("kept")).toBe(true);
   expect(isLookVerdict("seen")).toBe(false);
 
-  expect(lookLine({ id: "x", verdict: "", ready: false, words: "" })).toBe(stillBeingFinishedSentence);
-  expect(lookLine({ id: "x", verdict: "", ready: true, words: "" })).toBe(nothingYetSentence);
-  expect(lookLine({ id: "x", verdict: "", ready: true, words: "gold jhumkas" })).toBe("gold jhumkas");
+  expect(lookLine({ id: "x", verdict: "", ready: false, words: "", fixed: true })).toBe(stillBeingFinishedSentence);
+  // A finished look with no render still has a fix to show, never "nothing".
+  expect(lookLine({ id: "x", verdict: "", ready: true, words: "", fixed: true })).toBe(suggestionOnlySentence);
+  expect(lookLine({ id: "x", verdict: "", ready: true, words: "", fixed: false })).toBe(cleanLookSentence);
+  expect(lookLine({ id: "x", verdict: "", ready: true, words: "gold jhumkas", fixed: true })).toBe("gold jhumkas");
 
   expect(occasionsOf(disk("occasions.json").body)).toEqual([
     { id: "date", name: "Date" },
@@ -439,5 +444,5 @@ test("a body that cannot be read is refused", () => {
 
   // And the recorded story list reads back whole.
   const looks = looksFromResponse(disk("looks.json").body, "family-function");
-  expect(looks).toEqual([{ id: (disk("looks.json").body as { looks: { id: string }[] }).looks[0]!.id, verdict: "", ready: true, words: "gold jhumkas" }]);
+  expect(looks).toEqual([{ id: (disk("looks.json").body as { looks: { id: string }[] }).looks[0]!.id, verdict: "", ready: true, words: "gold jhumkas", fixed: true }]);
 });

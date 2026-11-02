@@ -647,6 +647,8 @@ test("the screen grabs a front-camera frame and keeps a gallery and a phone-came
   expect(source).toContain("Try your own piece");
   expect(source).not.toContain("A product");
   expect(source).toContain("startLook(");
-  expect(source).toContain("storyOccasion");
+  expect(source).not.toContain("storyOccasion");
+  expect(source).toContain("startLook(\n        occasionId,");
+  expect(source).toContain("Pick an occasion first, then check the look.");
   expect(source).toContain("verdictHash");
 });

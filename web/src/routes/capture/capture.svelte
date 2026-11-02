@@ -6,6 +6,7 @@
   import { PhotoPreview } from "./preview.svelte";
   import type { ShownError } from "../../lib/api/types";
   import { verdictHash } from "../look/verdict/route";
+  import { keptOccasion, listOccasions } from "../occasion/menu";
   import {
     finishUpload,
     productFieldsReady,
@@ -17,7 +18,6 @@
     shownError,
     startLook,
     stillOptions,
-    storyOccasion,
     uploadCaptured,
     keepLook,
     type NormalisedPhoto,
@@ -26,6 +26,24 @@
   } from "./upload";
 
   const session = new CameraSession();
+
+  /** The occasion this look is judged for, from the picker. The screen names
+   * it, and a look never starts without one: a silent default judged a
+   * selfie against an occasion the user never chose. */
+  const occasionId = keptOccasion();
+  let occasionName = $state("");
+
+  $effect(() => {
+    if (occasionId === "") return;
+    const control = new AbortController();
+    listOccasions(control.signal).then(
+      (list) => {
+        occasionName = list.find((item) => item.id === occasionId)?.name ?? "";
+      },
+      () => {},
+    );
+    return () => control.abort();
+  });
 
   /** The mirror's selfie preview: the object URL over the photo's prepared
    * bytes, revoked on replacement and when the screen goes away. */
@@ -306,12 +324,16 @@
   async function checkDressCode(): Promise<void> {
     const photo = selfie;
     if (!photo || starting) return;
+    if (occasionId === "") {
+      problem = { code: "capture", message: "Pick an occasion first, then check the look." };
+      return;
+    }
     starting = true;
     problem = undefined;
     status = "Opening the look.";
     try {
       const started = await startLook(
-        storyOccasion,
+        occasionId,
         photo.media_id,
         savedProducts.map((product) => product.id),
       );
@@ -347,6 +369,14 @@
     <button type="button" disabled={busy} onclick={() => void useResumed("product")}>Use it as a product</button>
   </div>
 {/if}
+
+<p class="occasion-line">
+  {#if occasionId === ""}
+    No occasion picked yet. <a href="#/">Pick one</a>
+  {:else}
+    For {occasionName === "" ? "your occasion" : occasionName}. <a href="#/">Change</a>
+  {/if}
+</p>
 
 <section aria-label="Your selfie">
   <div class="mirror-frame">
@@ -485,6 +515,15 @@
 </details>
 
 <style>
+  .occasion-line {
+    margin: 0 0 0.9rem;
+    color: var(--dim);
+  }
+
+  .occasion-line a {
+    color: var(--accent);
+  }
+
   section {
     display: flex;
     flex-direction: column;

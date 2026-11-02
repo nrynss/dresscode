@@ -139,10 +139,12 @@ const (
 // sampleIDs are the five samples, in the order the list answers. The
 // recorded list example (testdata/api/samples.json) names them in this
 // order, and each has one recorded story file beside the sample people.
+// The one whose story carries a passed render leads, and the clean look
+// follows it: the first tap shows the try-on, not a refused render.
 var sampleIDs = []string{
-	"sample-date",
 	"sample-family",
 	"sample-interview",
+	"sample-date",
 	"sample-festival",
 	"sample-funeral",
 }
