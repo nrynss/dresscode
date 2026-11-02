@@ -525,7 +525,7 @@ requires:   T3.10
 fixture-ok: no
 size:       XS · light
 owns:       internal/domain/
-status:     in-review
+status:     done
 ```
 The user accepted the shipped wording as is (2026-11-03); the two hardenings T3.10's review queued ride alone. (a) The loader refuses a phrase template with no literal text — pure placeholders load today and render `""` if all placeholders vanish, which `LookLine` would emit as an empty segment. (b) A synthetic pin that placeholders never recurse — a referenced attribute that itself carries a phrase renders its label, not its phrase (the rule is stated in code and docs, untested because the shipped table's only reference carries no phrase).
 
