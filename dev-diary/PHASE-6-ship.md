@@ -97,3 +97,28 @@ status:     not-started
 Through the judging period (product.md gives both published windows; plan for the longer): Workers Paid on before judging starts; YouCam units checked against the judging share; the flags ready if units run low; the machine and tunnel up; the recorded video as the fallback if the connection drops. After judging: cancel Workers Paid if it isn't wanted.
 
 **Done when:** `docs/judging.md` holds the checklist, and the user has upgraded Workers AI.
+
+---
+
+### T6.1b: The first real user could not reach a render
+```yaml
+id:         T6.1b
+title:      The product-photo picker never loses a pick, and a suggestion-only look says what to do next
+owns:       web/src/routes/capture/capture.svelte, web/src/routes/capture/upload.ts, web/src/routes/capture/upload.test.ts, web/src/routes/look/verdict/
+requires:   T5.23
+fixture-ok: no
+size:       S · mid
+status:     claimed:zcode-t61b
+```
+The deployed app met its first real user (the author's own phone, their own selfie, the funeral occasion) and the promise dead-ended twice. First: the judge ran live and correctly (suggestion-worded flags, no scores — the pipeline's behaviour was exactly per product), but with zero fixes ticked open the look ended suggestion-only, and the screen offered nothing — no reason, no next step, no way to proceed. The opt-in ticks exist on the occasion screen, but a look started with none ticked is a silent dead end. Second: on the product path, choosing a photo before the product's name and kind are typed swallows the pick — `onGallery` reads the FileList, resets the input (T5.22's reset is correct and stays), and only then gates on `productReady()`, so the refusal lands after the photo is already voided, and the message "Name the product and what it is." arrives too late to mean anything. The store confirms both: the look row has empty fix/runner-up/verdict, `opt_ins` and `products` have no rows for the attempt.
+
+**Done when:**
+- The product path never loses a chosen photo: the gate is answered before the pick is consumed (or the flow collects the pick first and asks for name and kind after), the refusal names what is missing while the user can still act on it, and once the gate passes the already-chosen photo completes the product without a re-pick.
+- A suggestion-only verdict is not a dead end: when no fix was eligible because nothing is ticked open, the screen says so in the product's voice and offers the one-tap path to that occasion's fix menu; the ticks are reachable from the verdict.
+- The opt-in semantics do not move: nothing is ticked by default, nothing is inferred, no pre-ticks to make the demo march.
+- Tests pin both: the refused-pick path (pick with the fields empty behaves per the chosen design and never silently discards), and the suggestion-only screen renders the path forward. `./tools/check.sh` green.
+
+Notes:
+
+- Redeploy (rebuild the bundle, restart the unit per `deploy/README.md`'s own steps) follows landing; it is not this task's proof.
+- Nothing about the user — no photo, no device detail, no account id — goes into any commit, test or diary line. The findings are described by behaviour only.
