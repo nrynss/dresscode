@@ -439,6 +439,46 @@
     .stages li.active .mark {
       animation: stage-pulse 1.6s ease-in-out infinite;
     }
+
+    /* The verdict arrives, it does not appear: the cards rise the moment the
+     * look lands, and the way forward breathes once the card has settled. */
+    .result-card,
+    .reasons-drawer {
+      animation: card-rise 0.4s ease-out backwards;
+    }
+
+    .result-card .primary-link {
+      animation:
+        link-rise 0.45s ease-out 0.12s backwards,
+        primary-breathe 2.6s ease-in-out 0.9s infinite;
+    }
+
+    .stages li,
+    .stages .mark {
+      transition:
+        color 0.3s ease,
+        background 0.3s ease,
+        border-color 0.3s ease;
+    }
+
+    .disclosure summary::after {
+      transition: rotate 0.2s ease;
+    }
+
+    .primary-link {
+      transition:
+        transform 0.15s ease,
+        box-shadow 0.3s ease;
+    }
+
+    .primary-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0.25rem 0.8rem var(--accent-soft);
+    }
+
+    .primary-link:active {
+      transform: scale(0.98);
+    }
   }
 
   @keyframes stage-pulse {
@@ -449,6 +489,41 @@
 
     50% {
       box-shadow: 0 0 0 0.35rem var(--accent-soft);
+    }
+  }
+
+  @keyframes card-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.6rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes link-rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.3rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes primary-breathe {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 var(--accent-soft);
+    }
+
+    50% {
+      box-shadow: 0 0 0 0.45rem var(--accent-soft);
     }
   }
 </style>
