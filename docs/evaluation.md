@@ -1,6 +1,6 @@
 # The evaluation
 
-Every threshold in the settings file, chosen from measurement on the sample set's ground truth (T0.4), read back through the recorded Clef calls (T0.6) on the shipped pipeline code. These are the numbers the README and the video quote. The evaluation replays offline: `go test ./internal/eval/` re-runs all of it from committed recordings — no key, no network, no spend — and a second run returns the identical report (the test proves it).
+Every threshold in the settings file, chosen from measurement on the sample set's ground truth (T0.4), read back through the recorded Clef calls (the corpus T3.9e re-recorded in T0.6's place and re-measured on) on the shipped pipeline code. These are the numbers the README and the video quote. The evaluation replays offline: `go test ./internal/eval/` re-runs all of it from committed recordings — no key, no network, no spend — and a second run returns the identical report (the test proves it).
 
 The machinery is `internal/eval/`; the ground truth is `testdata/eval/ground-truth.json`, transcribed from [`testdata/samples/README.md`](../testdata/samples/README.md). Probabilities appear here because this document is the threshold record. None of them reaches a user: probabilities steer the pipeline and die there.
 
@@ -18,7 +18,7 @@ The sample set is 37 variants of four generated people across the five occasions
 1. replays its recorded judge calls through the real `pipeline.Judge` and keeps the raw yes-probabilities (the replay hit is also the byte-equality proof: the shipped request equals the recorded probe request, which carried no YouCam analysis);
 2. sweeps the met line over the intervals between observed probabilities, scoring agreement with the ground truth;
 3. takes the **widest plateau with the most agreement** — every line inside it reads the same cells, and the plateau's midpoint is the reading farthest from any observed probability, so a stray digit moves nothing;
-4. chooses the default `met` as the single line reading the most cells across all criteria (ties: fewest overrides, then closest to 0.5), and gives a criterion a `per_criterion` override only where the default reads it below its own curve's best. Every criterion then performs at its maximum with the fewest overrides.
+4. chooses the default `met` as the single line reading the most cells across all criteria (ties: fewest overrides, then closest to 0.5), and gives a criterion a `per_criterion` override only where the default reads it below its own curve's best. Every criterion then performs at its maximum with the fewest overrides — and where a curve has two tied intervals at its best, the line the default carries can sit in the one the table does not list (one row below does).
 
 The same sweep runs per gate on the render check, over the honest pair (V04 against V05 — the second-visit story's kept look — as the positive control) and the known bad render (V04 against a different person entirely, the proxy verdict T0.4 recorded on both models). The chosen lines are the chosen model's plateau midpoints.
 
