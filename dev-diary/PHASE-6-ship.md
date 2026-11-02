@@ -45,7 +45,7 @@ requires:   T6.1, T3.9
 fixture-ok: yes
 size:       S · mid
 owns:       README.md
-status:     not-started
+status:     claimed:zcode-t62
 ```
 First screen: what Dresscode does, the YouCam APIs it uses and why each, the public URL, and a **"For judges: start here"** table (the URL, the samples, the video, the evaluation numbers). Then setup from a fresh clone, keys by name, the architecture in one picture, Keel, Chaaya and Lambo named as dependencies, and the licence.
 
@@ -59,7 +59,7 @@ requires:   T6.1
 fixture-ok: yes
 size:       S · frontier
 owns:       docs/video-script.md
-status:     not-started
+status:     claimed:zcode-t63
 ```
 Under three minutes, on a phone, the real hosted app. The second visit is the spine: first visit (two criteria missed, the jhumkas kept, the red lip dismissed), then the return and what memory changed. Name each YouCam API as it works. One evaluation number, said early. No brand logos, no third-party footage, no music without permission.
 
