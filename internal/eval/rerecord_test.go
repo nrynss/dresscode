@@ -83,6 +83,11 @@ const (
 	rerecordPaidEnv    = "DRESSCODE_RERECORD"
 	rerecordPaidValue  = "yes"
 
+	// rerecordThinnestLine is the criterion docs/clef.md calls the thinnest
+	// interval of the 36, the one place a rounded margin misrepresents how
+	// little room the line has; its sentence is pinned to the corpus's curve.
+	rerecordThinnestLine = "date-beard-even"
+
 	rerecordProofPrefix  = "rerecord-proof-"
 	rerecordStandToken   = "offline-proof-not-a-key"
 	rerecordStandAccount = "offline-proof-not-an-account-id"
@@ -642,25 +647,34 @@ func rerecordGrouped1dp(v float64) string {
 	return rerecordGrouped(tenths/10) + "." + strconv.FormatInt(tenths%10, 10)
 }
 
-// rerecordDocStates fails when one of a corpus's own figures is missing from the
-// document that states it as fact. The claims are rendered from the measured
-// numbers, so a doc that keeps an old figure, or a corpus whose usage moved
-// under it, names the difference rather than quietly disagreeing.
-func rerecordDocStates(t *testing.T, path string, spend rerecordSpend, claims []string) {
+// rerecordDocCarries fails when one of the claims a corpus produced is missing
+// from the document that states it as fact. The claims are rendered from the
+// measured numbers, so a doc that keeps an old figure, or a corpus whose
+// readings moved under it, names the difference instead of quietly disagreeing.
+// reason is the test's own statement of what the corpus gives, so the failure
+// reads as a comparison and not as a missing string.
+func rerecordDocCarries(t *testing.T, path string, reason string, claims []string) {
 	t.Helper()
 	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("rerecord: spend: %v", err)
+		t.Fatalf("rerecord: %s: %v", filepath.Base(path), err)
 	}
 	for _, claim := range claims {
 		if !strings.Contains(string(data), claim) {
-			t.Errorf("rerecord: %s does not state %q, which is what the corpus books: %d calls, %s input tokens on %s and %s on %s, %s neurons (%s), %s with the ledger's one rounding per call - the doc and the recordings are made of the same pass and must read the same numbers",
-				filepath.Base(path), claim, spend.Calls,
-				rerecordGrouped(spend.Tokens[systemone.ModelClef]), systemone.ModelClef,
-				rerecordGrouped(spend.Tokens[systemone.ModelClefFlash]), systemone.ModelClefFlash,
-				rerecordGrouped1dp(spend.Neurons), spend.Dollars, spend.Dollars)
+			t.Errorf("rerecord: %s does not state %q, which is what the corpus gives: %s - the doc and the recordings are made of the same pass and must read the same numbers",
+				filepath.Base(path), claim, reason)
 		}
 	}
+}
+
+// rerecordSpendReason states the booked pass in the figures the spend test
+// asserts, for the failure message of the doc pin.
+func rerecordSpendReason(spend rerecordSpend) string {
+	return fmt.Sprintf("%d calls, %s input tokens on %s and %s on %s, %s neurons (%s) with the ledger's one rounding per call",
+		spend.Calls,
+		rerecordGrouped(spend.Tokens[systemone.ModelClef]), systemone.ModelClef,
+		rerecordGrouped(spend.Tokens[systemone.ModelClefFlash]), systemone.ModelClefFlash,
+		rerecordGrouped1dp(spend.Neurons), spend.Dollars)
 }
 
 // rerecordLimits is the budget one pass is measured against: the call
@@ -1210,7 +1224,7 @@ func TestRerecordBookedSpendIsTheCorpus(t *testing.T) {
 
 	// The doc's claim and this assertion read the same numbers: every figure
 	// below is rendered out of the sums above, none is retyped.
-	rerecordDocStates(t, filepath.Join(w.root, "docs", "clef.md"), spend, []string{
+	rerecordDocCarries(t, filepath.Join(w.root, "docs", "clef.md"), rerecordSpendReason(spend), []string{
 		// The booked pass, whole neurons and nanodollars.
 		fmt.Sprintf("%s neurons, %s", rerecordGrouped(int64(math.Round(spend.Neurons))), spend.Dollars),
 		// The per-model input tokens and the neuron sum beside each.
@@ -1750,8 +1764,27 @@ func TestRerecordReadsBothCorpora(t *testing.T) {
 	// docs/clef.md's transcription against the corpus it transcribes. This is
 	// the shipped tree on every commit, and the assertions below are what keeps
 	// the doc's cells right rather than merely self-consistent.
-	tr := rerecordTranscription(t, filepath.Join(w.root, "docs", "clef.md"))
+	docPath := filepath.Join(w.root, "docs", "clef.md")
+	tr := rerecordTranscription(t, docPath)
 	rerecordReportTranscription(t, tr, shipped.Judge.Curves, filepath.Join("testdata", rerecordShippedDir), true)
+
+	// The doc's account of the thinnest line in the product, in the figures its
+	// own curve produces: the chosen line, the plateau that bounds it and the
+	// margin on either side. Those digits are rendered here from the measurement
+	// rather than retyped, so a figure rounded the wrong way - or a curve that
+	// moved under the sentence - names the difference instead of aging quietly.
+	// Five decimals carries the line and its margin exactly: the chosen value is
+	// the plateau midpoint rounded to five, and the readings either side of it
+	// carry four.
+	thinnest, ok := rerecordCurveOf(shipped.Judge.Curves, rerecordThinnestLine)
+	if !ok {
+		t.Fatalf("rerecord: no curve for %s in the shipped corpus, so the doc's claim about it cannot be checked",
+			rerecordThinnestLine)
+	}
+	rerecordDocCarries(t, docPath, fmt.Sprintf("%s chosen %.5f, plateau (%.4f, %.4f), margin %.5f either side",
+		rerecordThinnestLine, thinnest.Chosen, thinnest.PlateauLow, thinnest.PlateauHigh, thinnest.Margin),
+		[]string{fmt.Sprintf("%.5f on a plateau running %.4f to %.4f, a margin of %.5f either side",
+			thinnest.Chosen, thinnest.PlateauLow, thinnest.PlateauHigh, thinnest.Margin)})
 
 	if _, err := os.Stat(w.freshDir); err != nil {
 		t.Logf("rerecord: no second corpus beside the shipped one (%v), so the side-by-side half below has"+
