@@ -12,7 +12,7 @@ Ground rules the recording must keep:
   occasions (docs/evaluation.md). It is said once, in shot 1, and not repeated.
 - Every YouCam API is named in a caption at the moment it works on screen.
 - The person in the photos is an **AI-generated sample, not a real human** —
-  said in shot 5, when the photo first fills the screen, and repeated on the
+  said in shot 4, when the photo first fills the screen, and repeated on the
   end card.
 - No brand or app names other than Dresscode and the providers it names
   (YouCam, Cloudflare Workers AI). No logos, no third-party footage, no
