@@ -61,29 +61,42 @@ package server
 //     when a check recording of it passed the change and the person, and
 //     the check's three facts are that recording's readings at the shipped
 //     check lines. The sample set records four render checks and every one
-//     of them is a family-function check of V04, so festival is the story
-//     that carries a genuine recorded render of its own selfie and does
-//     not show it: its chain names no check, holds no media id and reaches
-//     no screen.
+//     of them is a family-function check of V04, so family is the only
+//     story that shows a render; the other four show none because no
+//     check of their occasion was ever recorded. Until T3.12 festival
+//     additionally named the recorded gold-chain try-on of its own selfie
+//     as its runner-up's picture; the re-recorded corpus moved that
+//     runner-up to the festive top, the chain stopped being a pass of the
+//     story, and the file names no picture of it.
+//   - The cached files are derived data (T3.12). Their flags, issue,
+//     pick, runner-up, pass fixes and shown-render check facts are
+//     readings of the recordings at the shipped lines, emitted by
+//     internal/eval/samples_cache.go and asserted file for file by
+//     TestTheSampleCachesAreGeneratedData in the ordinary gate;
+//     regeneration is the named opt-in DRESSCODE_REGENERATE_CACHES=yes.
+//     The occasion, the variant, the selfie and the source prose stay
+//     authored - a recording cannot say which of its passes a story
+//     chose to narrate.
 
 import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
-	"slices"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/nrynss/dresscode/internal/config"
 	"github.com/nrynss/dresscode/internal/domain"
+	"github.com/nrynss/dresscode/internal/eval"
 	"github.com/nrynss/dresscode/internal/pipeline"
 	"github.com/nrynss/dresscode/internal/systemone"
 	"github.com/nrynss/keel/id"
@@ -213,7 +226,7 @@ func TestOpeningEverySampleSpendsNothing(t *testing.T) {
 		{id: "sample-festival", fixture: "sample-festival-look", occasion: "festival",
 			flags: []string{"festival-garment-festive", "festival-earring", "festival-necklace",
 				"festival-lip", "festival-hair", "festival-expression", "festival-light"},
-			fix: "festival-tie-hair", runnerUp: "festival-gold-chain",
+			fix: "festival-tie-hair", runnerUp: "festival-festive-top",
 			products: []string{"festival-tie-hair"}},
 		{id: "sample-funeral", fixture: "sample-funeral-look", occasion: "funeral",
 			flags: []string{"funeral-garment-dark", "funeral-collar-plain", "funeral-beard-close",
@@ -831,7 +844,10 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 		// (e) The runner-up. Three stories state one rule and this test
 		// re-executes it against the judge recording's own readings; the
 		// fourth names the contract's recorded example instead, and is
-		// traced there. A story with no pick names neither.
+		// traced there. A story with no pick names neither. Since T3.12
+		// the caches are derived data and the rule has one home,
+		// eval.RunnerUp: the generator that wrote this file's runner-up
+		// and the clause that reads it back are the same code.
 		flagged := make(map[string]bool, len(dec.Judge.Flags))
 		for _, fid := range dec.Judge.Flags {
 			flagged[fid] = true
@@ -853,8 +869,8 @@ func TestEveryCachedStoryIsWhatTheRecordingsSay(t *testing.T) {
 					dec.Pick.Fix, dec.Pick.RunnerUp, body.Fix.ID, body.RunnerUp)
 			}
 		default:
-			if want := derivedRunnerUp(occ, answers, flagged, dec.Pick.Fix); dec.Pick.RunnerUp != want {
-				t.Fatalf("%s: runner-up %q, the rule the file states gives %q", sid, dec.Pick.RunnerUp, want)
+			if fault := runnerUpFault(sid, occ, answers, flagged, dec.Pick.Fix, dec.Pick.RunnerUp); fault != "" {
+				t.Fatal(fault)
 			}
 		}
 
@@ -1107,6 +1123,64 @@ func TestTheIssueClauseBitesOnAnIssueTheFlagsDoNotSupport(t *testing.T) {
 	// The mutation, stated as the difference the clause compares on.
 	if told == gated.ID {
 		t.Fatal("clause (d) cannot bite: the raw choice and the gated issue coincide on the witness story")
+	}
+}
+
+// TestTheRunnerUpClauseBitesOnTheRetiredFestivalChain is clause (e)'s
+// mutation proof, the sibling of the one above, kept in the file for the
+// same reason. sample-festival is the witness and the mutation is the
+// story T3.12 itself retired: on the re-recorded corpus the rule reads
+// festival-garment-festive (0.056) under festival-necklace (0.069), so
+// the runner-up is festival-festive-top, and the cached file says so.
+// Re-quote the story onto the pre-re-record pair - festival-gold-chain,
+// still a real fix on the menu, still not the pick, and so still
+// something loadSample would never refuse on its own - and
+// runnerUpFault, the very comparison clause (e) makes, names the story
+// and both values. The clause is not a restatement of the file: it is
+// the rule, run against the recording's own nouls, and this test
+// refuses to let it pass a story the rule no longer tells.
+func TestTheRunnerUpClauseBitesOnTheRetiredFestivalChain(t *testing.T) {
+	t.Parallel()
+	env := newLookEnv(t, earringAnswers(), 8, nil)
+	mountSamples(t, env)
+	sm := env.srv.samplesOf()
+	root := repoRoot(t)
+
+	st := sm.byID["sample-festival"]
+	answers := recordedJudgeAnswers(t, root, st.Variant, st.Occasion)
+	flagged := make(map[string]bool, len(st.Judge.Flags))
+	for _, fid := range st.Judge.Flags {
+		flagged[fid] = true
+	}
+
+	// The premise: the two nouls the mutation turns on, read from the
+	// recording rather than assumed. If a re-measured corpus ever puts
+	// the necklace back under the garment, this story stops being the
+	// witness and the test says so instead of passing on a coincidence.
+	if answers["festival-garment-festive"] >= answers["festival-necklace"] {
+		t.Fatal("the recording no longer reads the garment under the necklace, so the retired chain is no longer a mutation this story can carry")
+	}
+	if st.Pick.RunnerUp != "festival-festive-top" {
+		t.Fatalf("the cached runner-up is %q, want the pair the re-recorded corpus derives", st.Pick.RunnerUp)
+	}
+
+	// The shipped story passes the clause as it stands.
+	if fault := runnerUpFault("sample-festival", st.occ, answers, flagged, st.Pick.Fix, st.Pick.RunnerUp); fault != "" {
+		t.Fatalf("the committed festival story fails its own rule: %s", fault)
+	}
+
+	// The mutation: the retired pair, claimed as if nothing had moved.
+	// It must be a loadable lie - a fix on this occasion's menu and not
+	// the pick - or it proves nothing about the clause.
+	if st.Pick.Fix == "festival-gold-chain" || fixByID(st.occ, "festival-gold-chain") == nil {
+		t.Fatal("the retired chain is no longer a distinct menu fix, so it cannot witness the mutation")
+	}
+	fault := runnerUpFault("sample-festival", st.occ, answers, flagged, st.Pick.Fix, "festival-gold-chain")
+	if fault == "" {
+		t.Fatal("clause (e) accepted the retired chain: the clause does not bite")
+	}
+	if !strings.Contains(fault, "festival-gold-chain") || !strings.Contains(fault, "festival-festive-top") {
+		t.Fatalf("the fault %q names neither the claimed pair nor the one the rule gives", fault)
 	}
 }
 
@@ -2417,52 +2491,19 @@ func recordedChecks(t *testing.T, root string) map[string]recCheck {
 	return out
 }
 
-// derivedRunnerUp re-executes the rule the date, festival and funeral
-// stories state in their source for the runner-up no recording pairs: the
-// fix of the lowest-read flagged criterion the pick does not address and
-// that some fix on the menu addresses. A flagged criterion no fix on the
-// menu serves (funeral's expression-still and light-plain) is skipped, for
-// a runner-up that cannot render is no runner-up; a criterion the pick
-// already answers is skipped too. The read that decides is the recording's
-// own noul, so a threshold edit that reorders the flags reorders the pick.
-// A story with no pick and no flag names no runner-up, and the empty fix
-// says so.
-func derivedRunnerUp(occ *domain.Occasion, answers map[string]float64, flagged map[string]bool, fix string) string {
-	picked := fixByID(occ, fix)
-	serves := func(criterionID string) bool {
-		if picked == nil {
-			return false
-		}
-		return slices.Contains(picked.Criteria, criterionID)
+// runnerUpFault re-executes clause (e): the rule the date, festival and
+// funeral stories state in their source for the runner-up no recording
+// pairs. The rule itself has one home since T3.12 - eval.RunnerUp, in
+// internal/eval/samples_cache.go - because the committed caches are now
+// derived data: the generator that writes the value and this honesty
+// test that reads it back must run one rule, not two that can drift
+// into agreeing by accident. This only words the fault.
+func runnerUpFault(sid string, occ *domain.Occasion, answers map[string]float64,
+	flagged map[string]bool, pickFix, claimed string) string {
+	if want := eval.RunnerUp(occ, answers, flagged, pickFix); claimed != want {
+		return fmt.Sprintf("%s: runner-up %q, the rule the file states gives %q", sid, claimed, want)
 	}
-	// theFix is the menu fix that renders a criterion, the first to declare
-	// it: a criterion no fix names has no runner-up to reach.
-	theFix := func(criterionID string) string {
-		for i := range occ.Fixes {
-			if slices.Contains(occ.Fixes[i].Criteria, criterionID) {
-				return occ.Fixes[i].ID
-			}
-		}
-		return ""
-	}
-	bestFix, bestNoul := "", 0.0
-	for _, c := range occ.Criteria {
-		if !flagged[c.ID] || serves(c.ID) {
-			continue
-		}
-		noul, read := answers[c.ID]
-		if !read {
-			continue
-		}
-		fid := theFix(c.ID)
-		if fid == "" {
-			continue
-		}
-		if bestFix == "" || noul < bestNoul {
-			bestFix, bestNoul = fid, noul
-		}
-	}
-	return bestFix
+	return ""
 }
 
 // recordedFaceAttrRead is the recorded face-attr flow: the sample picture
