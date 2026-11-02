@@ -637,7 +637,7 @@ id:         T3.13
 title:      The eval's biggest-issue column names the read it scores, and docs/evaluation.md is pinned to the report
 owns:       internal/eval/, docs/evaluation.md
 requires:   T3.11, T3.12
-status:     in-review
+status:     done
 ```
 T3.11's review found a live incoherence in the evaluation, not in the product. `internal/eval/judge.go:93` fills `JudgeRead.Issue` from the recording's raw `issue.Choice` and `:310-326` score **that** against ground truth, while the same loop already calls `pipeline.Judge` at `:284` and discards its `Issue`. Since T3.11 the app reports the gated issue, so `docs/evaluation.md:196` ("biggest issue names a miss (or none) … 28/37") and `:230` describe what the service chose while the product ships something else. Both reads are true and they are not the same measurement: the raw choice is Clef's quality, the gated one is what a user is told. The gap is a missing label, and the honest fix is to print both rather than pick a winner. Checked against the file, and one more site belongs to the same finding: `:76` calls `pipeline.Judge` at the 0.5 reading and throws the judgement away entirely, keeping only the capture — so the package already runs the real judge twice per sample and uses its output for neither of the two things the gate decides.
 
