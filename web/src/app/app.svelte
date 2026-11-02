@@ -8,6 +8,7 @@
   import { isHistoryHash } from "../routes/history/route";
   import { isRenderHash } from "../routes/look/render/route";
   import { isVerdictHash } from "../routes/look/verdict/route";
+  import { keepLook } from "../routes/capture/upload";
   import ErrorNotice from "./error-notice.svelte";
   import Home from "./home.svelte";
   import Shell from "./shell.svelte";
@@ -30,16 +31,19 @@
    * chips show their recorded men and the other three their woman. The
    * thumbnail is decoration beside the button's own name: it carries `alt=""`
    * and `aria-hidden`, and it names no person. */
+  /** Each sample names its own recorded person, served from the samples
+   * mount the server publishes. The dev-only /media ids do not exist in a
+   * deployed build, where they answered nothing. */
   const sampleAvatars: Record<string, string> = {
-    "sample-date": "/media/5e1f1e00000000000000000000000002",
-    "sample-family": "/media/5e1f1e00000000000000000000000001",
-    "sample-interview": "/media/5e1f1e00000000000000000000000003",
-    "sample-festival": "/media/5e1f1e00000000000000000000000004",
-    "sample-funeral": "/media/5e1f1e00000000000000000000000005",
+    "sample-date": "/samples/woman/V03-date.jpg",
+    "sample-family": "/samples/woman/V04-family-function.jpg",
+    "sample-interview": "/samples/man/V09-interview.jpg",
+    "sample-festival": "/samples/woman/V14-festival.jpg",
+    "sample-funeral": "/samples/man/V18-funeral.jpg",
   };
 
   function sampleAvatar(id: string): string {
-    return sampleAvatars[id] ?? "/media/5e1f1e00000000000000000000000001";
+    return sampleAvatars[id] ?? "/samples/woman/V04-family-function.jpg";
   }
 
   /** Hash route. The shell has no router. */
@@ -98,7 +102,14 @@
     startingSample = true;
     sampleProblem = null;
     try {
-      await api<unknown>(`/api/samples/${encodeURIComponent(id)}/looks`, { method: "POST" });
+      const opened = await api<unknown>(`/api/samples/${encodeURIComponent(id)}/looks`, { method: "POST" });
+      // Each sample is its own look: keep the ids the open returned, or
+      // every sample would replay the same recorded story.
+      const body = typeof opened === "object" && opened !== null ? (opened as Record<string, unknown>) : undefined;
+      const lookId = typeof body?.look_id === "string" ? body.look_id : "";
+      const jobId = typeof body?.job_id === "string" ? body.job_id : "";
+      if (lookId === "" || jobId === "") throw new ApiError("The sample look could not be opened.", "invalid_request", 502);
+      keepLook(lookId, jobId);
       if (typeof window === "undefined") return;
       window.location.hash = "/look/render";
     } catch (error: unknown) {

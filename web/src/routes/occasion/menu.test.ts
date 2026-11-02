@@ -249,17 +249,20 @@ test("the front door carries the short copy, the icon tiles and the clean select
   // browser-backed guard measures the rendering of.
   expect(screen).toMatch(/a\.bring\s*\{[^}]*display:\s*flex;\s*width:\s*100%;\s*justify-content:\s*center;/);
 
-  // The sample buttons' face thumbnails name only media ids the mock really
-  // serves, so no thumbnail points at a path that answers nothing. The
-  // served set is read from `web/vite.config.ts`'s sample-media map — the
-  // one table the dev middleware and the mock both read — so the pin cannot
-  // drift from what actually answers.
-  const viteConfig = readFileSync(fileURLToPath(new URL("../../../vite.config.ts", import.meta.url)), "utf8");
-  const served = [...viteConfig.matchAll(/"(\/media\/[0-9a-f]+)":\s*"[^"]+"/g)].map((match) => match[1]);
-  const named = [...app.matchAll(/\/media\/[0-9a-f]+/g)].map((match) => match[0]);
-  expect(named.length, "the avatar table names served media paths").toBeGreaterThan(0);
-  expect(served.length, "the sample-media map is read").toBeGreaterThan(0);
-  for (const path of named) {
-    expect(served, `${path} is served`).toContain(path);
+  // The sample buttons' face thumbnails name each sample's own recorded
+  // person, served from the samples mount at /samples/. The story files are
+  // ground truth: a chip's avatar must be the story's own selfie member —
+  // a table that cannot see a story swap is exactly the drift the faces
+  // guard exists for.
+  const avatarTable = [...app.matchAll(/"(sample-[a-z]+)":\s*"(\/samples\/[^"]+)"/g)];
+  expect(avatarTable.length, "the avatar table names each sample's recorded person").toBe(5);
+  for (const [, id, avatar] of avatarTable) {
+    const story = JSON.parse(
+      readFileSync(
+        fileURLToPath(new URL(`../../../../testdata/samples/cached/${id}.json`, import.meta.url)),
+        "utf8",
+      ),
+    ) as { selfie: string };
+    expect(avatar, `${id} shows its own recorded person`).toBe(`/samples/${story.selfie}`);
   }
 });

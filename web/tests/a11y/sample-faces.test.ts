@@ -6,38 +6,16 @@ import { expect, test } from "vitest";
 /** The sample chips' faces, checked against the recordings they stand on.
  * Each of the five sample stories names its own person (the `selfie` member
  * of its recorded file under `testdata/samples/cached/`), the front door's
- * chip table maps each sample id to a media path, and the sample-media map in
- * `web/vite.config.ts` serves each path the recorded person's photograph.
- * Three reads, one truth: a chip that shows another sample's face fails
- * here, and so does a map entry that points a served id at the wrong file.
- * jsdom cannot judge a photograph (and no assertion reads image bytes), so
- * this guard pins the mapping, and the browser rig pins the drawn chips. */
+ * chip table maps each sample id to that path under the samples mount
+ * (`/samples/<selfie>`, which the server publishes in production and the
+ * dev middleware answers here). Three reads, one truth: a chip that shows
+ * another sample's face fails here. jsdom cannot judge a photograph (and no
+ * assertion reads image bytes), so this guard pins the mapping, and the
+ * browser rig pins the drawn chips. */
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.resolve(here, "../..");
 const repoRoot = path.resolve(here, "../../..");
-
-/** The sample-media map, read out of `web/vite.config.ts` — the one source
- * the dev middleware and the mock's virtual module both read, so the served
- * pin reads the same table they do. */
-function mediaSamples(): Map<string, string> {
-  const source = readFileSync(path.join(webRoot, "vite.config.ts"), "utf8");
-  const map = new Map<string, string>();
-  for (const match of source.matchAll(/"(\/media\/[0-9a-f]+)":\s*"([^"]+)"/g)) {
-    map.set(match[1]!, match[2]!);
-  }
-  return map;
-}
-
-/** The front door's chip table, read out of `web/src/app/app.svelte`. */
-function chipFaces(): Map<string, string> {
-  const source = readFileSync(path.join(webRoot, "src/app/app.svelte"), "utf8");
-  const map = new Map<string, string>();
-  for (const match of source.matchAll(/"(sample-[a-z-]+)":\s*"(\/media\/[0-9a-f]+)"/g)) {
-    map.set(match[1]!, match[2]!);
-  }
-  return map;
-}
 
 /** The recorded sample stories: the ground truth for whose face a chip is
  * of. The server's own loader reads these files at mount and refuses a story
@@ -64,7 +42,31 @@ function recordedSamples(): RecordedSample[] {
   return stories.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-const faces = mediaSamples();
+/** The faces the samples mount serves: each story's own selfie member, at
+ * the path the mount publishes. One source — the stories themselves — so a
+ * second table cannot drift from what the server answers. */
+function servedFaces(): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const story of recordedSamples()) {
+    map.set(
+      `/samples/${story.selfie}`,
+      path.join(repoRoot, "testdata", "samples", ...story.selfie.split("/")),
+    );
+  }
+  return map;
+}
+
+/** The front door's chip table, read out of `web/src/app/app.svelte`. */
+function chipFaces(): Map<string, string> {
+  const source = readFileSync(path.join(webRoot, "src/app/app.svelte"), "utf8");
+  const map = new Map<string, string>();
+  for (const match of source.matchAll(/"(sample-[a-z-]+)":\s*"(\/samples\/[^"]+)"/g)) {
+    map.set(match[1]!, match[2]!);
+  }
+  return map;
+}
+
+const faces = servedFaces();
 const chips = chipFaces();
 const stories = recordedSamples();
 
@@ -78,9 +80,9 @@ test("every recorded sample's chip shows its own recorded person", () => {
     const chip = chips.get(story.id);
     expect(chip, `${story.id} names a face`).toBeDefined();
     const served = faces.get(chip!);
-    expect(served, `${story.id}'s face is one the media map serves`).toBeDefined();
+    expect(served, `${story.id}'s face is one the samples mount serves`).toBeDefined();
     expect(
-      path.resolve(webRoot, served!),
+      path.resolve(served!),
       `${story.id} (${story.variant}) shows its own recorded person, ${story.selfie}`,
     ).toBe(path.resolve(repoRoot, "testdata", "samples", ...story.selfie.split("/")));
   }
@@ -90,18 +92,22 @@ test("the five chips name five distinct faces", () => {
   expect(new Set(chips.values()).size, "no two chips share one face").toBe(chips.size);
 });
 
-test("no media path the app names goes unserved", () => {
+test("no samples path the app names goes unserved", () => {
   const app = readFileSync(path.join(webRoot, "src/app/app.svelte"), "utf8");
-  const named = [...app.matchAll(/\/media\/[0-9a-f]+/g)].map((match) => match[0]);
-  expect(named.length, "the app names served media paths").toBeGreaterThan(0);
-  for (const mediaPath of new Set(named)) {
-    expect([...faces.keys()], `${mediaPath} is served`).toContain(mediaPath);
+  const named = [...app.matchAll(/\/samples\/[A-Za-z0-9/.-]+\.jpg/g)].map((match) => match[0]);
+  expect(named.length, "the app names served sample photos").toBeGreaterThan(0);
+  for (const samplesPath of new Set(named)) {
+    const rel = samplesPath.replace("/samples/", "");
+    expect(
+      () => readFileSync(path.join(repoRoot, "testdata", "samples", ...rel.split("/"))),
+      `${samplesPath} is served`,
+    ).not.toThrow();
   }
 });
 
-test("every file the media map names exists", () => {
-  expect(faces.size, "the media map is read").toBeGreaterThan(0);
-  for (const [mediaPath, file] of faces) {
-    expect(() => readFileSync(path.resolve(webRoot, file)), `${mediaPath} serves a real file`).not.toThrow();
+test("every file the served faces name exists", () => {
+  expect(faces.size, "the served faces are read").toBeGreaterThan(0);
+  for (const [, file] of faces) {
+    expect(() => readFileSync(file), "the served face is a real file").not.toThrow();
   }
 });

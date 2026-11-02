@@ -96,11 +96,26 @@ function dresscodeSampleMedia() {
     },
     /** An `<img>` load bypasses the fetch interception the mock installs, so
      * the dev server itself answers the recorded ids from the same id-to-file
-     * map the virtual module embeds. */
+     * map the virtual module embeds — and the samples mount the chips'
+     * avatars name, in dev as in production. */
     configureServer(server: DevServer) {
       server.middlewares.use((req, res, next) => {
         const url = req.url ?? "";
-        if (req.method !== "GET" || !url.startsWith("/media/")) {
+        if (req.method !== "GET") {
+          next();
+          return;
+        }
+        if (url.startsWith("/samples/") && url.endsWith(".jpg")) {
+          const file = path.resolve(root, "../testdata/samples", decodeURIComponent(url.slice("/samples/".length).split("?")[0]));
+          if (!file.startsWith(path.resolve(root, "../testdata/samples"))) {
+            next();
+            return;
+          }
+          res.setHeader("Content-Type", "image/jpeg");
+          res.end(fs.readFileSync(file).toString("base64"), "base64");
+          return;
+        }
+        if (!url.startsWith("/media/")) {
           next();
           return;
         }

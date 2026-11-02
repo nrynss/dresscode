@@ -3,7 +3,7 @@
 // and it needs Node's own WebSocket and fetch — jsdom's stand-ins refuse the
 // DevTools socket. No DOM test lives here; the page is measured in Chrome.
 import { spawn, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { createServer, type Server } from "node:http";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -37,15 +37,20 @@ const recordedSampleNames = new Map<string, string>(
 );
 const chipTable = new Map<string, string>();
 for (const match of readFileSync(path.join(webRoot, "src/app/app.svelte"), "utf8").matchAll(
-  /"(sample-[a-z-]+)":\s*"(\/media\/[0-9a-f]+)"/g,
+  /"(sample-[a-z-]+)":\s*"(\/samples\/[^"]+)"/g,
 )) {
   chipTable.set(match[1]!, match[2]!);
 }
-const servedMedia = new Set<string>();
-for (const match of readFileSync(path.join(webRoot, "vite.config.ts"), "utf8").matchAll(
-  /"(\/media\/[0-9a-f]+)":\s*"[^"]+"/g,
-)) {
-  servedMedia.add(match[1]!);
+/** The served sample faces: the stories' own selfie members, at the paths
+ * the samples mount publishes — in dev as in production. The stories are
+ * the one source, so the drawn chips are checked against what the server
+ * really answers, never against a second table. */
+const servedSamples = new Set<string>();
+const cachedDir = path.join(webRoot, "..", "testdata", "samples", "cached");
+for (const name of readdirSync(cachedDir)) {
+  if (!name.endsWith(".json")) continue;
+  const story = JSON.parse(readFileSync(path.join(cachedDir, name), "utf8")) as { selfie?: string };
+  if (typeof story.selfie === "string") servedSamples.add(`/samples/${story.selfie}`);
 }
 /** Sample name on a drawn button -> the media path that button's face. */
 const faceOfLabel = new Map<string, string>(
@@ -599,8 +604,8 @@ for (const theme of ["light", "dark"] as const) {
         expect(avatar.width, "an avatar is a 2.25rem chip").toBeGreaterThan(30);
         expect(avatar.width, "an avatar is a 2.25rem chip").toBeLessThan(42);
         expect(Math.abs(avatar.width - avatar.height), "an avatar is round, not oval").toBeLessThanOrEqual(1);
-        expect(avatar.src, "an avatar names a served media path").toMatch(/^\/media\/[0-9a-f]+$/);
-        expect(servedMedia.has(avatar.src), `${avatar.src} is one the sample-media map serves`).toBe(true);
+        expect(avatar.src, "an avatar names a served sample photo").toMatch(/^\/samples\/[A-Za-z0-9/.-]+\.jpg$/);
+        expect(servedSamples.has(avatar.src), `${avatar.src} is one the samples mount serves`).toBe(true);
         const expected = faceOfLabel.get(avatar.label);
         expect(expected, `${avatar.label} is one of the recorded samples`).toBeDefined();
         expect(avatar.src, `${avatar.label}'s chip shows its own recorded person's face`).toBe(expected);
