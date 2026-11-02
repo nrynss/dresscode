@@ -447,7 +447,7 @@ requires:   T3.9c, T3.9d
 fixture-ok: no
 size:       M · mid
 owns:       testdata/clef/, testdata/clef-fresh/, docs/clef.md, internal/eval/, docs/evaluation.md, dresscode.toml.example, internal/config/load_test.go, internal/pipeline/judge_test.go, internal/systemone/recorder_test.go
-status:     claimed:qoder-t39e
+status:     done
 ```
 The shipped lines come off the T0.6 recordings and read 254 of 273 live against the 269 they were chosen for (T3.9b); the live curves still top out at 269 with the same 32 of 36 perfect separations, so the gap is service drift under the lines, not the criteria wording. Re-record the corpus against the service of today and re-choose every line from the fresh curves, with T3.9d's recorder and T3.9c's pinned arithmetic in place. The wording is deliberately unchanged here — the user's open call on the four irreducible criteria came to the orchestrator, and the ruling is to re-record as-is, so service drift and a rewording never land in one diff and become inseparable. A rewording is T3.9e's result read against `docs/evaluation.md`'s named candidates, as its own task, after the fresh corpus says where the thin margins actually sit.
 
@@ -559,7 +559,7 @@ id:         T3.11
 title:      Judge reports the model's choice only when it names a flagged criterion
 owns:       internal/pipeline/, internal/server/samples_test.go
 requires:   T3.9e
-status:     in-review
+status:     done
 ```
 T3.9e's fresh corpus turned a latent defect into a red gate. `internal/pipeline/judge.go` copies Clef's `biggest_issue` choice straight into `Judgement.Issue`, unconditioned on `Judgement.Flags`, and `internal/server/samples_test.go` clause (d) pins the demo stories to that raw choice. On the re-recorded corpus the interview story — the product's *compliant look*, ground truth `miss: []`, reading zero flags at the shipped lines — answers `interview-beard-short` at 0.6416 while that criterion's own noul 0.2175 sits **above** its chosen override 0.18815. A user whose look meets the dress code would be told its beard is the biggest issue, with nothing flagged and no fix to offer. The T0.6 corpus hid this only because that recording happened to answer `none`.
 
@@ -605,7 +605,7 @@ id:         T3.12
 title:      A committed generator for testdata/samples/cached, and the festival runner-up it re-quotes
 owns:       testdata/samples/cached/, internal/eval/, internal/server/samples_test.go
 requires:   T3.11
-status:     in-review
+status:     done
 ```
 T3.9e's re-record left one red assertion that no threshold and no behaviour change can close. `internal/server/samples_test.go` clause (e) re-executes the runner-up rule the story's own `source` states, and on the fresh corpus `sample-festival` reads: cached `festival-gold-chain`, rule gives **`festival-festive-top`**. Cause, named by the swap's own feedback entry: two flagged criteria reordered inside 0.013 — `festival-garment-festive` 0.0401 → 0.056 crossing `festival-necklace` 0.0304 → 0.069. The flags themselves are unchanged and ground truth did not move; only the ordering that produces a runner-up did.
 
@@ -637,7 +637,7 @@ id:         T3.13
 title:      The eval's biggest-issue column names the read it scores, and docs/evaluation.md is pinned to the report
 owns:       internal/eval/, docs/evaluation.md
 requires:   T3.11, T3.12
-status:     pending
+status:     claimed:zcode-t313
 ```
 T3.11's review found a live incoherence in the evaluation, not in the product. `internal/eval/judge.go:93` fills `JudgeRead.Issue` from the recording's raw `issue.Choice` and `:310-326` score **that** against ground truth, while the same loop already calls `pipeline.Judge` at `:284` and discards its `Issue`. Since T3.11 the app reports the gated issue, so `docs/evaluation.md:196` ("biggest issue names a miss (or none) … 28/37") and `:230` describe what the service chose while the product ships something else. Both reads are true and they are not the same measurement: the raw choice is Clef's quality, the gated one is what a user is told. The gap is a missing label, and the honest fix is to print both rather than pick a winner. Checked against the file, and one more site belongs to the same finding: `:76` calls `pipeline.Judge` at the 0.5 reading and throws the judgement away entirely, keeping only the capture — so the package already runs the real judge twice per sample and uses its output for neither of the two things the gate decides.
 
@@ -655,3 +655,24 @@ The task's second half is the reason this file is the place to close it: **no te
 Notes:
 
 - A wording note for whoever next edits `internal/eval`: `live_report_test.go:68` calls the settings file "the settings file of today". The intent — the pinned tests take their lines from the transcript, never from the shipped file — is right, and the deictic is what a second re-record will make false. Corpus-named wording, same sentence.
+
+---
+
+### T3.14: The prose the re-quote retired
+```yaml
+id:         T3.14
+title:      Re-quote the five stale mentions of festival's retired gold chain
+owns:       internal/server/samples.go, testdata/samples/cached/sample-date.json, testdata/samples/cached/sample-funeral.json
+requires:   T3.12
+status:     claimed:zcode-t314
+```
+T3.12's runner-up re-quote retired `festival-gold-chain` from the festival story, and its review's tree-wide grep confirmed exactly five prose sites that still speak of it as part of the story: three code comments and two authored `source` sentences. None is behaviour — all five are documentation of the data, which is why the orchestrator charters them rather than sending a remediator. The two cache sentences were frozen by T3.12's own byte-stability clause on purpose: they move only now, in their own hand, with the generator landed to prove they are the only bytes that move.
+
+**Done when:**
+- The five sites say what the caches now say: `internal/server/samples.go` around `:95-97` (the comment naming festival's chain a genuine recorded try-on "named in that story" — it is no longer in the story), around `:157-158` and `:612` (the render-root comments citing festival's discarded pass among the YouCam results — the runner-up attempt's image retired with it; family's shown render still justifies the second root, and the wording must say which files justify it now), and the festival clause in `sample-date.json` / `sample-funeral.json`'s `source` sentences (the same rule now gives `festival-festive-top` for V14; the V03 and V18 clauses stay as they are). The new wording is quoted in the report for the orchestrator's read.
+- The cache edits touch only authored `source` prose: `TestTheSampleCachesAreGeneratedData` (assert mode) stays green **untouched**, which is the proof no measured byte moved; `git diff` shows no other cache file and no measured field changed.
+- The comment edits change no behaviour and no test expectation. No file outside `owns` changes. `./tools/check.sh` green.
+
+Notes:
+
+- The grep that closed T3.12's ripple list, restated so this hand does not re-derive it: after this task, the only remaining `festival-gold-chain` / `festival-necklace` / `0.0304` mentions are the fix's own menu entry (`testdata/occasions/festival.json`, `docs/occasions.md`, `web/src/routes/occasion/menu.test.ts` — the fix still exists on the menu), the still-recorded necklace flow (`internal/pipeline/render_test.go`, `testdata/youcam/`), the samples README's criterion miss lists, and historical dev-diary/live-transcript records — all true as they stand.
