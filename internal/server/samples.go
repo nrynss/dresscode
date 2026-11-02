@@ -92,9 +92,11 @@
 // from two roots only, the samples directory and the recorded YouCam
 // results beside it; a story that names anything else is refused, not
 // resolved. What the recordings do not tell, the story does not say:
-// festival's gold chain is a genuine recorded try-on of its own selfie,
-// it is named in that story, and it is not shown, because no render check
-// of the festival occasion was ever recorded.
+// festival's gold chain is still a genuine recorded try-on of its own
+// selfie, but the story no longer carries it - the runner-up rule gives
+// festival-festive-top, whose pass recorded no render - and nothing of
+// the festival occasion is shown, because no render check of that
+// occasion was ever recorded.
 
 package server
 
@@ -155,7 +157,7 @@ type SamplesConfig struct {
 	// "../youcam/results/<name>.jpg", so the mount reads a second root,
 	// the sibling <SamplesDir>/../youcam/results, and a samples
 	// directory without that sibling refuses the mount - family's shown
-	// render and festival's discarded pass both live there.
+	// render is the story file that lives there.
 	SamplesDir string
 
 	// Now is the clock for look rows. Nil means time.Now.
@@ -609,9 +611,9 @@ func (st *sampleState) fixOf() *domain.Fix {
 // input, but a path in it is still a path, and one that walked out of both
 // roots would have the server open anything its own user can read. The
 // recorded results are a root because honest evidence lives there:
-// family's jhumkas and festival's chain are YouCam results, named as such
-// with the one "../youcam/results/" shape, and no other member of any
-// story reaches outside the samples directory.
+// family's jhumkas is a YouCam result, named as such with the one
+// "../youcam/results/" shape, and no other member of any story reaches
+// outside the samples directory.
 func sampleRoots(dir string) []string {
 	root := filepath.Clean(dir)
 	return []string{root, filepath.Clean(filepath.Join(root, "..", "youcam", "results"))}
