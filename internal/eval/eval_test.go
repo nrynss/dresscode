@@ -132,49 +132,56 @@ func TestRunReplaysTwiceTheSame(t *testing.T) {
 	}
 }
 
-// offAtHalf is the thirteen cells docs/clef.md counts as off the
+// offAtHalf is the nineteen cells docs/clef.md counts as off the
 // expected side of 0.5 - the sanity anchors this evaluation's curves
 // must show.
 var offAtHalf = map[string]float64{
-	"P09 date-beard-even":           0.4508,
-	"P11 family-garment-festive":    0.4425,
-	"P12 family-expression-present": 0.612,
-	"P13 interview-beard-short":     0.5771,
-	"P16 funeral-beard-close":       0.5737,
-	"V02 date-light-see":            0.7913,
-	"V06 family-expression-present": 0.5431,
-	"V08 family-beard-even":         0.609,
-	"V08 family-light-even":         0.6223,
-	"V09 interview-collar-buttoned": 0.1853,
-	"V12 interview-collar-buttoned": 0.401,
-	"V16 festival-light":            0.5734,
-	"V21 date-beard-even":           0.5985,
+	"P03 family-expression-present": 0.4709,
+	"P05 interview-collar-buttoned": 0.2583,
+	"P05 interview-expression-calm": 0.3199,
+	"P09 date-beard-even":           0.1965,
+	"P11 family-beard-even":         0.2058,
+	"P11 family-garment-festive":    0.4358,
+	"P15 funeral-beard-close":       0.2982,
+	"V01 date-beard-even":           0.4503,
+	"V02 date-beard-even":           0.2087,
+	"V02 date-light-see":            0.6666,
+	"V04 family-expression-present": 0.368,
+	"V08 family-beard-even":         0.574,
+	"V09 interview-beard-short":     0.2175,
+	"V09 interview-collar-buttoned": 0.3842,
+	"V11 interview-collar-buttoned": 0.4634,
+	"V11 interview-expression-calm": 0.4215,
+	"V12 interview-collar-buttoned": 0.1656,
+	"V15 festival-beard":            0.492,
+	"V17 funeral-beard-close":       0.3595,
 }
 
-// wrongAtChosen are the four cells no line on this set can save: the
-// men's beard and light readings that sit inside the met group's own
-// range, and one flat stare that reads calmer than a calm face.
+// wrongAtChosen are the four cells no line on this set can save: V21's
+// and V08's patchy beards, which read above the line the genuinely even
+// beards need, V02's flat dull frontal light, and P12's flat stare,
+// which sits above the line two genuinely calm faces sit above.
 var wrongAtChosen = map[string]float64{
-	"P09 date-beard-even":           0.4508,
-	"P11 family-beard-even":         0.5106,
-	"P12 family-expression-present": 0.612,
-	"V02 date-light-see":            0.7913,
+	"P12 family-expression-present": 0.3702,
+	"V02 date-light-see":            0.6666,
+	"V08 family-beard-even":         0.574,
+	"V21 date-beard-even":           0.2869,
 }
 
 // TestTheJudgeAnchors pins the judge read against docs/clef.md: the
-// sample count, the cell count, the 260-of-273 agreement at 0.5, the
-// thirteen anchor cells, and the biggest-issue count.
+// sample count, the cell count, the 254-of-273 agreement at 0.5, the
+// nineteen anchor cells, and the biggest-issue count.
 func TestTheJudgeAnchors(t *testing.T) {
 	report := runOnce(t)
 	j := report.Judge
 	if j.Samples != 37 || j.Cells != 273 {
 		t.Fatalf("judge read %d samples and %d cells, want 37 and 273", j.Samples, j.Cells)
 	}
-	if j.AgreeAtHalf != 260 {
-		t.Fatalf("agreement at 0.5 is %d, want 260 of 273", j.AgreeAtHalf)
+	if j.AgreeAtHalf != 254 {
+		t.Fatalf("agreement at 0.5 is %d, want 254 of 273", j.AgreeAtHalf)
 	}
 	if len(j.OffAtHalf) != len(offAtHalf) {
-		t.Fatalf("%d cells off the expected side of 0.5, want the thirteen docs/clef.md names", len(j.OffAtHalf))
+		t.Fatalf("%d cells off the expected side of 0.5, want the nineteen docs/clef.md names", len(j.OffAtHalf))
 	}
 	for _, cell := range j.OffAtHalf {
 		key := cell.Sample + " " + cell.Criterion
@@ -198,11 +205,11 @@ func TestTheJudgeAnchors(t *testing.T) {
 	if apart != 32 {
 		t.Fatalf("%d criteria apart, want 32 of 36", apart)
 	}
-	if j.Issues.Named != 31 || j.Issues.Of != 37 {
-		t.Fatalf("biggest issue named %d of %d, want 31 of 37", j.Issues.Named, j.Issues.Of)
+	if j.Issues.Named != 28 || j.Issues.Of != 37 {
+		t.Fatalf("biggest issue named %d of %d, want 28 of 37", j.Issues.Named, j.Issues.Of)
 	}
-	if !reflect.DeepEqual(j.Issues.Missed, []string{"P09", "P11", "P15", "V07", "V15", "V21"}) {
-		t.Fatalf("the biggest issue missed %v, want the six docs/clef.md names", j.Issues.Missed)
+	if !reflect.DeepEqual(j.Issues.Missed, []string{"P09", "P11", "P15", "V01", "V02", "V07", "V09", "V15", "V17"}) {
+		t.Fatalf("the biggest issue missed %v, want the nine docs/clef.md names", j.Issues.Missed)
 	}
 }
 
@@ -274,16 +281,18 @@ func TestEveryCurveChoosesFromMeasurement(t *testing.T) {
 // the diff this report proposes for dresscode.toml's [judge] and
 // [check] sections.
 var chosenSettings = Settings{
-	JudgeMet: 0.628,
+	JudgeMet: 0.35265,
 	JudgePerCriterion: map[string]float64{
-		"family-expression-present": 0.5466,
-		"family-garment-festive":    0.2394,
-		"interview-collar-buttoned": 0.11395,
-		"interview-expression-calm": 0.36925,
+		"date-beard-even":           0.19435,
+		"family-beard-even":         0.1682,
+		"funeral-beard-close":       0.26845,
+		"interview-beard-short":     0.18815,
+		"interview-collar-buttoned": 0.1126,
+		"interview-expression-calm": 0.2022,
 	},
-	CheckChangeMade:   0.50085,
-	CheckSamePerson:   0.48355,
-	CheckCriterionMet: 0.50315,
+	CheckChangeMade:   0.4978,
+	CheckSamePerson:   0.4799,
+	CheckCriterionMet: 0.4986,
 	CheckModel:        "clef",
 	JudgeAgreement:    269,
 	JudgeCells:        273,
@@ -314,10 +323,10 @@ func TestTheChosenSettings(t *testing.T) {
 	if got.CheckCorrect != 4 || got.CheckOf != 4 {
 		t.Fatalf("the chosen check lines decide %d of %d reads, want 4 of 4", got.CheckCorrect, got.CheckOf)
 	}
-	// The default line is a measurement too: it reads 260 cells, the
+	// The default line is a measurement too: it reads 262 cells, the
 	// most any single line reads without overrides.
-	if report.Judge.DefaultTotal != 260 {
-		t.Fatalf("the default line reads %d, want 260", report.Judge.DefaultTotal)
+	if report.Judge.DefaultTotal != 262 {
+		t.Fatalf("the default line reads %d, want 262", report.Judge.DefaultTotal)
 	}
 	for _, c := range report.Judge.Curves {
 		line := report.Judge.DefaultMet
@@ -401,7 +410,7 @@ func TestTheCheckDecidesEveryRecordedRead(t *testing.T) {
 
 // TestTheModelChoice pins the model decision: both recorded models
 // gate perfectly, and clef reads the look more truthfully - 19 of 22
-// against clef-flash's 17 of 22.
+// against clef-flash's 18 of 22.
 func TestTheModelChoice(t *testing.T) {
 	report := runOnce(t)
 	if report.Check.ChosenModel != "clef" {
@@ -422,21 +431,22 @@ func TestTheModelChoice(t *testing.T) {
 		t.Fatalf("clef vocabulary %+v, want 19 of 22", clef)
 	}
 	flash, ok := scores["clef-flash"]
-	if !ok || flash.VocabOK != 17 || flash.VocabOf != 22 {
-		t.Fatalf("clef-flash vocabulary %+v, want 17 of 22", flash)
+	if !ok || flash.VocabOK != 18 || flash.VocabOf != 22 {
+		t.Fatalf("clef-flash vocabulary %+v, want 18 of 22", flash)
 	}
 }
 
-// TestTheVocabularyScoresTheLook pins the vocabulary scoring: 36 of 44
-// cells true, with exactly the eight misses - two the vocabulary
-// cannot express at all, one on each model's read of the honest render,
-// and the flash-only bare-ear gold and collar calls on the discarded
-// proxy.
+// TestTheVocabularyScoresTheLook pins the vocabulary scoring: 37 of 44
+// cells true, with exactly the seven misses - the honest render's hair
+// and expression on both models, the discarded proxy's bare lips read
+// nude on both, and the flash-only buttoned collar on that proxy. The
+// flash no longer calls the proxy's bare ear gold: on this recording it
+// answers none, correctly.
 func TestTheVocabularyScoresTheLook(t *testing.T) {
 	report := runOnce(t)
 	v := report.Check.Vocabulary
-	if v.Of != 44 || v.Correct != 36 {
-		t.Fatalf("vocabulary %d of %d true, want 36 of 44", v.Correct, v.Of)
+	if v.Of != 44 || v.Correct != 37 {
+		t.Fatalf("vocabulary %d of %d true, want 37 of 44", v.Correct, v.Of)
 	}
 	misses := map[string]string{} // "exchange attribute" -> answer
 	for _, cell := range v.Cells {
@@ -450,14 +460,13 @@ func TestTheVocabularyScoresTheLook(t *testing.T) {
 		misses[key] = cell.Answer
 	}
 	want := map[string]string{
-		"check-clef-V04-to-V05 hair":                           "tied-back",
-		"check-clef-V04-to-V05 expression":                     "flat",
-		"check-clef-V04-to-woman-white lip_colour":             "nude",
-		"check-clef-flash-V04-to-V05 hair":                     "tied-back",
-		"check-clef-flash-V04-to-V05 expression":               "flat",
-		"check-clef-flash-V04-to-woman-white collar":           "buttoned",
-		"check-clef-flash-V04-to-woman-white lip_colour":       "nude",
-		"check-clef-flash-V04-to-woman-white jewellery_colour": "gold",
+		"check-clef-V04-to-V05 hair":                     "tied-back",
+		"check-clef-V04-to-V05 expression":               "flat",
+		"check-clef-V04-to-woman-white lip_colour":       "nude",
+		"check-clef-flash-V04-to-V05 hair":               "tied-back",
+		"check-clef-flash-V04-to-V05 expression":         "flat",
+		"check-clef-flash-V04-to-woman-white collar":     "buttoned",
+		"check-clef-flash-V04-to-woman-white lip_colour": "nude",
 	}
 	if !reflect.DeepEqual(misses, want) {
 		t.Fatalf("vocabulary misses %v, want %v", misses, want)
@@ -496,7 +505,7 @@ func TestTheStabilityRepeats(t *testing.T) {
 }
 
 // TestTheSizeSweep pins the resize question docs/clef.md left open: at
-// the chosen lines the flags survive 1024 and 512 px, and at 768 px
+// the chosen lines the flags survive 1024 px, and at both 768 and 512 px
 // the one criterion that moves is the expression - the curve's
 // thinnest plateau.
 func TestTheSizeSweep(t *testing.T) {
@@ -514,8 +523,8 @@ func TestTheSizeSweep(t *testing.T) {
 	if moved := byLabel["1024"]; len(moved) != 0 {
 		t.Fatalf("at 1024 px the flags move: %v", moved)
 	}
-	if moved := byLabel["512"]; len(moved) != 0 {
-		t.Fatalf("at 512 px the flags move: %v", moved)
+	if moved := byLabel["512"]; !reflect.DeepEqual(moved, []string{"family-expression-present"}) {
+		t.Fatalf("at 512 px the flags move %v, want only the expression", moved)
 	}
 	if moved := byLabel["768"]; !reflect.DeepEqual(moved, []string{"family-expression-present"}) {
 		t.Fatalf("at 768 px the flags move %v, want only the expression", moved)
