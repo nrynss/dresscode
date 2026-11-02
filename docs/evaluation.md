@@ -150,17 +150,16 @@ Joint intervals (safe for both models at once): `change_made` (0.0350, 0.9437), 
 
 ## Look vocabulary
 
-Clef's answer against the true attribute on every recorded render, 11 attributes × 4 reads = 44 cells; 36 true. The eight misses:
+Clef's answer against the true attribute on every recorded render, 11 attributes × 4 reads = 44 cells; 37 true — clef 19 of 22, clef-flash 18 of 22. The seven misses:
 
 | Read | Attribute | Answered | True | Why |
 |---|---|---|---|---|
-| honest, both models | `hair` | tied-back | bun | V05's hair is a low bun; the vocabulary has both words and the checker says tied-back. The data's own word for tied hair is bun (the tie-hair fixes set it), so memory would store a different word than the fix sets. |
-| honest, both models | `expression` | flat | closed-mouth-smile | Calm and present has no vocabulary value between flat and closed-mouth-smile (docs/clef.md flagged this in T0.6; it still holds). |
-| bad proxy, both models | `lip_colour` | nude | none | Bare lips read "nude" more readily than "none" — at low confidence (0.36), on a render that is discarded anyway, so the line dies with it. |
-| bad proxy, clef-flash | `jewellery_colour` | gold | none | The bare ear called gold while the earring read none — flash's vocabulary weakness, on a discarded render. |
-| bad proxy, clef-flash | `collar` | buttoned | open | The anchor's simple collar; flash spreads its collar answers thin. |
+| honest, both models | `hair` | tied-back | bun | V05's hair is a low bun; the vocabulary has both words and the checker says tied-back (0.7990 on clef, 0.8001 on clef-flash). The data's own word for tied hair is bun (the tie-hair fixes set it), so memory would store a different word than the fix sets. |
+| honest, both models | `expression` | flat | closed-mouth-smile | Calm and present has no vocabulary value between flat and closed-mouth-smile (docs/clef.md flagged this in T0.6; it still holds): flat answers 0.6555 on clef and 0.6216 on clef-flash. |
+| bad proxy, both models | `lip_colour` | nude | none | Bare lips read "nude" more readily than "none" — at low confidence (0.3467 on clef, 0.3235 on clef-flash), on a render that is discarded anyway, so the line dies with it. |
+| bad proxy, clef-flash | `collar` | buttoned | open | The anchor's simple collar; flash spreads its collar answers thin — `buttoned` at 0.3341 where clef says `open` at 0.7445. |
 
-The discarded proxy's words never reach the user (a failed check's line dies with the render), so the misses that matter are the honest render's two — both vocabulary gaps, both already on the wording list. Both models join the honest render's line identically ("jhumkas, gold, red, mandarin, tied-back, black, flat, festive-top"), which is the same-look-same-line promise holding.
+The discarded proxy's words never reach the user (a failed check's line dies with the render), so the misses that matter are the honest render's two per model — the expression, which the vocabulary has no word for, and the hair, which it does. Both are already on the wording list. Both models join the honest render's line identically ("gold jhumkas, red, mandarin, tied-back, black, flat, festive-top" — the phrase table's line, the jhumkas carrying the colour), which is the same-look-same-line promise holding. The T0.6 corpus's eighth miss does not survive the re-record: there clef-flash called the proxy's bare ear `gold` while its earring read `none`; on this recording it answers `none` (0.4428) and is correct, with `gold` only its runner-up at 0.3012.
 
 ## Stability
 
