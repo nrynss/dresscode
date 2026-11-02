@@ -150,70 +150,71 @@ The choice was `family-earring-festive` all ten times. Clef is deterministic for
 
 ## The judge on the sample set
 
-Each cell is the expected answer from `testdata/samples/README.md` (Y should pass, N should fail) and the raw `noul` Clef returned. **≠** marks a cell where the probability is on the other side of 0.5 from the expected answer. 0.5 is used only to count agreement in this document. It is not a threshold, and T3.9 may well pick per-criterion lines elsewhere.
+Each cell is the expected answer from `testdata/samples/README.md` (Y should pass, N should fail) and the raw `noul` Clef returned on the fresh pass. **≠** marks a cell where the probability is on the other side of 0.5 from the expected answer. 0.5 is used only to count agreement in this document. It is not a threshold: the shipped lines sit elsewhere, chosen per criterion off the curves in [`docs/evaluation.md`](evaluation.md).
+
+The two halves of a cell move differently. The letter is the sample set's ground truth, and a re-record does not touch it; the probability and the mark are observations of one pass of the service, and both moved here — 19 of the 273 cells sit on the wrong side of 0.5 on this corpus, where the T0.6 corpus had 13.
 
 ### Date
 
 | Variant | Person | `date-collar-open` | `date-garment-easy` | `date-hair-clear` | `date-beard-even` | `date-lip-clear` | `date-expression-engaged` | `date-light-see` | Biggest issue (p) |
 |---|---|---|---|---|---|---|---|---|---|
-| V01 | man | Y 0.8095 | Y 0.8085 | Y 0.7847 | Y 0.7217 | Y 0.6944 | Y 0.7236 | Y 0.6337 | `none` 0.4917 |
-| V02 | man | N 0.0403 | N 0.037 | Y 0.924 | Y 0.7355 | Y 0.9096 | N 0.1923 | N 0.7913 **≠** | `date-expression-engaged` 0.307 |
-| V03 | woman | Y 0.9622 | Y 0.9296 | N 0.0398 | Y 0.9477 | N 0.0925 | Y 0.8054 | Y 0.8341 | `date-lip-clear` 0.5553 |
-| V21 | man | Y 0.8593 | Y 0.8236 | Y 0.8882 | N 0.5985 **≠** | Y 0.8273 | Y 0.8644 | Y 0.6388 | `date-collar-open` 0.3019 |
-| P01 | woman-white | Y 0.8995 | Y 0.8651 | Y 0.8451 | Y 0.8625 | Y 0.6691 | Y 0.7957 | Y 0.7587 | `none` 0.5515 |
-| P02 | woman-white | N 0.0509 | N 0.0376 | N 0.4052 | Y 0.946 | N 0.0775 | Y 0.7439 | Y 0.8057 | `date-lip-clear` 0.7029 |
-| P09 | man-eastasian | Y 0.9085 | Y 0.9098 | Y 0.9079 | Y 0.4508 **≠** | Y 0.8344 | Y 0.7565 | Y 0.8408 | `date-beard-even` 0.5363 |
-| P10 | man-eastasian | Y 0.9525 | Y 0.9061 | Y 0.914 | N 0.4486 | Y 0.852 | N 0.3786 | N 0.3259 | `date-beard-even` 0.4168 |
+| V01 | man | Y 0.7543 | Y 0.9004 | Y 0.9289 | Y 0.4503 **≠** | Y 0.8158 | Y 0.848 | Y 0.7398 | `date-beard-even` 0.4902 |
+| V02 | man | N 0.0831 | N 0.0473 | Y 0.9496 | Y 0.2087 **≠** | Y 0.9112 | N 0.1504 | N 0.6666 **≠** | `date-beard-even` 0.576 |
+| V03 | woman | Y 0.8803 | Y 0.8995 | N 0.032 | Y 0.9587 | N 0.0942 | Y 0.8898 | Y 0.7652 | `date-lip-clear` 0.4519 |
+| V21 | man | Y 0.76 | Y 0.8738 | Y 0.9318 | N 0.2869 | Y 0.902 | Y 0.7804 | Y 0.6247 | `date-beard-even` 0.5719 |
+| P01 | woman-white | Y 0.7734 | Y 0.7953 | Y 0.8246 | Y 0.9084 | Y 0.7254 | Y 0.7851 | Y 0.7351 | `none` 0.3754 |
+| P02 | woman-white | N 0.1745 | N 0.0591 | N 0.2651 | Y 0.8968 | N 0.0571 | Y 0.7776 | Y 0.8015 | `date-lip-clear` 0.5722 |
+| P09 | man-eastasian | Y 0.8105 | Y 0.9092 | Y 0.9339 | Y 0.1965 **≠** | Y 0.8551 | Y 0.7531 | Y 0.7259 | `date-beard-even` 0.6296 |
+| P10 | man-eastasian | Y 0.87 | Y 0.8896 | Y 0.9307 | N 0.1922 | Y 0.9226 | N 0.2031 | N 0.1126 | `date-beard-even` 0.4486 |
 
 ### Family function
 
 | Variant | Person | `family-earring-festive` | `family-lip-colour` | `family-garment-festive` | `family-hair-finished` | `family-beard-even` | `family-expression-present` | `family-light-even` | Biggest issue (p) |
 |---|---|---|---|---|---|---|---|---|---|
-| V04 | woman | N 0.0351 | N 0.2094 | Y 0.9308 | Y 0.9253 | Y 0.9518 | Y 0.5943 | Y 0.9061 | `family-earring-festive` 0.8456 |
-| V05 | woman | Y 0.9517 | Y 0.939 | Y 0.9103 | Y 0.9012 | Y 0.9041 | Y 0.5608 | Y 0.8574 | `none` 0.7908 |
-| V06 | woman | Y 0.9798 | Y 0.9746 | Y 0.8925 | N 0.0263 | Y 0.9631 | N 0.5431 **≠** | Y 0.929 | `family-hair-finished` 0.9008 |
-| V07 | man | N 0.0249 | N 0.037 | Y 0.8987 | Y 0.8446 | Y 0.8676 | Y 0.7219 | Y 0.9009 | `none` 0.3765 |
-| V08 | man | N 0.0219 | N 0.0193 | N 0.0342 | Y 0.8906 | N 0.609 **≠** | N 0.3287 | N 0.6223 **≠** | `family-garment-festive` 0.5698 |
-| P03 | woman-white | Y 0.9422 | Y 0.9444 | Y 0.8356 | Y 0.7673 | Y 0.9143 | Y 0.5501 | Y 0.9025 | `none` 0.6472 |
-| P04 | woman-white | N 0.025 | N 0.1337 | N 0.0363 | N 0.0312 | Y 0.9342 | N 0.4531 | N 0.4152 | `family-garment-festive` 0.2674 |
-| P11 | man-eastasian | N 0.0201 | N 0.0283 | Y 0.4425 **≠** | Y 0.8544 | Y 0.5106 | Y 0.7279 | Y 0.9208 | `family-garment-festive` 0.349 |
-| P12 | man-eastasian | N 0.0161 | N 0.0234 | N 0.0281 | Y 0.8829 | N 0.2652 | N 0.612 **≠** | Y 0.9361 | `family-garment-festive` 0.4434 |
+| V04 | woman | N 0.0455 | N 0.3101 | Y 0.8243 | Y 0.8327 | Y 0.8927 | Y 0.368 **≠** | Y 0.8258 | `family-earring-festive` 0.234 |
+| V05 | woman | Y 0.88 | Y 0.8231 | Y 0.8132 | Y 0.7558 | Y 0.8421 | Y 0.5027 | Y 0.7413 | `none` 0.5172 |
+| V06 | woman | Y 0.9472 | Y 0.9401 | Y 0.7998 | N 0.0242 | Y 0.9422 | N 0.3458 | Y 0.784 | `family-hair-finished` 0.5617 |
+| V07 | man | N 0.0676 | N 0.1159 | Y 0.6955 | Y 0.5991 | Y 0.5341 | Y 0.5628 | Y 0.6214 | `none` 0.416 |
+| V08 | man | N 0.0199 | N 0.0551 | N 0.0563 | Y 0.8636 | N 0.574 **≠** | N 0.2089 | N 0.2636 | `family-garment-festive` 0.5824 |
+| P03 | woman-white | Y 0.8744 | Y 0.8578 | Y 0.795 | Y 0.7102 | Y 0.8686 | Y 0.4709 **≠** | Y 0.7571 | `none` 0.6084 |
+| P04 | woman-white | N 0.0451 | N 0.1108 | N 0.1105 | N 0.0738 | Y 0.9025 | N 0.2584 | N 0.132 | `family-garment-festive` 0.2218 |
+| P11 | man-eastasian | N 0.0205 | N 0.0339 | Y 0.4358 **≠** | Y 0.8143 | Y 0.2058 **≠** | Y 0.7403 | Y 0.8991 | `family-beard-even` 0.4225 |
+| P12 | man-eastasian | N 0.019 | N 0.0769 | N 0.0778 | Y 0.7183 | N 0.1306 | N 0.3702 | Y 0.8807 | `family-beard-even` 0.3781 |
 
 ### Interview
 
 | Variant | Person | `interview-collar-buttoned` | `interview-garment-plain` | `interview-hair-close` | `interview-beard-short` | `lip-quiet` | `interview-expression-calm` | `interview-light-plain` | Biggest issue (p) |
 |---|---|---|---|---|---|---|---|---|---|
-| V09 | man | Y 0.1853 **≠** | Y 0.9297 | Y 0.8563 | Y 0.7586 | Y 0.8437 | Y 0.6607 | Y 0.6679 | `none` 0.4553 |
-| V10 | man | N 0.0426 | N 0.0267 | Y 0.9375 | N 0.2603 | Y 0.9248 | N 0.1121 | N 0.1864 | `interview-garment-plain` 0.8586 |
-| V11 | woman | Y 0.5524 | Y 0.9729 | N 0.032 | Y 0.9552 | N 0.0295 | Y 0.6101 | Y 0.7197 | `lip-quiet` 0.725 |
-| V12 | woman | Y 0.401 **≠** | Y 0.948 | Y 0.8597 | Y 0.9257 | Y 0.8262 | Y 0.672 | Y 0.7546 | `none` 0.3807 |
-| P05 | woman-white | Y 0.6087 | Y 0.9678 | N 0.0412 | Y 0.9404 | Y 0.8921 | Y 0.5782 | Y 0.8412 | `interview-hair-close` 0.8352 |
-| P13 | man-eastasian | N 0.024 | N 0.0307 | Y 0.9116 | N 0.5771 **≠** | Y 0.8955 | N 0.1603 | N 0.1785 | `interview-garment-plain` 0.8398 |
+| V09 | man | Y 0.3842 **≠** | Y 0.9394 | Y 0.871 | Y 0.2175 **≠** | Y 0.8315 | Y 0.8107 | Y 0.6428 | `interview-beard-short` 0.6416 |
+| V10 | man | N 0.0596 | N 0.0425 | Y 0.8664 | N 0.0773 | Y 0.801 | N 0.0845 | N 0.1396 | `interview-garment-plain` 0.7318 |
+| V11 | woman | Y 0.4634 **≠** | Y 0.9434 | N 0.0334 | Y 0.9549 | N 0.0449 | Y 0.4215 **≠** | Y 0.7791 | `lip-quiet` 0.2764 |
+| V12 | woman | Y 0.1656 **≠** | Y 0.8391 | Y 0.7117 | Y 0.8483 | Y 0.7247 | Y 0.5276 | Y 0.6456 | `none` 0.409 |
+| P05 | woman-white | Y 0.2583 **≠** | Y 0.9429 | N 0.0397 | Y 0.9429 | Y 0.8956 | Y 0.3199 **≠** | Y 0.8075 | `interview-hair-close` 0.537 |
+| P13 | man-eastasian | N 0.0369 | N 0.0382 | Y 0.8636 | N 0.1588 | Y 0.8982 | N 0.0742 | N 0.1212 | `interview-garment-plain` 0.5503 |
 
 ### Festival
 
 | Variant | Person | `festival-garment-festive` | `festival-earring` | `festival-necklace` | `festival-lip` | `festival-hair` | `festival-beard` | `festival-expression` | `festival-light` | Biggest issue (p) |
 |---|---|---|---|---|---|---|---|---|---|---|
-| V13 | woman | Y 0.9298 | Y 0.9621 | Y 0.8437 | Y 0.9562 | Y 0.8433 | Y 0.9216 | Y 0.9466 | Y 0.7703 | `none` 0.8016 |
-| V14 | woman | N 0.0401 | N 0.049 | N 0.0304 | N 0.0715 | N 0.0464 | Y 0.9357 | N 0.0844 | N 0.2935 | `festival-hair` 0.3792 |
-| V15 | man | Y 0.8575 | N 0.0146 | N 0.0195 | N 0.0214 | Y 0.8211 | Y 0.8214 | Y 0.9004 | Y 0.7898 | `none` 0.5078 |
-| V16 | man | N 0.0866 | N 0.0211 | N 0.0211 | N 0.0248 | Y 0.8633 | N 0.2369 | Y 0.7474 | N 0.5734 **≠** | `festival-garment-festive` 0.5569 |
-| P06 | woman-white | Y 0.8831 | Y 0.9567 | Y 0.9434 | Y 0.9364 | N 0.033 | Y 0.9592 | N 0.1154 | Y 0.7533 | `festival-hair` 0.7009 |
-| P14 | man-eastasian | Y 0.9307 | N 0.0157 | N 0.0297 | N 0.015 | Y 0.8285 | N 0.1742 | Y 0.96 | Y 0.7755 | `festival-beard` 0.7546 |
+| V13 | woman | Y 0.8799 | Y 0.9296 | Y 0.6929 | Y 0.8856 | Y 0.7265 | Y 0.9037 | Y 0.8922 | Y 0.6178 | `none` 0.6963 |
+| V14 | woman | N 0.056 | N 0.0836 | N 0.069 | N 0.0693 | N 0.0501 | Y 0.9238 | N 0.0812 | N 0.1209 | `festival-hair` 0.3498 |
+| V15 | man | Y 0.8682 | N 0.0351 | N 0.0775 | N 0.0785 | Y 0.8416 | Y 0.492 **≠** | Y 0.8719 | Y 0.6357 | `festival-beard` 0.3197 |
+| V16 | man | N 0.0647 | N 0.0361 | N 0.0715 | N 0.076 | Y 0.8346 | N 0.0677 | Y 0.6256 | N 0.3245 | `festival-garment-festive` 0.3077 |
+| P06 | woman-white | Y 0.9104 | Y 0.9194 | Y 0.7564 | Y 0.9008 | N 0.0389 | Y 0.9534 | N 0.0827 | Y 0.691 | `festival-expression` 0.2099 |
+| P14 | man-eastasian | Y 0.9175 | N 0.034 | N 0.1455 | N 0.0942 | Y 0.8857 | N 0.0601 | Y 0.9503 | Y 0.7196 | `festival-beard` 0.5774 |
 
 ### Funeral
 
 | Variant | Person | `funeral-garment-dark` | `funeral-collar-plain` | `funeral-jewellery-quiet` | `lip-quiet` | `funeral-hair-plain` | `funeral-beard-close` | `funeral-expression-still` | `funeral-light-plain` | Biggest issue (p) |
 |---|---|---|---|---|---|---|---|---|---|---|
-| V17 | man | Y 0.9546 | Y 0.8917 | Y 0.9117 | Y 0.8756 | Y 0.8603 | Y 0.812 | Y 0.9303 | Y 0.803 | `none` 0.694 |
-| V18 | man | N 0.0287 | N 0.0604 | Y 0.8438 | Y 0.8729 | Y 0.8599 | N 0.2102 | N 0.0588 | N 0.0623 | `funeral-garment-dark` 0.8386 |
-| V19 | woman | Y 0.9604 | Y 0.8902 | Y 0.9047 | Y 0.9014 | Y 0.8733 | Y 0.9268 | Y 0.9443 | Y 0.7755 | `none` 0.7127 |
-| V20 | woman | N 0.0443 | N 0.0853 | N 0.0554 | N 0.0462 | N 0.27 | Y 0.9366 | N 0.0475 | N 0.0873 | `funeral-garment-dark` 0.5527 |
-| P07 | woman-white | Y 0.9656 | Y 0.9273 | Y 0.9184 | Y 0.8911 | Y 0.7797 | Y 0.9311 | Y 0.9361 | Y 0.8654 | `none` 0.7329 |
-| P08 | woman-white | Y 0.9049 | N 0.1014 | N 0.033 | N 0.0431 | N 0.1337 | Y 0.952 | Y 0.9314 | Y 0.9026 | `funeral-jewellery-quiet` 0.8077 |
-| P15 | man-eastasian | Y 0.9465 | Y 0.8866 | Y 0.8799 | Y 0.8603 | Y 0.7195 | Y 0.642 | Y 0.8732 | Y 0.8684 | `funeral-beard-close` 0.4155 |
-| P16 | man-eastasian | Y 0.9316 | Y 0.9199 | Y 0.8606 | Y 0.8612 | Y 0.809 | N 0.5737 **≠** | N 0.0393 | N 0.0392 | `funeral-expression-still` 0.8096 |
-
+| V17 | man | Y 0.9291 | Y 0.9078 | Y 0.8534 | Y 0.8278 | Y 0.8359 | Y 0.3595 **≠** | Y 0.9309 | Y 0.7973 | `funeral-beard-close` 0.5047 |
+| V18 | man | N 0.0468 | N 0.0435 | Y 0.708 | Y 0.7757 | Y 0.8431 | N 0.0376 | N 0.0496 | N 0.0864 | `funeral-garment-dark` 0.6855 |
+| V19 | woman | Y 0.9034 | Y 0.8747 | Y 0.8065 | Y 0.8632 | Y 0.8248 | Y 0.8905 | Y 0.9159 | Y 0.7056 | `none` 0.51 |
+| V20 | woman | N 0.038 | N 0.0676 | N 0.0437 | N 0.0462 | N 0.1951 | Y 0.8526 | N 0.0324 | N 0.0887 | `funeral-expression-still` 0.4948 |
+| P07 | woman-white | Y 0.906 | Y 0.9036 | Y 0.8262 | Y 0.8463 | Y 0.6473 | Y 0.8994 | Y 0.906 | Y 0.7534 | `none` 0.5295 |
+| P08 | woman-white | Y 0.8998 | N 0.2605 | N 0.0352 | N 0.0672 | N 0.0781 | Y 0.922 | Y 0.8866 | Y 0.9076 | `funeral-jewellery-quiet` 0.757 |
+| P15 | man-eastasian | Y 0.919 | Y 0.914 | Y 0.859 | Y 0.816 | Y 0.8262 | Y 0.2982 **≠** | Y 0.9264 | Y 0.8209 | `funeral-beard-close` 0.7107 |
+| P16 | man-eastasian | Y 0.9258 | Y 0.9286 | Y 0.9076 | Y 0.7785 | Y 0.9076 | N 0.2387 | N 0.0231 | N 0.0434 | `funeral-expression-still` 0.6788 |
 
 ### Agreement per criterion
 
