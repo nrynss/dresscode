@@ -484,15 +484,22 @@ func Run(ctx context.Context, deps Deps, req Request, progress func(job.Progress
 	}
 
 	// Measure. Only the chosen fix's analyses run, once per user, photo
-	// and task.
+	// and task. A measurement that cannot run — a pose the analysis
+	// refuses (error_face_angle_downward, a live photo's own refusal), a
+	// service hiccup — is not the look's death: the fix stands untried and
+	// the chain falls to the runner-up, then the suggestion, the same way
+	// a refused render does. The measure stage names the fix it could not
+	// measure.
 	cached, err := cachedAlready(ctx, deps.Cache, photo, choice.Fix)
 	if err != nil {
 		return Look{}, err
 	}
+	measureFailed := false
 	if _, err := Measure(ctx, deps.Runner, deps.Cache, photo, choice.Fix); err != nil {
-		return Look{}, job.Failure{Code: noFaceCode(err), Err: fmt.Errorf("measure: fix %q: %w", choice.Fix.ID, err)}
-	}
-	if len(choice.Fix.Analysis) == 0 {
+		measureFailed = true
+		failed := choice.Fix.ID
+		emit(progress, stageMeasure, measureEvent{Failed: &failed})
+	} else if len(choice.Fix.Analysis) == 0 {
 		skipped := true
 		emit(progress, stageMeasure, measureEvent{Skipped: &skipped})
 	} else {
@@ -504,9 +511,15 @@ func Run(ctx context.Context, deps Deps, req Request, progress func(job.Progress
 	// refused render is not a failed check: the chain ends there, with
 	// the refusal's event and the suggestion.
 	flagged := criterionIDs(j.Flags)
-	shown, words, refused, rerr := attempt(ctx, deps, photo, occ, choice.Fix, req, flagged, attemptFix, progress)
-	if rerr != nil {
-		return look, rerr
+	var shown *domain.Render
+	var words string
+	refused := measureFailed
+	if !measureFailed {
+		var rerr error
+		shown, words, refused, rerr = attempt(ctx, deps, photo, occ, choice.Fix, req, flagged, attemptFix, progress)
+		if rerr != nil {
+			return look, rerr
+		}
 	}
 	if shown != nil {
 		shown.FixID = choice.Fix.ID
@@ -523,6 +536,7 @@ func Run(ctx context.Context, deps Deps, req Request, progress func(job.Progress
 		look.SuggestionOnly = true
 		return finish(ctx, deps, req, occ, choice.Fix, look, progress)
 	}
+	var rerr error
 	shown, words, refused, rerr = attempt(ctx, deps, photo, occ, choice.RunnerUp, req, flagged, attemptRunnerUp, progress)
 	if rerr != nil {
 		return look, rerr
@@ -795,8 +809,9 @@ type pickEvent struct {
 }
 
 type measureEvent struct {
-	Skipped *bool `json:"skipped,omitempty"`
-	Cached  *bool `json:"cached,omitempty"`
+	Skipped *bool   `json:"skipped,omitempty"`
+	Cached  *bool   `json:"cached,omitempty"`
+	Failed  *string `json:"failed,omitempty"`
 }
 
 type renderEvent struct {

@@ -2303,3 +2303,76 @@ func TestStartKeepsTheSnapshotPastACancel(t *testing.T) {
 		t.Fatalf("resume (%v, %v), want the look rebuilt and resumable", fn, err)
 	}
 }
+
+// A measurement that cannot run is not the look's death. The analysis
+// refuses a pose it cannot measure — error_face_angle_downward, a live
+// photo's own refusal tonight — and the look must stand on its suggestion
+// with the fix named in the measure stage, the runner-up unreachable when
+// there is none, and no render attempted past the dead measure.
+func TestAMeasureFailureStandsTheSuggestion(t *testing.T) {
+	t.Parallel()
+	rep := openRenderReplay(t)
+	occasions := loadOccasions(t)
+	photo := recordedImage(t, rep, "hair-updo-upload-src")
+	rig := newRunRig(t, rep, 12) // no slots: the measure's upload cannot run
+	rig.pics.named["selfie-1"] = photo
+	rig.clef.judge = map[string]float64{"family-hair-finished": 0.03}
+	rig.clef.issue = "family-hair-finished"
+	rig.clef.look = map[string]string{
+		"jewellery":        "none",
+		"jewellery_colour": "none",
+		"necklace":         "none",
+		"necklace_colour":  "none",
+		"lip_colour":       "none",
+		"collar":           "mandarin",
+		"hair":             "tied-back",
+		"hair_colour":      "black",
+		"beard":            "none",
+		"expression":       "flat",
+		"garment":          "festive-top",
+	}
+	rig.clef.picks = []pickAnswer{{choice: "family-tie-hair"}}
+
+	deps := Deps{
+		Clef:          rig.clef,
+		Runner:        rig.runner,
+		Cache:         rig.cache,
+		Vocab:         loadVocabulary(t),
+		Thresholds:    Thresholds{Met: readingAt},
+		Lines:         checkReading,
+		CheckModel:    systemone.ModelClef,
+		Occasions:     occasionSource(occasions).resolve,
+		Pictures:      rig.pics,
+		Catalog:       loadCatalog(t),
+		ProductRecord: noIntakeRecords,
+	}
+	req := Request{
+		Photo:    Photo{User: "user-1", Hash: "hash-v06", Image: photo},
+		Selfie:   "selfie-1",
+		Occasion: "family-function",
+		OptIn:    []string{"family-tie-hair"},
+	}
+
+	look, err := Run(t.Context(), deps, req, rig.events.publish)
+	if err != nil {
+		t.Fatalf("run: %v — a measure failure must stand the suggestion, not kill the look", err)
+	}
+
+	events := rig.events.all()
+	want := []string{stageJudge, stagePick, stageMeasure, stageShop}
+	if got := stagesOf(t, rig.events); !reflect.DeepEqual(got, want) {
+		t.Fatalf("stages %v, want %v", got, want)
+	}
+	if string(events[2].Detail) != `{"failed":"family-tie-hair"}` {
+		t.Fatalf("measure detail %s, want the named failed frame", events[2].Detail)
+	}
+	if !look.SuggestionOnly || look.Shown != nil {
+		t.Fatalf("look %+v, want the suggestion standing with nothing shown", look)
+	}
+	if look.FixID != "family-tie-hair" {
+		t.Fatalf("look fix %q, want the pick's", look.FixID)
+	}
+	if rig.cache.count() != 0 {
+		t.Fatalf("%d cache rows, want none — the analysis never ran", rig.cache.count())
+	}
+}
