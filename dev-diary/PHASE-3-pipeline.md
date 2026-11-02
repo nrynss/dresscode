@@ -578,6 +578,14 @@ Notes:
 
 - Lands in T3.9e's branch, and the reason is recorded in that section: the fix's own proof is `testdata/clef/judge-V09-interview.json`, which exists only there.
 
+Round 1 review (verdict: changes required — and the required change is not this task's to make):
+
+- **The gate is right and its pins bite, verified rather than assumed.** Keyed on the option id, never the label; the flags it consults are `judgement.Flags` from the same read pass (`internal/pipeline/judge.go:199-210`) that `Run` hands the app (`run.go:465`), so there is no check-pass or scope skew; suppression returns no error and is commented at both read sites; the id and the label always travel as one option. `git diff 1391bc2..HEAD -- testdata/` and `-- docs/` are empty, and `judge_test.go`'s `expected` table moved no row — at 0.5 the gate genuinely changes nothing, which `TestJudgeReplaysEverySample` passing confirms. Three mutations the reviewer ran itself: unconditioning the gate reddens `judge_test.go:692/696/702` and `:752/756` plus `samples_test.go:823` naming `sample-interview`; keeping a suppressed criterion's label beside the `none` id reddens both packages; swallowing `cant-tell` reddens the pre-existing pin at `judge_test.go:577`.
+- **Done-when #4 ("the gate is green") is re-ruled, and the defect was mine, not the hand's.** The one red assertion at HEAD is clause (e) — `sample-festival`'s runner-up — which T3.12 owns and exists to close. The reviewer proved it is not the gate: `git archive 1391bc2` with only base clause (d) softened (`t.Fatalf` → `t.Logf`) fails identically at base `samples_test.go:832`; the base run aborts earlier only because `sampleIDs` (`internal/server/samples.go:140`) lists `sample-interview` before `sample-festival`, so the old clause-(d) fatal masked (e). **Ruling: T3.11's clause is "no red assertion attributable to T3.11", and the full green gate stays T3.12's deliverable, as its charter already states.** T3.9e's landing therefore waits on T3.12, not on a further T3.11 change.
+- **Both should-fixes closed at `5d7f22f` (orchestrator's hand, comments and one rationale only — no behaviour delta).** The comments cited `domain.load.go` for the file at `internal/domain/load.go`. The review found `namesCriterion`'s reserved-id test unreachable in effect — dropping `|| id == cantTellID` left `internal/pipeline` green, because `validateBiggest` admits only the criteria plus `none` and `cant-tell`, and `load.go:281` reserves those two ids away from any criterion. **Ruled: keep it.** The id reaches that function over the wire from the service, so the check is the boundary's own and not a restatement of the loader's guarantee; the reason is now in the comment beside it, and the `cant-tell` survival the charter demands is pinned independently at `judge_test.go:570-579`, which the mutation shows biting. Reusing `domain.issueCantTell` was impossible (unexported), so the package-local constant is the only option; reusing `noneID` from `pick.go` rather than adding a second `none` constant is right.
+- **Carried to T3.13 rather than patched here:** `internal/eval/judge.go:93` fills `JudgeRead.Issue` from the recording's raw `issue.Choice` and `:310-326` score *that* against ground truth, while the same loop calls `pipeline.Judge` at `:284` and discards `j.Issue`. So `docs/evaluation.md:196` ("biggest issue names a miss (or none) … 28/37") and `:230` describe the pre-gate choice while the product ships the gated one. `internal/eval` is outside this task's owns, and closing it moves a quoted number, which is its own charter's work.
+- Two facts for the board, both checked: `web/src` greps empty for a consumer of `issue`, so nothing user-facing assumes a criterion id; and `dev-diary/PHASE-5B-ux.md:43`'s ban on touching `biggest_issue` in occasion data is still honoured. `dev-diary/PHASE-4-server.md`'s note that clause (d) pins "that recording's own `choice`" was stale and is corrected to the gated issue.
+
 ---
 
 ### T3.12: The demo caches are generated, not hand-kept
@@ -601,3 +609,34 @@ The reason this is its own task and not a line edit: **there is no committed gen
 - Report every place the old runner-up id appears elsewhere — `docs/`, `README.md`, `web/`, `testdata/api/` — **quoted, not edited**, so the orchestrator sees the ripple before landing it.
 - Clause (e) still bites after the change: a story claiming a runner-up the flags do not produce must fail by name. Mutation-prove it.
 - **`./tools/check.sh` passes in full, for the first time on this line of work.** T3.11 fixed clause (d); clause (e) is the last red assertion. A green gate is the deliverable, not an afterthought.
+
+Notes:
+
+- **One gap of the same class stays open after this task, and is named so it is not mistaken for closed:** `testdata/api/look.json` is transcribed data with no committed generator either, and `internal/server/samples.go`'s family story cites it for its pick and runner-up. T3.12 makes the five caches derived; the fixture remains hand-kept. Whether it becomes derived data or stays a recorded contract fixture is the other orchestrator's call — it is Phase-4/5 surface, not this track's.
+
+---
+
+### T3.13: The evaluation says which issue it measured
+```yaml
+id:         T3.13
+title:      The eval's biggest-issue column names the read it scores, and docs/evaluation.md is pinned to the report
+owns:       internal/eval/, docs/evaluation.md
+requires:   T3.11, T3.12
+status:     pending
+```
+T3.11's review found a live incoherence in the evaluation, not in the product. `internal/eval/judge.go:93` fills `JudgeRead.Issue` from the recording's raw `issue.Choice` and `:310-326` score **that** against ground truth, while the same loop already calls `pipeline.Judge` at `:284` and discards its `Issue`. Since T3.11 the app reports the gated issue, so `docs/evaluation.md:196` ("biggest issue names a miss (or none) … 28/37") and `:230` describe what the service chose while the product ships something else. Both reads are true and they are not the same measurement: the raw choice is Clef's quality, the gated one is what a user is told. The gap is a missing label, and the honest fix is to print both rather than pick a winner.
+
+The task's second half is the reason this file is the place to close it: **no test reads `docs/evaluation.md`.** `docs/clef.md` has `rerecord_test.go`'s transcription guard, and this file has nothing — `:68` and `:107` state the same thin-margin fact independently, which is exactly the drift a pin exists to catch.
+
+**Ruling (the orchestrator's): the report carries both columns, labelled, and the doc quotes one of them by name.**
+
+**Done when:**
+- `internal/eval`'s judge read carries the service's raw choice **and** what `pipeline.Judge` reports for the same recording, each named in the report the code prints. Neither is recomputed by hand and neither silently replaces the other.
+- `docs/evaluation.md`'s biggest-issue sentences say which of the two they are read from, and every figure in them is re-emitted from the printed report, never transcribed. Where the two counts differ, both numbers appear with their labels; the old headline is not adjusted into the new one.
+- A committed pin reads `docs/evaluation.md` the way `rerecord_test.go` reads `docs/clef.md`, covering at least the biggest-issue totals and the margin sentences at `:68` and `:107`, so a future re-record names the drift instead of aging it quietly.
+- The 254-of-273 agreement, the `[judge]`/`[check]` lines and everything under `testdata/eval/live/` do **not** move. The gate changes what the app reports, not what the thresholds flag; T3.9e's ruling stands that the transcripts are frozen evidence about the T0.6 corpus and a pin must not read the live corpus for a claim about them.
+- `./tools/check.sh` green. No `-tags live` run: nothing here spends.
+
+Notes:
+
+- A wording note for whoever next edits `internal/eval`: `live_report_test.go:68` calls the settings file "the settings file of today". The intent — the pinned tests take their lines from the transcript, never from the shipped file — is right, and the deictic is what a second re-record will make false. Corpus-named wording, same sentence.
