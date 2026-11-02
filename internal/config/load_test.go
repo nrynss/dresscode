@@ -59,20 +59,22 @@ func TestExampleLoads(t *testing.T) {
 	if got.Flags.FreshUploadsOff || got.Flags.RendersOff || got.Flags.SamplesOnly {
 		t.Fatalf("flags %+v, want the open position", got.Flags)
 	}
-	if got.Judge.Met != 0.628 || len(got.Judge.PerCriterion) != 4 {
-		t.Fatalf("judge %+v, want the evaluation's met line and its four overrides", got.Judge)
+	if got.Judge.Met != 0.35265 || len(got.Judge.PerCriterion) != 6 {
+		t.Fatalf("judge %+v, want the evaluation's met line and its six overrides", got.Judge)
 	}
 	for id, want := range map[string]float64{
-		"family-expression-present": 0.5466,
-		"family-garment-festive":    0.2394,
-		"interview-collar-buttoned": 0.11395,
-		"interview-expression-calm": 0.36925,
+		"date-beard-even":           0.19435,
+		"family-beard-even":         0.1682,
+		"funeral-beard-close":       0.26845,
+		"interview-beard-short":     0.18815,
+		"interview-collar-buttoned": 0.1126,
+		"interview-expression-calm": 0.2022,
 	} {
 		if got.Judge.PerCriterion[id] != want {
 			t.Fatalf("override %s = %v, want %v", id, got.Judge.PerCriterion[id], want)
 		}
 	}
-	if got.Check != (Check{ChangeMade: 0.50085, SamePerson: 0.48355, CriterionMet: 0.50315, Model: "clef"}) {
+	if got.Check != (Check{ChangeMade: 0.4978, SamePerson: 0.4799, CriterionMet: 0.4986, Model: "clef"}) {
 		t.Fatalf("check %+v, want the evaluation's lines on clef", got.Check)
 	}
 
@@ -344,7 +346,7 @@ func TestAnAbsentSectionIsALoadError(t *testing.T) {
 		// The walk reports the section's first unsupplied required key,
 		// so the cut check section is pinned on its prefix.
 		{"no check section", "check.", cut("[check]")},
-		{"a met line of zero", "judge.met", swap("met = 0.628", "met = 0.0")},
+		{"a met line of zero", "judge.met", swap("met = 0.35265", "met = 0.0")},
 		{"no check model", "check.model", swap(`model = "clef"`, "model = ''")},
 	}
 	for _, tc := range cases {
@@ -371,18 +373,18 @@ func TestJudgeAndCheckLinesRefused(t *testing.T) {
 		want string
 		mod  func(string) string
 	}{
-		{"met nan", "judge: met", swap("met = 0.628", "met = nan")},
-		{"met inf", "judge: met", swap("met = 0.628", "met = inf")},
-		{"met under zero", "judge: met", swap("met = 0.628", "met = -0.1")},
-		{"met over one", "judge: met", swap("met = 0.628", "met = 1.5")},
-		{"an override that is not a line", "family-expression-present", swap(
-			"family-expression-present = 0.5466",
-			"family-expression-present = nan",
+		{"met nan", "judge: met", swap("met = 0.35265", "met = nan")},
+		{"met inf", "judge: met", swap("met = 0.35265", "met = inf")},
+		{"met under zero", "judge: met", swap("met = 0.35265", "met = -0.1")},
+		{"met over one", "judge: met", swap("met = 0.35265", "met = 1.5")},
+		{"an override that is not a line", "date-beard-even", swap(
+			"date-beard-even = 0.19435",
+			"date-beard-even = nan",
 		)},
-		{"change made nan", "check: change_made", swap("change_made = 0.50085", "change_made = nan")},
-		{"same person inf", "check: same_person", swap("same_person = 0.48355", "same_person = inf")},
-		{"criterion met under zero", "check: criterion_met", swap("criterion_met = 0.50315", "criterion_met = -1")},
-		{"criterion met over one", "check: criterion_met", swap("criterion_met = 0.50315", "criterion_met = 2")},
+		{"change made nan", "check: change_made", swap("change_made = 0.4978", "change_made = nan")},
+		{"same person inf", "check: same_person", swap("same_person = 0.4799", "same_person = inf")},
+		{"criterion met under zero", "check: criterion_met", swap("criterion_met = 0.4986", "criterion_met = -1")},
+		{"criterion met over one", "check: criterion_met", swap("criterion_met = 0.4986", "criterion_met = 2")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -400,19 +402,19 @@ func TestJudgeAndCheckLinesRefused(t *testing.T) {
 
 // TestAnOverrideAndItsModelLoad pins the spellings the example does not
 // use: an inline per_criterion table in place of the example's sub-table,
-// and the flash model. The example's own four overrides are pinned by
+// and the flash model. The example's own six overrides are pinned by
 // TestExampleLoads.
 func TestAnOverrideAndItsModelLoad(t *testing.T) {
 	t.Parallel()
 	t.Run("an inline per criterion table", func(t *testing.T) {
 		got, err := loadVariant(t, func(text string) string {
 			without := cut("[judge.per_criterion]")(text)
-			return swap("met = 0.628", "met = 0.628\nper_criterion = { family-earring-festive = 0.35 }")(without)
+			return swap("met = 0.35265", "met = 0.35265\nper_criterion = { family-earring-festive = 0.35 }")(without)
 		})
 		if err != nil {
 			t.Fatalf("load: %v", err)
 		}
-		if got.Judge.Met != 0.628 || len(got.Judge.PerCriterion) != 1 || got.Judge.PerCriterion["family-earring-festive"] != 0.35 {
+		if got.Judge.Met != 0.35265 || len(got.Judge.PerCriterion) != 1 || got.Judge.PerCriterion["family-earring-festive"] != 0.35 {
 			t.Fatalf("judge %+v, want the example's met and the one inline override", got.Judge)
 		}
 	})

@@ -51,24 +51,26 @@ samples = "testdata/samples"
 # plateau with the most agreement on that criterion's measured curve.
 # 269 of 273 judged cells agree at these lines; the four that remain
 # are a wording problem, not a threshold problem.
-met = 0.628
+met = 0.35265
 
 [judge.per_criterion]
-family-expression-present = 0.5466
-family-garment-festive = 0.2394
-interview-collar-buttoned = 0.11395
-interview-expression-calm = 0.36925
+date-beard-even = 0.19435
+family-beard-even = 0.1682
+funeral-beard-close = 0.26845
+interview-beard-short = 0.18815
+interview-collar-buttoned = 0.1126
+interview-expression-calm = 0.2022
 
 [check]
 # The lines that turn the render check's probabilities into facts, and
 # the model the check runs on. The lines are the evaluation's: every
-# known bad render discarded, zero honest renders lost, at least 0.42
+# known bad render discarded, zero honest renders lost, at least 0.44
 # of margin per gate on this model. clef wins the vocabulary (19 of 22
-# true attribute answers against clef-flash's 17), at about 132 neurons
+# true attribute answers against clef-flash's 18), at about 132 neurons
 # a look instead of 57.
-change_made = 0.50085
-same_person = 0.48355
-criterion_met = 0.50315
+change_made = 0.4978
+same_person = 0.4799
+criterion_met = 0.4986
 model = "clef"
 
 [[secrets.youcam_api_key]]
