@@ -903,23 +903,20 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	}
 
 	// The named cells: the 0.5 anchors, the cells no line saves, every
-	// value that moved, and every cell that crossed the shipped line.
+	// value that moved, and every cell that crossed the shipped line. Each
+	// off-list block comes whole out of liveOffBlock, so the sweep holds no
+	// copy of that text or that comparison: the gate's pin of the same
+	// builder against the committed transcript is what catches a swapped
+	// field, a renamed label or a list out of order, not the next paid run.
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, liveOffHeaderFmt, len(recorded.OffAtHalf), len(nums.OffHalf))
-	liveLogf(t, secrets, "    recorded (docs/clef.md's thirteen):")
-	livePrintCells(t, secrets, recorded.OffAtHalf)
-	liveLogf(t, secrets, "    live:")
-	livePrintCells(t, secrets, nums.OffHalf)
-	liveCompareCells(t, secrets, "0.5", recorded.OffAtHalf, nums.OffHalf)
+	liveLogLines(t, secrets, liveOffBlock("0.5",
+		fmt.Sprintf(liveOffHeaderFmt, len(recorded.OffAtHalf), len(nums.OffHalf)),
+		liveOffHalfRecordedLabel, recorded.OffAtHalf, liveOffLiveLabel, nums.OffHalf))
 
 	liveLogf(t, secrets, "")
-	liveLogf(t, secrets, liveWrongHeaderFmt,
-		len(recorded.Wrong), len(nums.Wrong))
-	liveLogf(t, secrets, "    recorded:")
-	livePrintCells(t, secrets, recorded.Wrong)
-	liveLogf(t, secrets, "    live:")
-	livePrintCells(t, secrets, nums.Wrong)
-	liveCompareCells(t, secrets, "the shipped line", recorded.Wrong, nums.Wrong)
+	liveLogLines(t, secrets, liveOffBlock("the shipped line",
+		fmt.Sprintf(liveWrongHeaderFmt, len(recorded.Wrong), len(nums.Wrong)),
+		liveOffRecordedLabel, recorded.Wrong, liveOffLiveLabel, nums.Wrong))
 
 	liveLogf(t, secrets, "")
 	liveLogf(t, secrets, liveMovedBlockFmt, len(nums.Moved), recorded.Cells)
@@ -946,37 +943,14 @@ func liveReportJudge(t *testing.T, world liveWorld, reads []JudgeRead) {
 	}
 }
 
-// livePrintCells logs one list of off-cells, each with the value that
-// put it on the wrong side and what the ground truth expected. The line is
-// printed from liveOffCellFormat, the same constant the pinned test
-// re-emits the transcript's off-cell lists from: one copy of the text.
-func livePrintCells(t *testing.T, secrets liveSecrets, cells []OffCell) {
+// liveLogLines logs one built block's lines, each as its own transcript
+// line. The lines arrive as text from the untagged builder the pinned test
+// calls too, so they are printed with no format of their own: nothing here
+// can reorder a block's fields or eat a printed percent sign.
+func liveLogLines(t *testing.T, secrets liveSecrets, lines []string) {
 	t.Helper()
-	if len(cells) == 0 {
-		liveLogf(t, secrets, "      (none)")
-		return
-	}
-	for _, c := range cells {
-		liveLogf(t, secrets, liveOffCellFormat, c.Sample, c.Criterion, c.Value, c.Expected)
-	}
-}
-
-// liveCompareCells says whether the live list names exactly the cells the
-// recorded list names, and which side each list has that the other lacks.
-// The set difference is liveOffDiff's and the three lines are the constants
-// liveReproduceFmt, liveOffOnlyLiveFmt and liveOffOnlyRecFmt, all in
-// live_report_test.go: the sweep has no copy of this logic or this text,
-// and the pin that checks them against the committed transcript is the
-// gate's, not a paid run's.
-func liveCompareCells(t *testing.T, secrets liveSecrets, where string, recorded, live []OffCell) {
-	t.Helper()
-	onlyLive, onlyRecorded := liveOffDiff(recorded, live)
-	liveLogf(t, secrets, liveReproduceFmt, where, len(onlyLive) == 0 && len(onlyRecorded) == 0)
-	for _, entry := range onlyLive {
-		liveLogf(t, secrets, liveOffOnlyLiveFmt, where, entry)
-	}
-	for _, entry := range onlyRecorded {
-		liveLogf(t, secrets, liveOffOnlyRecFmt, where, entry)
+	for _, ln := range lines {
+		liveLogf(t, secrets, "%s", ln)
 	}
 }
 

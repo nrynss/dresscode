@@ -801,6 +801,17 @@ const (
 	liveConsistencyLine = "consistency: the shipped [judge] and [check] numbers equal the offline evaluation's chosen settings: true"
 )
 
+// The lines inside an off-list block that carry no computed value: the two
+// list labels and the empty-list stand-in. liveOffBlock prints them, the
+// pinned test compares them with the transcript's own and the parser reads
+// the transcript's lists off them, so a rename has to agree in all three.
+const (
+	liveOffHalfRecordedLabel = "    recorded (docs/clef.md's thirteen):"
+	liveOffRecordedLabel     = "    recorded:"
+	liveOffLiveLabel         = "    live:"
+	liveOffNoneLine          = "      (none)"
+)
+
 func liveFloat(t *testing.T, name, text string) float64 {
 	t.Helper()
 	v, err := strconv.ParseFloat(text, 64)
@@ -927,6 +938,49 @@ func (d liveTranscriptData) linesWith(prefix string) []string {
 	return out
 }
 
+// offBlockLines lifts one off-list block out of the transcript: the header
+// and every payload line under it, up to the blank line that closes the
+// section, indent trimmed, in print order. A transcript with no block under
+// that header is the print changing shape, so it fails rather than
+// comparing an empty list.
+func (d liveTranscriptData) offBlockLines(t *testing.T, header string) []string {
+	t.Helper()
+	if header == "" {
+		t.Fatalf("live pin: %s: no off-list header was captured, so no block can be lifted", d.name)
+	}
+	var (
+		out     []string
+		started bool
+	)
+	for _, ln := range d.lines {
+		trimmed := strings.TrimSpace(ln)
+		switch {
+		case !started:
+			if trimmed != header {
+				continue
+			}
+			started = true
+		case trimmed == "":
+			return out
+		}
+		out = append(out, trimmed)
+	}
+	if !started {
+		t.Fatalf("live pin: %s: the transcript carries no off-list block under %q", d.name, header)
+	}
+	return out
+}
+
+// liveTrimLines drops the indent from each line, for a pin that compares the
+// print's text against a transcript line carried without its indent.
+func liveTrimLines(lines []string) []string {
+	out := make([]string, 0, len(lines))
+	for _, ln := range lines {
+		out = append(out, strings.TrimSpace(ln))
+	}
+	return out
+}
+
 // headline reads one captured single-line value, failing the test when the
 // transcript does not carry it: a missing headline is the print changing,
 // which is exactly what these pins exist to catch.
@@ -1006,14 +1060,13 @@ type liveGateRowText struct {
 }
 
 type liveReadRowText struct {
-	raw       string
-	exchange  string
-	model     string
-	bad       bool
-	change    string
-	same      string
-	met       string
-	recTriple string // the recorded "0.9866 / 0.9066 / 0.9806" tail
+	raw      string
+	exchange string
+	model    string
+	bad      bool
+	change   string
+	same     string
+	met      string
 }
 
 type liveDecisionRow struct {
@@ -1115,12 +1168,13 @@ func parseLiveTranscript(t *testing.T, name string) liveTranscriptData {
 			continue
 		case len(f) >= 10 && f[7] == "/" && f[9] == "/" && (f[2] == "true" || f[2] == "false"):
 			// The check's read table: the recorded triple trails the
-			// live values with two slash separators.
+			// live values with two slash separators. It is not kept apart
+			// from the line: the pin re-emits the whole row, tail included,
+			// from the recorded read's own three values.
 			d.readRows = append(d.readRows, liveReadRowText{
 				raw: ln, exchange: f[0], model: f[1],
 				bad:    liveBool(t, tr.name, f[2]),
 				change: f[3], same: f[4], met: f[5],
-				recTriple: strings.Join(f[6:], " "),
 			})
 			continue
 		case (len(f) == 10 || len(f) == 14) && liveHasName(gateNames, f[0]):
@@ -1238,13 +1292,13 @@ func parseLiveTranscript(t *testing.T, name string) liveTranscriptData {
 			d.movedHeader, section = trimmed, secMoved
 		case strings.HasPrefix(trimmed, "CELLS ON THE OTHER SIDE OF THE SHIPPED LINE"):
 			d.flippedHeader, section = trimmed, secFlipped
-		case trimmed == "recorded (docs/clef.md's thirteen):":
+		case trimmed == strings.TrimSpace(liveOffHalfRecordedLabel):
 			section = secOffRecorded
-		case trimmed == "live:" && section == secOffRecorded:
+		case trimmed == strings.TrimSpace(liveOffLiveLabel) && section == secOffRecorded:
 			section = secOffLive
-		case trimmed == "recorded:" && section == secNone:
+		case trimmed == strings.TrimSpace(liveOffRecordedLabel) && section == secNone:
 			section = secWrongRecorded
-		case trimmed == "live:" && section == secWrongRecorded:
+		case trimmed == strings.TrimSpace(liveOffLiveLabel) && section == secWrongRecorded:
 			section = secWrongLive
 		case trimmed == "recorded misses:":
 			section = secMissRecorded
@@ -1491,6 +1545,9 @@ func livePinLine(t *testing.T, d liveTranscriptData, label, want, got string) {
 
 // livePinTrimmed compares a header the sweep prints with indentation
 // against the transcript line captured with that indentation trimmed.
+// Both sides are trimmed, so what is pinned is the text and what is left
+// unpinned is indent-only drift: a print that moved a header two spaces and
+// changed no word passes here, and no re-emission catches it.
 func livePinTrimmed(t *testing.T, d liveTranscriptData, label, want, got string) {
 	t.Helper()
 	if w := strings.TrimSpace(want); w != got {
@@ -1521,6 +1578,11 @@ func livePinHasLine(t *testing.T, d liveTranscriptData, want string) {
 	t.Errorf("live pin: %s: the transcript carries no line %q", d.name, want)
 }
 
+// livePinList compares a block the sweep prints line by line against the
+// transcript's own lines. Both sides reach here indent-trimmed - the
+// transcript is captured trimmed and the computed lines come through
+// liveTrimLines - so a list that re-indents without changing a word is the
+// drift this pin cannot see; the line count, the order and the text it can.
 func livePinList(t *testing.T, d liveTranscriptData, label string, want, got []string) {
 	t.Helper()
 	if len(want) != len(got) {
@@ -1535,7 +1597,8 @@ func livePinList(t *testing.T, d liveTranscriptData, label string, want, got []s
 	}
 }
 
-// liveOffKeys indexes an off-cell list by the key liveCompareCells uses.
+// liveOffKeys indexes an off-cell list by the key the off-list comparison
+// uses: the sample and the criterion, the same pair the entry lines print.
 func liveOffKeys(cells []OffCell) map[string]OffCell {
 	m := make(map[string]OffCell, len(cells))
 	for _, c := range cells {
@@ -1544,8 +1607,8 @@ func liveOffKeys(cells []OffCell) map[string]OffCell {
 	return m
 }
 
-// liveOffDiff reproduces the sweep's liveCompareCells finding: the entries
-// each side has that the other lacks, sorted, in the print's own wording.
+// liveOffDiff gives the entries each side has that the other lacks, sorted,
+// in the print's own wording.
 func liveOffDiff(recorded, live []OffCell) (onlyLive, onlyRecorded []string) {
 	rec, liv := liveOffKeys(recorded), liveOffKeys(live)
 	for k, c := range liv {
@@ -1565,38 +1628,81 @@ func liveOffDiff(recorded, live []OffCell) (onlyLive, onlyRecorded []string) {
 	return onlyLive, onlyRecorded
 }
 
-// livePinOffBlock re-runs the sweep's cell comparison for one off-list
-// section: the header, both lists, the reproduce line and the only-one-side
-// entries, all against the transcript.
+// liveOffCellLines renders one off-cell list as the sweep prints it, the
+// empty stand-in included. The order is the one the computation sorted the
+// cells into; nothing here re-sorts.
+func liveOffCellLines(cells []OffCell) []string {
+	if len(cells) == 0 {
+		return []string{liveOffNoneLine}
+	}
+	lines := make([]string, 0, len(cells))
+	for _, c := range cells {
+		lines = append(lines, fmt.Sprintf(liveOffCellFormat, c.Sample, c.Criterion, c.Value, c.Expected))
+	}
+	return lines
+}
+
+// liveOffDiffLines builds the comparison tail of an off-list block: the
+// reproduce line, then the entries only one side has, each in the print's
+// own text and in the order the block prints them.
+func liveOffDiffLines(where string, recorded, live []OffCell) (repro string, onlyLive, onlyRecorded []string) {
+	liveEntries, recEntries := liveOffDiff(recorded, live)
+	repro = fmt.Sprintf(liveReproduceFmt, where, len(liveEntries) == 0 && len(recEntries) == 0)
+	for _, e := range liveEntries {
+		onlyLive = append(onlyLive, fmt.Sprintf(liveOffOnlyLiveFmt, where, e))
+	}
+	for _, e := range recEntries {
+		onlyRecorded = append(onlyRecorded, fmt.Sprintf(liveOffOnlyRecFmt, where, e))
+	}
+	return repro, onlyLive, onlyRecorded
+}
+
+// liveOffBlock builds one off-list block whole, in print order: the header,
+// each side's labelled list and the comparison tail. The tagged sweep logs
+// exactly these lines and livePinOffBlock compares them, line for line, with
+// the committed transcript, so the block has one builder. A same-typed swap
+// inside it - a c.Sample printed where the c.Criterion goes - fails the gate
+// on every commit instead of showing up on the next paid run, which is the
+// only place a copy of this text living in the sweep could be found out.
+func liveOffBlock(where, header, recordedLabel string, recorded []OffCell,
+	liveLabel string, live []OffCell,
+) []string {
+	repro, onlyLive, onlyRecorded := liveOffDiffLines(where, recorded, live)
+	lines := []string{header, recordedLabel}
+	lines = append(lines, liveOffCellLines(recorded)...)
+	lines = append(lines, liveLabel)
+	lines = append(lines, liveOffCellLines(live)...)
+	lines = append(lines, repro)
+	lines = append(lines, onlyLive...)
+	return append(lines, onlyRecorded...)
+}
+
+// livePinOffBlock pins one off-list section of the transcript: the block
+// liveOffBlock builds against the transcript's own lines from its header to
+// the blank that closes it, and the header, the two lists, the reproduce line
+// and each side's lone entries named on their own so a failure says which
+// part moved rather than only where in the block it sits.
 func livePinOffBlock(t *testing.T, d liveTranscriptData, where, header string,
-	headerWant string, recorded, live []OffCell, lists liveCellList, reproKey string,
+	headerWant string, recordedLabel string, recorded, live []OffCell,
+	lists liveCellList, reproKey string,
 ) {
 	t.Helper()
+	repro, wantLive, wantRec := liveOffDiffLines(where, recorded, live)
+	block := liveTrimLines(liveOffBlock(where, headerWant, recordedLabel, recorded, liveOffLiveLabel, live))
+	livePinList(t, d, where+" off-list block", block, d.offBlockLines(t, header))
 	livePinTrimmed(t, d, "the off-list header", headerWant, header)
 	livePinCellsList(t, d, where+" recorded list", recorded, lists.recorded)
 	livePinCellsList(t, d, where+" live list", live, lists.live)
-	onlyLiveEntries, onlyRecEntries := liveOffDiff(recorded, live)
-	livePinTrimmed(t, d, "the reproduce line",
-		fmt.Sprintf(liveReproduceFmt, where, len(onlyLiveEntries) == 0 && len(onlyRecEntries) == 0),
-		strings.TrimSpace(d.headline(t, reproKey)))
-	var wantLive, wantRec []string
-	for _, e := range onlyLiveEntries {
-		wantLive = append(wantLive, strings.TrimSpace(fmt.Sprintf(liveOffOnlyLiveFmt, where, e)))
-	}
-	for _, e := range onlyRecEntries {
-		wantRec = append(wantRec, strings.TrimSpace(fmt.Sprintf(liveOffOnlyRecFmt, where, e)))
-	}
-	livePinList(t, d, "off live-only lines", wantLive, d.linesWith("off at "+where+" live only:"))
-	livePinList(t, d, "off recorded-only lines", wantRec, d.linesWith("off at "+where+" recorded only:"))
+	livePinTrimmed(t, d, "the reproduce line", repro, strings.TrimSpace(d.headline(t, reproKey)))
+	livePinList(t, d, "off live-only lines", liveTrimLines(wantLive),
+		d.linesWith("off at "+where+" live only:"))
+	livePinList(t, d, "off recorded-only lines", liveTrimLines(wantRec),
+		d.linesWith("off at "+where+" recorded only:"))
 }
 
 func livePinCellsList(t *testing.T, d liveTranscriptData, label string, cells []OffCell, got []string) {
 	t.Helper()
-	want := make([]string, 0, len(cells))
-	for _, c := range cells {
-		want = append(want, strings.TrimSpace(fmt.Sprintf(liveOffCellFormat, c.Sample, c.Criterion, c.Value, c.Expected)))
-	}
-	livePinList(t, d, label, want, got)
+	livePinList(t, d, label, liveTrimLines(liveOffCellLines(cells)), got)
 }
 
 // ---- The pinned tests ----
@@ -1791,10 +1897,10 @@ func TestLiveTranscriptJudging(t *testing.T) {
 	// The off-lists, their headers and their comparisons.
 	livePinOffBlock(t, d, "0.5", d.offHalfHeader,
 		fmt.Sprintf(liveOffHeaderFmt, len(recorded.OffAtHalf), len(nums.OffHalf)),
-		recorded.OffAtHalf, nums.OffHalf, d.offHalf, "reproHalf")
+		liveOffHalfRecordedLabel, recorded.OffAtHalf, nums.OffHalf, d.offHalf, "reproHalf")
 	livePinOffBlock(t, d, "the shipped line", d.wrongHeader,
 		fmt.Sprintf(liveWrongHeaderFmt, len(recorded.Wrong), len(nums.Wrong)),
-		recorded.Wrong, nums.Wrong, d.wrong, "reproLine")
+		liveOffRecordedLabel, recorded.Wrong, nums.Wrong, d.wrong, "reproLine")
 	livePinTrimmed(t, d, "the moved block header",
 		fmt.Sprintf(liveMovedBlockFmt, len(nums.Moved), recorded.Cells), d.movedHeader)
 	livePinTrimmed(t, d, "the flipped block header",
