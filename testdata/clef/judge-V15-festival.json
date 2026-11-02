@@ -5,123 +5,123 @@
   "path": "/ai/run/@cf/cloudflare/clef",
   "body": {
    "model": "clef",
-   "state": {
-    "occasion": "festival",
-    "name": "Festival"
-   },
-   "questions": {
-    "festival-garment-festive": {
-     "type": "noul",
-     "instructions": "Is the garment a festive colour or pattern, rather than a plain office shirt?"
-    },
-    "festival-earring": {
-     "type": "noul",
-     "instructions": "Is a festive earring visible, such as hoops or jhumkas, rather than a bare ear?"
-    },
-    "festival-necklace": {
-     "type": "noul",
-     "instructions": "Is a necklace visible, rather than a bare neck?"
-    },
-    "festival-lip": {
-     "type": "noul",
-     "instructions": "Is the lip a festive colour, red or berry, rather than bare?"
-    },
-    "festival-hair": {
-     "type": "noul",
-     "instructions": "Is the hair in a finished shape and off the eyes, rather than loose across the face?"
-    },
-    "festival-beard": {
-     "type": "noul",
-     "instructions": "Is facial hair either absent or a full shape with a clean edge, not a patchy or stubbly outline?"
-    },
-    "festival-expression": {
-     "type": "noul",
-     "instructions": "Is the expression open and present, rather than a flat stare?"
-    },
-    "festival-light": {
-     "type": "noul",
-     "instructions": "Is the face lit warmly and evenly, with both eyes visible, rather than left in a dark room?"
-    },
-    "biggest_issue": {
-     "type": "choice",
-     "instructions": "Which missed part of this dress code is the biggest issue?",
-     "criteria": {
-      "festival-garment-festive": "the garment",
-      "festival-earring": "the earring",
-      "festival-necklace": "the necklace",
-      "festival-lip": "the lip",
-      "festival-hair": "the hair",
-      "festival-beard": "the facial hair",
-      "festival-expression": "the expression",
-      "festival-light": "the light",
-      "none": "none",
-      "cant-tell": "can't tell"
-     }
-    }
-   },
    "images": [
     {
      "content_type": "image/jpeg",
      "file": "../samples/man/V15-festival.jpg"
     }
-   ]
+   ],
+   "state": {
+    "occasion": "festival",
+    "name": "Festival"
+   },
+   "questions": {
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "cant-tell": "can't tell",
+      "festival-beard": "the facial hair",
+      "festival-earring": "the earring",
+      "festival-expression": "the expression",
+      "festival-garment-festive": "the garment",
+      "festival-hair": "the hair",
+      "festival-light": "the light",
+      "festival-lip": "the lip",
+      "festival-necklace": "the necklace",
+      "none": "none"
+     }
+    },
+    "festival-beard": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or a full shape with a clean edge, not a patchy or stubbly outline?"
+    },
+    "festival-earring": {
+     "type": "noul",
+     "instructions": "Is a festive earring visible, such as hoops or jhumkas, rather than a bare ear?"
+    },
+    "festival-expression": {
+     "type": "noul",
+     "instructions": "Is the expression open and present, rather than a flat stare?"
+    },
+    "festival-garment-festive": {
+     "type": "noul",
+     "instructions": "Is the garment a festive colour or pattern, rather than a plain office shirt?"
+    },
+    "festival-hair": {
+     "type": "noul",
+     "instructions": "Is the hair in a finished shape and off the eyes, rather than loose across the face?"
+    },
+    "festival-light": {
+     "type": "noul",
+     "instructions": "Is the face lit warmly and evenly, with both eyes visible, rather than left in a dark room?"
+    },
+    "festival-lip": {
+     "type": "noul",
+     "instructions": "Is the lip a festive colour, red or berry, rather than bare?"
+    },
+    "festival-necklace": {
+     "type": "noul",
+     "instructions": "Is a necklace visible, rather than a bare neck?"
+    }
+   }
   }
  },
  "response": {
   "status": 200,
-  "elapsed_ms": 1069,
+  "elapsed_ms": 1577,
   "body": {
    "result": {
     "model": "clef",
     "answers": {
-     "festival-garment-festive": {
-      "type": "noul",
-      "noul": 0.8575
-     },
-     "festival-earring": {
-      "type": "noul",
-      "noul": 0.0146
-     },
-     "festival-necklace": {
-      "type": "noul",
-      "noul": 0.0195
-     },
-     "festival-lip": {
-      "type": "noul",
-      "noul": 0.0214
-     },
-     "festival-hair": {
-      "type": "noul",
-      "noul": 0.8211
+     "biggest_issue": {
+      "type": "choice",
+      "choice": "festival-beard",
+      "probabilities": {
+       "cant-tell": 0.0684,
+       "festival-beard": 0.3197,
+       "festival-earring": 0.0204,
+       "festival-expression": 0.0609,
+       "festival-garment-festive": 0.1669,
+       "festival-hair": 0.0177,
+       "festival-light": 0.0156,
+       "festival-lip": 0.0133,
+       "festival-necklace": 0.0554,
+       "none": 0.2617
+      },
+      "confidence": 0.1235
      },
      "festival-beard": {
       "type": "noul",
-      "noul": 0.8214
+      "noul": 0.492
+     },
+     "festival-earring": {
+      "type": "noul",
+      "noul": 0.0351
      },
      "festival-expression": {
       "type": "noul",
-      "noul": 0.9004
+      "noul": 0.8719
+     },
+     "festival-garment-festive": {
+      "type": "noul",
+      "noul": 0.8682
+     },
+     "festival-hair": {
+      "type": "noul",
+      "noul": 0.8416
      },
      "festival-light": {
       "type": "noul",
-      "noul": 0.7898
+      "noul": 0.6357
      },
-     "biggest_issue": {
-      "type": "choice",
-      "choice": "none",
-      "probabilities": {
-       "festival-garment-festive": 0.0399,
-       "festival-earring": 0.1256,
-       "festival-necklace": 0.0932,
-       "festival-lip": 0.0435,
-       "festival-hair": 0.0133,
-       "festival-beard": 0.1044,
-       "festival-expression": 0.0138,
-       "festival-light": 0.0116,
-       "none": 0.5078,
-       "cant-tell": 0.0469
-      },
-      "confidence": 0.2216
+     "festival-lip": {
+      "type": "noul",
+      "noul": 0.0785
+     },
+     "festival-necklace": {
+      "type": "noul",
+      "noul": 0.0775
      }
     },
     "usage": {

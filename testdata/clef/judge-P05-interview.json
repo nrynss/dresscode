@@ -5,14 +5,43 @@
   "path": "/ai/run/@cf/cloudflare/clef",
   "body": {
    "model": "clef",
+   "images": [
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/woman-white/P05-interview.jpg"
+    }
+   ],
    "state": {
     "occasion": "interview",
     "name": "Interview"
    },
    "questions": {
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "cant-tell": "can't tell",
+      "interview-beard-short": "the facial hair",
+      "interview-collar-buttoned": "the collar",
+      "interview-expression-calm": "the expression",
+      "interview-garment-plain": "the garment",
+      "interview-hair-close": "the hair",
+      "interview-light-plain": "the light",
+      "lip-quiet": "the lip",
+      "none": "none"
+     }
+    },
+    "interview-beard-short": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or a short even shape that stays off the collar, not a long or patchy outline?"
+    },
     "interview-collar-buttoned": {
      "type": "noul",
      "instructions": "Is the collar buttoned, rather than open at the neck?"
+    },
+    "interview-expression-calm": {
+     "type": "noul",
+     "instructions": "Is the expression calm, with the mouth relaxed, rather than a flat stare or a wide grin?"
     },
     "interview-garment-plain": {
      "type": "noul",
@@ -22,96 +51,67 @@
      "type": "noul",
      "instructions": "Is the hair off the face and sitting close, rather than across the eyes or standing up?"
     },
-    "interview-beard-short": {
-     "type": "noul",
-     "instructions": "Is facial hair either absent or a short even shape that stays off the collar, not a long or patchy outline?"
-    },
-    "lip-quiet": {
-     "type": "noul",
-     "instructions": "Is the lip either bare or a quiet nude, not a bright colour?"
-    },
-    "interview-expression-calm": {
-     "type": "noul",
-     "instructions": "Is the expression calm, with the mouth relaxed, rather than a flat stare or a wide grin?"
-    },
     "interview-light-plain": {
      "type": "noul",
      "instructions": "Is the light plain and even on both eyes, with no coloured cast and no hard shadow?"
     },
-    "biggest_issue": {
-     "type": "choice",
-     "instructions": "Which missed part of this dress code is the biggest issue?",
-     "criteria": {
-      "interview-collar-buttoned": "the collar",
-      "interview-garment-plain": "the garment",
-      "interview-hair-close": "the hair",
-      "interview-beard-short": "the facial hair",
-      "lip-quiet": "the lip",
-      "interview-expression-calm": "the expression",
-      "interview-light-plain": "the light",
-      "none": "none",
-      "cant-tell": "can't tell"
-     }
+    "lip-quiet": {
+     "type": "noul",
+     "instructions": "Is the lip either bare or a quiet nude, not a bright colour?"
     }
-   },
-   "images": [
-    {
-     "content_type": "image/jpeg",
-     "file": "../samples/woman-white/P05-interview.jpg"
-    }
-   ]
+   }
   }
  },
  "response": {
   "status": 200,
-  "elapsed_ms": 2130,
+  "elapsed_ms": 1498,
   "body": {
    "result": {
     "model": "clef",
     "answers": {
-     "interview-collar-buttoned": {
-      "type": "noul",
-      "noul": 0.6087
-     },
-     "interview-garment-plain": {
-      "type": "noul",
-      "noul": 0.9678
-     },
-     "interview-hair-close": {
-      "type": "noul",
-      "noul": 0.0412
-     },
-     "interview-beard-short": {
-      "type": "noul",
-      "noul": 0.9404
-     },
-     "lip-quiet": {
-      "type": "noul",
-      "noul": 0.8921
-     },
-     "interview-expression-calm": {
-      "type": "noul",
-      "noul": 0.5782
-     },
-     "interview-light-plain": {
-      "type": "noul",
-      "noul": 0.8412
-     },
      "biggest_issue": {
       "type": "choice",
       "choice": "interview-hair-close",
       "probabilities": {
-       "interview-collar-buttoned": 0.0579,
-       "interview-garment-plain": 0.0076,
-       "interview-hair-close": 0.8352,
-       "interview-beard-short": 0.0092,
-       "lip-quiet": 0.0066,
-       "interview-expression-calm": 0.0371,
-       "interview-light-plain": 0.0135,
-       "none": 0.0227,
-       "cant-tell": 0.0102
+       "cant-tell": 0.0434,
+       "interview-beard-short": 0.0252,
+       "interview-collar-buttoned": 0.0277,
+       "interview-expression-calm": 0.1576,
+       "interview-garment-plain": 0.0518,
+       "interview-hair-close": 0.537,
+       "interview-light-plain": 0.0241,
+       "lip-quiet": 0.0095,
+       "none": 0.1237
       },
-      "confidence": 0.6661
+      "confidence": 0.252
+     },
+     "interview-beard-short": {
+      "type": "noul",
+      "noul": 0.9429
+     },
+     "interview-collar-buttoned": {
+      "type": "noul",
+      "noul": 0.2583
+     },
+     "interview-expression-calm": {
+      "type": "noul",
+      "noul": 0.3199
+     },
+     "interview-garment-plain": {
+      "type": "noul",
+      "noul": 0.9429
+     },
+     "interview-hair-close": {
+      "type": "noul",
+      "noul": 0.0397
+     },
+     "interview-light-plain": {
+      "type": "noul",
+      "noul": 0.8075
+     },
+     "lip-quiet": {
+      "type": "noul",
+      "noul": 0.8956
      }
     },
     "usage": {

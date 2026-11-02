@@ -5,123 +5,123 @@
   "path": "/ai/run/@cf/cloudflare/clef",
   "body": {
    "model": "clef",
-   "state": {
-    "occasion": "funeral",
-    "name": "Funeral"
-   },
-   "questions": {
-    "funeral-garment-dark": {
-     "type": "noul",
-     "instructions": "Is the garment dark and plain, rather than bright, patterned, or festive?"
-    },
-    "funeral-collar-plain": {
-     "type": "noul",
-     "instructions": "Is the collar plain and closed, rather than open and bright?"
-    },
-    "funeral-jewellery-quiet": {
-     "type": "noul",
-     "instructions": "Is jewellery either absent or one small plain stud, not a festive earring or a large necklace?"
-    },
-    "lip-quiet": {
-     "type": "noul",
-     "instructions": "Is the lip either bare or a quiet nude, not a bright colour?"
-    },
-    "funeral-hair-plain": {
-     "type": "noul",
-     "instructions": "Is the hair plain and off the face, rather than across the eyes?"
-    },
-    "funeral-beard-close": {
-     "type": "noul",
-     "instructions": "Is facial hair either absent or a short close shape, not a long or patchy outline?"
-    },
-    "funeral-expression-still": {
-     "type": "noul",
-     "instructions": "Is the expression still, with the mouth closed, rather than a wide smile?"
-    },
-    "funeral-light-plain": {
-     "type": "noul",
-     "instructions": "Is the light plain and even, without a dramatic side shadow or a bright coloured wash?"
-    },
-    "biggest_issue": {
-     "type": "choice",
-     "instructions": "Which missed part of this dress code is the biggest issue?",
-     "criteria": {
-      "funeral-garment-dark": "the garment",
-      "funeral-collar-plain": "the collar",
-      "funeral-jewellery-quiet": "the jewellery",
-      "lip-quiet": "the lip",
-      "funeral-hair-plain": "the hair",
-      "funeral-beard-close": "the facial hair",
-      "funeral-expression-still": "the expression",
-      "funeral-light-plain": "the light",
-      "none": "none",
-      "cant-tell": "can't tell"
-     }
-    }
-   },
    "images": [
     {
      "content_type": "image/jpeg",
      "file": "../samples/woman-white/P08-funeral.jpg"
     }
-   ]
+   ],
+   "state": {
+    "occasion": "funeral",
+    "name": "Funeral"
+   },
+   "questions": {
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "cant-tell": "can't tell",
+      "funeral-beard-close": "the facial hair",
+      "funeral-collar-plain": "the collar",
+      "funeral-expression-still": "the expression",
+      "funeral-garment-dark": "the garment",
+      "funeral-hair-plain": "the hair",
+      "funeral-jewellery-quiet": "the jewellery",
+      "funeral-light-plain": "the light",
+      "lip-quiet": "the lip",
+      "none": "none"
+     }
+    },
+    "funeral-beard-close": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or a short close shape, not a long or patchy outline?"
+    },
+    "funeral-collar-plain": {
+     "type": "noul",
+     "instructions": "Is the collar plain and closed, rather than open and bright?"
+    },
+    "funeral-expression-still": {
+     "type": "noul",
+     "instructions": "Is the expression still, with the mouth closed, rather than a wide smile?"
+    },
+    "funeral-garment-dark": {
+     "type": "noul",
+     "instructions": "Is the garment dark and plain, rather than bright, patterned, or festive?"
+    },
+    "funeral-hair-plain": {
+     "type": "noul",
+     "instructions": "Is the hair plain and off the face, rather than across the eyes?"
+    },
+    "funeral-jewellery-quiet": {
+     "type": "noul",
+     "instructions": "Is jewellery either absent or one small plain stud, not a festive earring or a large necklace?"
+    },
+    "funeral-light-plain": {
+     "type": "noul",
+     "instructions": "Is the light plain and even, without a dramatic side shadow or a bright coloured wash?"
+    },
+    "lip-quiet": {
+     "type": "noul",
+     "instructions": "Is the lip either bare or a quiet nude, not a bright colour?"
+    }
+   }
   }
  },
  "response": {
   "status": 200,
-  "elapsed_ms": 1489,
+  "elapsed_ms": 1238,
   "body": {
    "result": {
     "model": "clef",
     "answers": {
-     "funeral-garment-dark": {
-      "type": "noul",
-      "noul": 0.9049
-     },
-     "funeral-collar-plain": {
-      "type": "noul",
-      "noul": 0.1014
-     },
-     "funeral-jewellery-quiet": {
-      "type": "noul",
-      "noul": 0.033
-     },
-     "lip-quiet": {
-      "type": "noul",
-      "noul": 0.0431
-     },
-     "funeral-hair-plain": {
-      "type": "noul",
-      "noul": 0.1337
-     },
-     "funeral-beard-close": {
-      "type": "noul",
-      "noul": 0.952
-     },
-     "funeral-expression-still": {
-      "type": "noul",
-      "noul": 0.9314
-     },
-     "funeral-light-plain": {
-      "type": "noul",
-      "noul": 0.9026
-     },
      "biggest_issue": {
       "type": "choice",
       "choice": "funeral-jewellery-quiet",
       "probabilities": {
-       "funeral-garment-dark": 0.0143,
-       "funeral-collar-plain": 0.0244,
-       "funeral-jewellery-quiet": 0.8077,
-       "lip-quiet": 0.0748,
-       "funeral-hair-plain": 0.0227,
-       "funeral-beard-close": 0.0057,
-       "funeral-expression-still": 0.0094,
-       "funeral-light-plain": 0.0088,
-       "none": 0.0163,
-       "cant-tell": 0.0159
+       "cant-tell": 0.0164,
+       "funeral-beard-close": 0.0042,
+       "funeral-collar-plain": 0.0226,
+       "funeral-expression-still": 0.0279,
+       "funeral-garment-dark": 0.0304,
+       "funeral-hair-plain": 0.0106,
+       "funeral-jewellery-quiet": 0.757,
+       "funeral-light-plain": 0.0094,
+       "lip-quiet": 0.1055,
+       "none": 0.016
       },
-      "confidence": 0.6222
+      "confidence": 0.5413
+     },
+     "funeral-beard-close": {
+      "type": "noul",
+      "noul": 0.922
+     },
+     "funeral-collar-plain": {
+      "type": "noul",
+      "noul": 0.2605
+     },
+     "funeral-expression-still": {
+      "type": "noul",
+      "noul": 0.8866
+     },
+     "funeral-garment-dark": {
+      "type": "noul",
+      "noul": 0.8998
+     },
+     "funeral-hair-plain": {
+      "type": "noul",
+      "noul": 0.0781
+     },
+     "funeral-jewellery-quiet": {
+      "type": "noul",
+      "noul": 0.0352
+     },
+     "funeral-light-plain": {
+      "type": "noul",
+      "noul": 0.9076
+     },
+     "lip-quiet": {
+      "type": "noul",
+      "noul": 0.0672
      }
     },
     "usage": {

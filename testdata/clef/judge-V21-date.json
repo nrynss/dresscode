@@ -5,14 +5,43 @@
   "path": "/ai/run/@cf/cloudflare/clef",
   "body": {
    "model": "clef",
+   "images": [
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/man/V21-date.jpg"
+    }
+   ],
    "state": {
     "occasion": "date",
     "name": "Date"
    },
    "questions": {
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "cant-tell": "can't tell",
+      "date-beard-even": "the facial hair",
+      "date-collar-open": "the collar",
+      "date-expression-engaged": "the expression",
+      "date-garment-easy": "the garment",
+      "date-hair-clear": "the hair",
+      "date-light-see": "the light",
+      "date-lip-clear": "the lip",
+      "none": "none"
+     }
+    },
+    "date-beard-even": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or a short even shape, not a patchy outline?"
+    },
     "date-collar-open": {
      "type": "noul",
      "instructions": "Is the collar open, rather than buttoned to the neck?"
+    },
+    "date-expression-engaged": {
+     "type": "noul",
+     "instructions": "Is the expression engaged, with the mouth relaxed, rather than a flat stare?"
     },
     "date-garment-easy": {
      "type": "noul",
@@ -22,96 +51,67 @@
      "type": "noul",
      "instructions": "Is the hair off the eyes?"
     },
-    "date-beard-even": {
-     "type": "noul",
-     "instructions": "Is facial hair either absent or a short even shape, not a patchy outline?"
-    },
-    "date-lip-clear": {
-     "type": "noul",
-     "instructions": "Is the lip either bare or one even colour, not a smeared edge?"
-    },
-    "date-expression-engaged": {
-     "type": "noul",
-     "instructions": "Is the expression engaged, with the mouth relaxed, rather than a flat stare?"
-    },
     "date-light-see": {
      "type": "noul",
      "instructions": "Are both eyes visible in even light, rather than a flat grey wash or a hard shadow on one side?"
     },
-    "biggest_issue": {
-     "type": "choice",
-     "instructions": "Which missed part of this dress code is the biggest issue?",
-     "criteria": {
-      "date-collar-open": "the collar",
-      "date-garment-easy": "the garment",
-      "date-hair-clear": "the hair",
-      "date-beard-even": "the facial hair",
-      "date-lip-clear": "the lip",
-      "date-expression-engaged": "the expression",
-      "date-light-see": "the light",
-      "none": "none",
-      "cant-tell": "can't tell"
-     }
+    "date-lip-clear": {
+     "type": "noul",
+     "instructions": "Is the lip either bare or one even colour, not a smeared edge?"
     }
-   },
-   "images": [
-    {
-     "content_type": "image/jpeg",
-     "file": "../samples/man/V21-date.jpg"
-    }
-   ]
+   }
   }
  },
  "response": {
   "status": 200,
-  "elapsed_ms": 1321,
+  "elapsed_ms": 1309,
   "body": {
    "result": {
     "model": "clef",
     "answers": {
-     "date-collar-open": {
-      "type": "noul",
-      "noul": 0.8593
-     },
-     "date-garment-easy": {
-      "type": "noul",
-      "noul": 0.8236
-     },
-     "date-hair-clear": {
-      "type": "noul",
-      "noul": 0.8882
+     "biggest_issue": {
+      "type": "choice",
+      "choice": "date-beard-even",
+      "probabilities": {
+       "cant-tell": 0.0449,
+       "date-beard-even": 0.5719,
+       "date-collar-open": 0.099,
+       "date-expression-engaged": 0.0794,
+       "date-garment-easy": 0.0958,
+       "date-hair-clear": 0.0131,
+       "date-light-see": 0.0218,
+       "date-lip-clear": 0.0088,
+       "none": 0.0653
+      },
+      "confidence": 0.2793
      },
      "date-beard-even": {
       "type": "noul",
-      "noul": 0.5985
+      "noul": 0.2869
      },
-     "date-lip-clear": {
+     "date-collar-open": {
       "type": "noul",
-      "noul": 0.8273
+      "noul": 0.76
      },
      "date-expression-engaged": {
       "type": "noul",
-      "noul": 0.8644
+      "noul": 0.7804
+     },
+     "date-garment-easy": {
+      "type": "noul",
+      "noul": 0.8738
+     },
+     "date-hair-clear": {
+      "type": "noul",
+      "noul": 0.9318
      },
      "date-light-see": {
       "type": "noul",
-      "noul": 0.6388
+      "noul": 0.6247
      },
-     "biggest_issue": {
-      "type": "choice",
-      "choice": "date-collar-open",
-      "probabilities": {
-       "date-collar-open": 0.3019,
-       "date-garment-easy": 0.1317,
-       "date-hair-clear": 0.0092,
-       "date-beard-even": 0.1676,
-       "date-lip-clear": 0.0077,
-       "date-expression-engaged": 0.0212,
-       "date-light-see": 0.0404,
-       "none": 0.28,
-       "cant-tell": 0.0403
-      },
-      "confidence": 0.1212
+     "date-lip-clear": {
+      "type": "noul",
+      "noul": 0.902
      }
     },
     "usage": {

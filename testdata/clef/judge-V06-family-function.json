@@ -5,18 +5,43 @@
   "path": "/ai/run/@cf/cloudflare/clef",
   "body": {
    "model": "clef",
+   "images": [
+    {
+     "content_type": "image/jpeg",
+     "file": "../samples/woman/V06-family-function.jpg"
+    }
+   ],
    "state": {
     "occasion": "family-function",
     "name": "Family function"
    },
    "questions": {
+    "biggest_issue": {
+     "type": "choice",
+     "instructions": "Which missed part of this dress code is the biggest issue?",
+     "criteria": {
+      "cant-tell": "can't tell",
+      "family-beard-even": "the facial hair",
+      "family-earring-festive": "the earring",
+      "family-expression-present": "the expression",
+      "family-garment-festive": "the garment",
+      "family-hair-finished": "the hair",
+      "family-light-even": "the light",
+      "family-lip-colour": "the lip",
+      "none": "none"
+     }
+    },
+    "family-beard-even": {
+     "type": "noul",
+     "instructions": "Is facial hair either absent or one neat shape, not a patchy outline?"
+    },
     "family-earring-festive": {
      "type": "noul",
      "instructions": "Are gold jhumkas visible, rather than a bare ear or a plain stud?"
     },
-    "family-lip-colour": {
+    "family-expression-present": {
      "type": "noul",
-     "instructions": "Is the lip a clear colour, rather than bare?"
+     "instructions": "Is the expression present and calm, rather than a flat stare or a wide grin?"
     },
     "family-garment-festive": {
      "type": "noul",
@@ -26,92 +51,67 @@
      "type": "noul",
      "instructions": "Does the hair look finished and off the eyes, either tied back or cut short and neat?"
     },
-    "family-beard-even": {
-     "type": "noul",
-     "instructions": "Is facial hair either absent or one neat shape, not a patchy outline?"
-    },
-    "family-expression-present": {
-     "type": "noul",
-     "instructions": "Is the expression present and calm, rather than a flat stare or a wide grin?"
-    },
     "family-light-even": {
      "type": "noul",
      "instructions": "Is the face lit evenly enough that both eyes are visible, without a hard shadow?"
     },
-    "biggest_issue": {
-     "type": "choice",
-     "instructions": "Which missed part of this dress code is the biggest issue?",
-     "criteria": {
-      "family-earring-festive": "the earring",
-      "family-lip-colour": "the lip",
-      "family-garment-festive": "the garment",
-      "family-hair-finished": "the hair",
-      "family-beard-even": "the facial hair",
-      "family-expression-present": "the expression",
-      "family-light-even": "the light",
-      "none": "none",
-      "cant-tell": "can't tell"
-     }
+    "family-lip-colour": {
+     "type": "noul",
+     "instructions": "Is the lip a clear colour, rather than bare?"
     }
-   },
-   "images": [
-    {
-     "content_type": "image/jpeg",
-     "file": "../samples/woman/V06-family-function.jpg"
-    }
-   ]
+   }
   }
  },
  "response": {
   "status": 200,
-  "elapsed_ms": 1412,
+  "elapsed_ms": 2540,
   "body": {
    "result": {
     "model": "clef",
     "answers": {
-     "family-earring-festive": {
-      "type": "noul",
-      "noul": 0.9798
-     },
-     "family-lip-colour": {
-      "type": "noul",
-      "noul": 0.9746
-     },
-     "family-garment-festive": {
-      "type": "noul",
-      "noul": 0.8925
-     },
-     "family-hair-finished": {
-      "type": "noul",
-      "noul": 0.0263
-     },
-     "family-beard-even": {
-      "type": "noul",
-      "noul": 0.9631
-     },
-     "family-expression-present": {
-      "type": "noul",
-      "noul": 0.5431
-     },
-     "family-light-even": {
-      "type": "noul",
-      "noul": 0.929
-     },
      "biggest_issue": {
       "type": "choice",
       "choice": "family-hair-finished",
       "probabilities": {
-       "family-earring-festive": 0.0059,
-       "family-lip-colour": 0.0066,
-       "family-garment-festive": 0.0084,
-       "family-hair-finished": 0.9008,
-       "family-beard-even": 0.0076,
-       "family-expression-present": 0.0316,
-       "family-light-even": 0.0077,
-       "none": 0.0216,
-       "cant-tell": 0.0098
+       "cant-tell": 0.0386,
+       "family-beard-even": 0.0164,
+       "family-earring-festive": 0.0276,
+       "family-expression-present": 0.1274,
+       "family-garment-festive": 0.11,
+       "family-hair-finished": 0.5617,
+       "family-light-even": 0.034,
+       "family-lip-colour": 0.0234,
+       "none": 0.0609
       },
-      "confidence": 0.79
+      "confidence": 0.2707
+     },
+     "family-beard-even": {
+      "type": "noul",
+      "noul": 0.9422
+     },
+     "family-earring-festive": {
+      "type": "noul",
+      "noul": 0.9472
+     },
+     "family-expression-present": {
+      "type": "noul",
+      "noul": 0.3458
+     },
+     "family-garment-festive": {
+      "type": "noul",
+      "noul": 0.7998
+     },
+     "family-hair-finished": {
+      "type": "noul",
+      "noul": 0.0242
+     },
+     "family-light-even": {
+      "type": "noul",
+      "noul": 0.784
+     },
+     "family-lip-colour": {
+      "type": "noul",
+      "noul": 0.9401
      }
     },
     "usage": {
