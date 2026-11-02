@@ -54,14 +54,16 @@
   }
   .toast button {
     flex: none;
+    display: grid;
+    place-items: center;
     width: 1.6rem;
     height: 1.6rem;
-    margin: -0.1rem -0.2rem -0.1rem 0;
-    border: 1px solid var(--stop);
-    border-radius: var(--radius-control);
+    padding: 0;
+    margin: -0.15rem -0.35rem -0.1rem 0;
+    border: none;
     background: transparent;
     color: inherit;
-    font-size: 1rem;
+    font-size: 1.1rem;
     line-height: 1;
     cursor: pointer;
   }
