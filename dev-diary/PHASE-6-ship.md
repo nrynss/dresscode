@@ -20,7 +20,7 @@ requires:   T4.6, T5.6, T5.23
 fixture-ok: no
 size:       M · mid
 owns:       deploy/
-status:     not-started
+status:     claimed:zcode-t61
 ```
 `dresscode` and the Dresscode Lambo server as systemd user units that restart on failure and start at boot; the built app served by `dresscode`; a public hostname through the existing Cloudflare Tunnel (HTTPS, which the camera and install need). Nightly backup of the SQLite file and media. A health check that fails the deploy if the public URL doesn't answer.
 
