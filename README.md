@@ -4,13 +4,15 @@
 
 Pick an occasion, bring one selfie. Dresscode reads the look against the occasion's written dress code and flags what it misses — as reasons, worded as suggestions, **never a score** — picks one fix from the fixes you ticked as open to, renders it on your own photo, checks the render is still you before showing it, and labels every product honestly: **exact product**, **approximate match** or **visual simulation**. With style history on, it remembers what you kept and dismissed for next time.
 
-Dresscode is an entry for the YouCam API Skin AI & eCommerce VTO Hackathon, and it is live at **https://dresscode.nryn.dev**.
+Dresscode was an entry for the YouCam API Skin AI & eCommerce VTO Hackathon. It did not win. Results came out 24 November 2026.
+
+> **No longer hosted.** The public deploy at `dresscode.nryn.dev` was taken down on 25 November 2026, after the results. To run it yourself, follow [Run it from a fresh clone](#run-it-from-a-fresh-clone--no-keys-needed) below and [deploy/README.md](deploy/README.md). The judging notes below are kept as they were submitted.
 
 ## For judges: start here
 
 | | |
 |---|---|
-| **The app** | https://dresscode.nryn.dev — served from the author's own machine behind a Cloudflare Tunnel, HTTPS, installable on a phone. Opening a cached sample story is free and spends nothing; a fresh selfie and its renders are capped by a per-session judge lease, and spend guards refuse before they spend. |
+| **The app** | *(taken down 25 Nov 2026)* https://dresscode.nryn.dev was served from the author's own machine behind a Cloudflare Tunnel, HTTPS, installable on a phone. Opening a cached sample story is free and spends nothing; a fresh selfie and its renders are capped by a per-session judge lease, and spend guards refuse before they spend. |
 | **Sample stories** | Five cached looks, one per occasion — **date**, **family function**, **festival**, **funeral**, **interview**. Family function is the demo's spine, the second visit: the first visit misses the festive earrings and the lip colour, the jhumka fix is picked, rendered and checked, and that kept look is what style memory remembers. **Every person in the samples is AI-generated and does not exist.** No photo of a real person was used anywhere, and no sample was generated to look like anyone. |
 | **The video** | The video shows the hosted app on its intended device, a phone, through the same second visit, and names each YouCam API as it works. |
 | **Evaluation** | Measured on 37 sample variants — 273 criterion answers — against the sample set's ground truth, replayed from recorded model calls ([docs/evaluation.md](docs/evaluation.md)). These are evaluation numbers, not product output: the product shows reasons, never scores or probabilities. **Judging: 269 of 273 criterion answers correct (98.5%)** at the shipped decision lines; a flat 0.5 line reads 254. **Render check: every known bad render discarded, no honest render lost** (4 of 4 recorded reads). **Biggest issue, two labelled reads**: the service's raw choice names a miss on **28 of 37**; gated on the look's own flags — the read the app reports — **32 of 37**. |

@@ -106,5 +106,5 @@ keys.
 
 - Stop the deploy: `systemctl --user disable --now dresscode.service dresscode-tunnel.service dresscode-backup.timer`. Nothing else on the machine changes; the other tunnel is a separate process on a separate config.
 - Restore data: stop `dresscode.service`, copy a backup's `dresscode.db` over `/home/nryn/dresscode-run/data/dresscode.db` and its `media/` over `/home/nryn/dresscode-run/data/media/`, start the unit again.
-- Retire the hostname: `cloudflared tunnel route ip delete dresscode.nryn.dev` (or delete the DNS record in the Cloudflare dashboard).
+- Retire the hostname: delete the `dresscode.nryn.dev` CNAME in the Cloudflare dashboard (DNS → Records). `cloudflared tunnel route ip delete` is for private-network IP routes and does not remove a DNS record. Do **not** run `cloudflared tunnel delete` on this tunnel: `anusha` also carries other hostnames through `~/.cloudflared/anusha.yml`.
 - Remove everything: the table at the top is the inventory — delete the runtime directory, `~/.cloudflared/config-dresscode.yml`, the installed units, and the backups directory.
